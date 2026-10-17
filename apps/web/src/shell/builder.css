@@ -1,0 +1,158 @@
+/*
+ * Builder chrome remap. Abel's editor chrome (ScreenCanvas frame, toolbar, Inspector, Add and
+ * Publish menus) was written with dark-only utilities (neutral-900, white/10, neutral-400).
+ * Inside the shell those classes are re-pointed at the shell tokens, so one set of rules reads
+ * correctly in light and dark (the tokens themselves change per theme).
+ *
+ * Scope: only inside the two chrome roots (the canvas <section> and the Inspector <aside>, both
+ * rounded-2xl) under [data-builder], and never inside [data-screen-root]: the generated page
+ * keeps its own palette. Selectors stay more specific than the Tailwind utilities they override.
+ */
+[data-builder] {
+  --builder-on-accent: #ffffff;
+}
+html.dark [data-builder] {
+  --builder-on-accent: #0d0d0d;
+}
+
+[data-builder] :is(section, aside).rounded-2xl {
+  /* The frame itself: a quiet card on the white work surface, no dark glass or heavy shadow. */
+  background-color: var(--color-tray);
+  border-color: var(--color-line);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--color-ink);
+
+  /* Backgrounds */
+  & .bg-neutral-900,
+  & .bg-neutral-900\/60,
+  & .bg-neutral-900\/70 {
+    &:not([data-screen-root] *) {
+      background-color: var(--color-surface);
+    }
+  }
+  & .bg-neutral-950\/60,
+  & .bg-neutral-950\/30:not(.pointer-events-none) {
+    &:not([data-screen-root] *) {
+      background-color: var(--color-surface);
+    }
+  }
+  /* Loading veil over the page: stays a soft scrim in both themes. */
+  & .pointer-events-none.bg-neutral-950\/30 {
+    background-color: color-mix(in srgb, var(--color-ink) 12%, transparent);
+  }
+  /* Active segment (Edit / Preview toggle). */
+  & .bg-white\/15:not([data-screen-root] *) {
+    background-color: var(--color-hover);
+  }
+
+  /* Borders */
+  & .border-white\/5:not([data-screen-root] *),
+  & .border-white\/10:not([data-screen-root] *),
+  & .border-white\/20:not([data-screen-root] *) {
+    border-color: var(--color-line);
+  }
+  & .border-white\/40:not([data-screen-root] *) {
+    border-color: var(--color-ink-3);
+  }
+  & .border-white:not([data-screen-root] *) {
+    border-color: var(--color-ink);
+  }
+  & .border-indigo-400:not([data-screen-root] *),
+  & .border-indigo-400\/40:not([data-screen-root] *) {
+    border-color: var(--color-accent);
+  }
+
+  /* Text: light-on-dark becomes ink on surface */
+  & .text-white:not([data-screen-root] *, .bg-indigo-500, .bg-indigo-400, .bg-emerald-500, .bg-emerald-400, [class*="bg-indigo-500/"], [class*="bg-emerald-500/"]) {
+    color: var(--color-ink);
+  }
+  & .text-neutral-100:not([data-screen-root] *),
+  & .text-neutral-200:not([data-screen-root] *) {
+    color: var(--color-ink);
+  }
+  & .text-neutral-300:not([data-screen-root] *),
+  & .text-neutral-400:not([data-screen-root] *) {
+    color: var(--color-ink-2);
+  }
+  & .text-neutral-500:not([data-screen-root] *),
+  & .text-neutral-600:not([data-screen-root] *) {
+    color: var(--color-ink-3);
+  }
+  & .text-indigo-300:not([data-screen-root] *),
+  & .text-emerald-300:not([data-screen-root] *) {
+    color: var(--color-accent);
+  }
+  & .placeholder\:text-neutral-500:not([data-screen-root] *)::placeholder {
+    color: var(--color-ink-3);
+  }
+
+  /* Accent and publish buttons keep a filled look with readable text in both themes */
+  & .bg-indigo-500:not([data-screen-root] *),
+  & .bg-indigo-500\/90:not([data-screen-root] *),
+  & .bg-indigo-400:not([data-screen-root] *) {
+    background-color: var(--color-accent);
+    color: var(--builder-on-accent);
+  }
+  & .bg-indigo-500\/20:not([data-screen-root] *) {
+    background-color: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+  & .hover\:bg-indigo-400:hover:not([data-screen-root] *) {
+    background-color: color-mix(in srgb, var(--color-accent) 85%, var(--color-ink));
+  }
+  & .bg-emerald-500:not([data-screen-root] *),
+  & .bg-emerald-500\/90:not([data-screen-root] *) {
+    background-color: var(--color-ok);
+    color: var(--builder-on-accent);
+  }
+  & .hover\:bg-emerald-400:hover:not([data-screen-root] *) {
+    background-color: color-mix(in srgb, var(--color-ok) 85%, var(--color-ink));
+  }
+  & .bg-indigo-500.text-white:not([data-screen-root] *) {
+    color: var(--builder-on-accent);
+  }
+  & .ring-indigo-400:not([data-screen-root] *) {
+    --tw-ring-color: var(--color-accent);
+  }
+  & .bg-indigo-400:not([data-screen-root] *).animate-pulse {
+    background-color: var(--color-accent);
+  }
+
+  /* Hover states */
+  & .hover\:bg-white\/5:hover:not([data-screen-root] *),
+  & .hover\:bg-white\/10:hover:not([data-screen-root] *) {
+    background-color: var(--color-hover);
+  }
+  & .hover\:text-white:hover:not([data-screen-root] *),
+  & .hover\:text-neutral-100:hover:not([data-screen-root] *),
+  & .hover\:text-neutral-200:hover:not([data-screen-root] *) {
+    color: var(--color-ink);
+  }
+  & .hover\:border-indigo-400\/50:hover:not([data-screen-root] *) {
+    border-color: var(--color-accent);
+  }
+
+  /* Inputs and selects */
+  & :is(input, textarea, select):not([data-screen-root] *, [type="checkbox"], [type="radio"], [type="range"], [type="color"]) {
+    background-color: var(--color-surface);
+    border-color: var(--color-line);
+    color: var(--color-ink);
+  }
+  & :is(input, textarea, select):not([data-screen-root] *):focus {
+    border-color: var(--color-accent);
+    outline: none;
+  }
+  & :is(input, textarea)::placeholder {
+    color: var(--color-ink-3);
+  }
+  & select option {
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+}
+
+/* The dropdown menus (Add, Publish) and the node AI box are dark panels too. */
+[data-builder] :is(section, aside).rounded-2xl .shadow-2xl:not([data-screen-root] *) {
+  box-shadow: var(--shadow-soft);
+}

@@ -1,0 +1,267 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  FALLBACK_TOAST_TEXT,
+  MODE_STORAGE_KEY,
+  TOAST_MS,
+  createMemoryStore,
+  hashBody,
+  installReplay,
+  requestKey,
+  responseFromRecording,
+  type Recording,
+  type ReplayStore,
+} from "./index";
+
+describe("key hashing", () => {
+  it("ignores JSON key order and whitespace", () => {
+    expect(hashBody('{"a":1,"b":{"x":1,"y":2}}')).toBe(hashBody('{ "b": {"y":2, "x":1}, "a": 1 }'));
+  });
+  it("differs on content and is 8 hex chars", () => {
+    expect(hashBody('{"a":1}')).not.toBe(hashBody('{"a":2}'));
+    expect(hashBody("x")).toMatch(/^[0-9a-f]{8}$/);
+  });
+  it("includes method and path", () => {
+    expect(requestKey("post", "/api/generate", "{}")).toMatch(/^POST \/api\/generate [0-9a-f]{8}$/);
+  });
+});
+
+const rec = (over: Partial<Recording>): Recording => ({
+  key: "k", method: "POST", path: "/api/generate", bodyHash: "h", createdAt: 1, status: 200, statusText: "OK",
+  headers: [["content-type", "application/x-ndjson"]], latency: 100, kind: "ndjson", chunks: [], body: "", ...over,
+});
+
+describe("NDJSON timing reconstruction", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("emits chunks at original relative times after latency", async () => {
+    const r = await responseFromRecording(
+      rec({ chunks: [{ t: 0, text: '{"a":1}\n' }, { t: 500, text: '{"b":2}\n' }] }),
+    );
+    const reader = r.body!.getReader();
+    const dec = new TextDecoder();
+    const seen: [number, string][] = [];
+    const t0 = Date.now();
+    const pump = (async () => {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        seen.push([Date.now() - t0, dec.decode(value)]);
+      }
+    })();
+    await vi.advanceTimersByTimeAsync(99);
+    expect(seen).toEqual([]);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(seen).toEqual([[100, '{"a":1}\n']]);
+    await vi.advanceTimersByTimeAsync(500);
+    await pump;
+    expect(seen[1]).toEqual([600, '{"b":2}\n']);
+  });
+
+  it("delays JSON by original latency", async () => {
+    let done = false;
+    const p = responseFromRecording(rec({ kind: "body", body: '{"ok":true}', latency: 300, headers: [] })).then((r) => {
+      done = true;
+      return r;
+    });
+    await vi.advanceTimersByTimeAsync(299);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await (await p).json()).toEqual({ ok: true });
+  });
+});
+
+/** Minimal DOM double: enough for the replay dot and toast (createElement, body, remove, isConnected). */
+interface FakeEl {
+  textContent: string;
+  style: { cssText: string };
+  attrs: Record<string, string>;
+  isConnected: boolean;
+  setAttribute(k: string, v: string): void;
+  remove(): void;
+}
+function fakeDoc() {
+  const body = {
+    children: [] as FakeEl[],
+    appendChild(el: FakeEl) {
+      el.isConnected = true;
+      this.children.push(el);
+      return el;
+    },
+  };
+  const doc = {
+    body,
+    createElement(): FakeEl {
+      const el: FakeEl = {
+        textContent: "",
+        style: { cssText: "" },
+        attrs: {},
+        isConnected: false,
+        setAttribute(k, v) {
+          this.attrs[k] = v;
+        },
+        remove() {
+          this.isConnected = false;
+          body.children = body.children.filter((c) => c !== el);
+        },
+      };
+      return el;
+    },
+  };
+  const toasts = () => body.children.filter((c) => c.attrs.role === "status");
+  return { doc: doc as unknown as Document, body, toasts };
+}
+
+const JSON_HEADERS: [string, string][] = [["content-type", "application/json"]];
+
+function jsonRecording(bodyText: string, path: string, method: string, payload: string): Recording {
+  return rec({
+    key: requestKey(method, path, payload),
+    method,
+    path,
+    kind: "body",
+    headers: JSON_HEADERS,
+    latency: 0,
+    body: bodyText,
+    createdAt: 1,
+  });
+}
+
+function mk(opts: { doc?: Document; store?: ReplayStore; mode?: "record" | "replay" } = {}) {
+  const listeners: Record<string, (e: any) => void> = {};
+  const data: Record<string, string> = {};
+  if (opts.mode) data[MODE_STORAGE_KEY] = opts.mode;
+  const real = vi.fn(async (_i: any, _init?: any) =>
+    new Response('{"n":1}', { status: 200, headers: { "content-type": "application/json" } }),
+  );
+  const win: any = {
+    fetch: real,
+    location: { href: "http://localhost/" },
+    addEventListener: (t: string, f: any) => (listeners[t] = f),
+    removeEventListener: () => {},
+  };
+  const storage = { getItem: (k: string) => data[k] ?? null, setItem: (k: string, v: string) => void (data[k] = v) };
+  const store = opts.store ?? createMemoryStore();
+  const ctl = installReplay({ win, storage, store, doc: opts.doc });
+  return { win, real, ctl, store, listeners, data };
+}
+
+describe("mode toggling and record/replay", () => {
+  it("defaults to record, toggles with Ctrl+Shift+R and persists", () => {
+    const { ctl, listeners, data } = mk();
+    expect(ctl.getMode()).toBe("record");
+    const preventDefault = vi.fn();
+    listeners.keydown({ ctrlKey: true, shiftKey: true, altKey: false, metaKey: false, key: "R", preventDefault });
+    expect(ctl.getMode()).toBe("replay");
+    expect(preventDefault).toHaveBeenCalled();
+    expect(data[MODE_STORAGE_KEY]).toBe("replay");
+    listeners.keydown({ ctrlKey: true, shiftKey: false, key: "r", preventDefault });
+    expect(ctl.getMode()).toBe("replay");
+    listeners.keydown({ ctrlKey: true, shiftKey: true, key: "r", preventDefault });
+    expect(ctl.getMode()).toBe("record");
+  });
+
+  it("records, then replays without hitting the network on a fallback", async () => {
+    const { win, real, ctl } = mk();
+    const body = JSON.stringify({ prompt: "hi" });
+    const res = await win.fetch("/api/generate", { method: "POST", body });
+    expect(await res.json()).toEqual({ n: 1 });
+    await new Promise((r) => setTimeout(r, 10));
+    ctl.setMode("replay");
+    real.mockClear();
+    const r2 = await win.fetch("/api/generate", { method: "POST", body: JSON.stringify({ prompt: "other" }) });
+    expect(await r2.json()).toEqual({ n: 1 });
+    expect(real).not.toHaveBeenCalled();
+    await win.fetch("/api/other", {});
+    expect(real).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("replay safety: exact match vs fallback", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  /** Let the replay path reach its timer (the store lookup is async) before the fake clock advances. */
+  const flush = async () => {
+    for (let i = 0; i < 50; i++) await Promise.resolve();
+  };
+
+  const generateBody = JSON.stringify({ prompt: "a bakery" });
+  const otherBody = JSON.stringify({ prompt: "a gym" });
+
+  it("serves an exact body match with no toast", async () => {
+    const store = createMemoryStore();
+    await store.put(jsonRecording('{"from":"bakery"}', "/api/generate", "POST", generateBody));
+    const { doc, toasts } = fakeDoc();
+    const { win, real } = mk({ doc, store, mode: "replay" });
+
+    const p = win.fetch("/api/generate", { method: "POST", body: generateBody });
+    await flush();
+    await vi.advanceTimersByTimeAsync(0);
+    const res = await p;
+    expect(await res.json()).toEqual({ from: "bakery" });
+    expect(real).not.toHaveBeenCalled();
+    expect(toasts()).toHaveLength(0);
+  });
+
+  it("serves the latest run for the path only with a visible toast when no exact match exists", async () => {
+    const store = createMemoryStore();
+    await store.put(jsonRecording('{"from":"bakery"}', "/api/generate", "POST", generateBody));
+    const { doc, toasts } = fakeDoc();
+    const { win, real } = mk({ doc, store, mode: "replay" });
+
+    const p = win.fetch("/api/generate", { method: "POST", body: otherBody });
+    await flush();
+    await vi.advanceTimersByTimeAsync(0);
+    const res = await p;
+    expect(await res.json()).toEqual({ from: "bakery" });
+    expect(real).not.toHaveBeenCalled();
+
+    const shown = toasts();
+    expect(shown).toHaveLength(1);
+    expect(shown[0].textContent).toBe("Replay: no exact match — showing the last recorded run");
+    expect(shown[0].textContent).toBe(FALLBACK_TOAST_TEXT);
+    expect(shown[0].attrs["aria-live"]).toBe("polite");
+    expect(shown[0].style.cssText).toContain("var(--color-surface)");
+    expect(shown[0].style.cssText).toContain("var(--color-ink)");
+  });
+
+  it("auto-hides the toast after TOAST_MS (3s)", async () => {
+    expect(TOAST_MS).toBe(3000);
+    const store = createMemoryStore();
+    await store.put(jsonRecording('{"from":"bakery"}', "/api/generate", "POST", generateBody));
+    const { doc, toasts } = fakeDoc();
+    const { win } = mk({ doc, store, mode: "replay" });
+
+    const p = win.fetch("/api/generate", { method: "POST", body: otherBody });
+    await flush();
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+    expect(toasts()).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(TOAST_MS - 1);
+    expect(toasts()).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(toasts()).toHaveLength(0);
+  });
+
+  it("passes through to the network when no recording exists for the path, with no toast", async () => {
+    const { doc, toasts } = fakeDoc();
+    const { win, real } = mk({ doc, mode: "replay" });
+
+    const res = await win.fetch("/api/generate", { method: "POST", body: generateBody });
+    expect(await res.json()).toEqual({ n: 1 });
+    expect(real).toHaveBeenCalledTimes(1);
+    expect(toasts()).toHaveLength(0);
+  });
+
+  it("does not show a toast in record mode", async () => {
+    const { doc, toasts } = fakeDoc();
+    const { win, real } = mk({ doc, mode: "record" });
+
+    const p = win.fetch("/api/generate", { method: "POST", body: generateBody });
+    await p;
+    expect(real).toHaveBeenCalledTimes(1);
+    expect(toasts()).toHaveLength(0);
+  });
+});

@@ -62,12 +62,12 @@ export function VoiceMode() {
       aria-pressed={recorder.recording}
       aria-label={recorder.recording ? "Stop recording" : "Start recording"}
       className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition disabled:opacity-50 ${
-        recorder.recording ? "bg-rose-500 text-white" : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+        recorder.recording ? "bg-bad text-white" : "bg-tray text-ink-2 hover:bg-hover"
       }`}
     >
       {recorder.recording && (
         <motion.span
-          className="absolute inset-0 rounded-xl bg-rose-500/40"
+          className="absolute inset-0 rounded-xl bg-bad/40"
           animate={{ scale: pulse, opacity: 0.9 - recorder.level * 0.5 }}
           transition={{ duration: 0.08 }}
         />
@@ -106,8 +106,8 @@ export function VoiceMode() {
           aria-label={recorder.recording ? "Stop recording" : "Start recording"}
           className={`mx-auto flex h-24 w-24 items-center justify-center rounded-full border transition ${
             recorder.recording
-              ? "border-rose-400/60 bg-rose-500/20 text-rose-200"
-              : "border-white/10 bg-neutral-900/70 text-neutral-200 hover:border-indigo-400/50"
+              ? "border-bad/60 bg-bad/15 text-bad"
+              : "border-line bg-surface text-ink-2 hover:border-accent/50"
           }`}
           animate={recorder.recording ? { scale: pulse } : { scale: 1 }}
           transition={{ duration: 0.08 }}
@@ -132,7 +132,7 @@ export function VoiceMode() {
         disabled={busy}
         leading={mic}
         placeholder={recorder.recording ? "Listening…" : "…or type here"}
-        hint={<span className={error ? "text-rose-300" : undefined}>{hint}</span>}
+        hint={<span className={error ? "text-bad" : undefined}>{hint}</span>}
       />
     </div>
   );
