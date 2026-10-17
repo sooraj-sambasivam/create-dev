@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useRef, useState, type CSSProperties } from "react";
 import { motion } from "motion/react";
 import {
   DndContext,
@@ -13,11 +13,10 @@ import {
   type DragMoveEvent,
   type Over,
 } from "@dnd-kit/core";
-import { findNode, isDescendant, updateNode, type Container, type Node, type Screen, type Style } from "@create/shared";
+import { TEXT_FIELD, findNode, isDescendant, updateNode, type Container, type Node, type Screen } from "@create/shared";
 import { useScreenStore } from "../store/screenStore";
 import {
   EditorContext,
-  INLINE_FIELD,
   ROOT_ID,
   TYPE_LABELS,
   useEditor,
@@ -25,226 +24,22 @@ import {
   type DropTarget,
   type EditorState,
 } from "../editor/EditorContext";
-import { EditableText } from "../editor/EditableText";
+import {
+  FONT_FAMILY,
+  Leaf,
+  accentVars,
+  alignClass,
+  containerStyle,
+  containerWidth,
+  gapClass,
+  justifyClass,
+  leafWidth,
+  overrides,
+  padClass,
+  type Direction,
+} from "./elements";
 import { CopyIcon, GripIcon, TrashIcon } from "../editor/icons";
-
-type Direction = Container["direction"];
-
-const gapClass: Record<Container["gap"], string> = { sm: "gap-2", md: "gap-4", lg: "gap-8" };
-const padClass: Record<Container["padding"], string> = { none: "p-0", sm: "p-3", md: "p-6", lg: "p-10" };
-const alignClass: Record<Container["align"], string> = {
-  start: "items-start",
-  center: "items-center",
-  end: "items-end",
-  stretch: "items-stretch",
-};
-const justifyClass: Record<Container["justify"], string> = {
-  start: "justify-start",
-  center: "justify-center",
-  end: "justify-end",
-  between: "justify-between",
-};
-const containerWidth: Record<Container["width"], string> = {
-  full: "w-full",
-  auto: "w-auto shrink-0",
-  half: "w-full md:w-auto md:flex-1 md:basis-[45%] min-w-0",
-  third: "w-full md:w-auto md:flex-1 md:basis-[28%] min-w-0",
-};
-
-const RADIUS: Record<NonNullable<Style["radius"]>, string> = {
-  none: "0px",
-  sm: "4px",
-  md: "8px",
-  lg: "16px",
-  full: "9999px",
-};
-
-/** User style overrides as CSS. Only non-null fields produce output. */
-function overrides(style: Style | null | undefined): CSSProperties {
-  const css: CSSProperties = {};
-  if (!style) return css;
-  if (style.color) css.color = style.color;
-  if (style.background) css.background = style.background;
-  if (style.radius) css.borderRadius = RADIUS[style.radius];
-  return css;
-}
-
-function containerStyle(bg: Container["background"], style: Style | null | undefined): CSSProperties {
-  const css: CSSProperties & Record<string, string> = {};
-  if (bg === "accent") {
-    css.background = "var(--accent)";
-    css.color = "var(--accent-fg)";
-  } else if (bg !== "none") {
-    css.background = `var(--${bg})`;
-  }
-  // Muted text and outlines inherit from the container's text color when it is not the page default,
-  // so subtitles stay readable on accent or custom-colored sections.
-  if (bg === "accent" || style?.color) {
-    css["--fg-muted"] = "color-mix(in srgb, currentColor 72%, transparent)";
-  }
-  return css;
-}
-
-/** Width of a leaf depends on the parent's flow direction. */
-function leafWidth(node: Node, parent: Direction, align: Container["align"]): string {
-  if (parent === "column") {
-    // Small controls hug their content so selection and resize handles sit on the element itself.
-    if (align !== "stretch" && (node.type === "button" || node.type === "link" || node.type === "checkbox")) {
-      return "w-fit max-w-full";
-    }
-    return "w-full";
-  }
-  switch (node.type) {
-    case "textbox":
-    case "image":
-      return "flex-1 min-w-0";
-    case "heading":
-    case "text":
-      return "min-w-0";
-    default:
-      return "shrink-0";
-  }
-}
-
-const inputClass =
-  "w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--accent)]/40";
-const inputBase: CSSProperties = { borderColor: "var(--border)", background: "var(--input-bg)", color: "var(--fg)" };
-
-function Label({ nodeId, text, children }: { nodeId: string; text: string; children: ReactNode }) {
-  if (!text) return <>{children}</>;
-  return (
-    <label className="flex w-full flex-col gap-1.5 text-sm font-medium">
-      <EditableText nodeId={nodeId} field="label" value={text} />
-      {children}
-    </label>
-  );
-}
-
-function ImageNode({ id, alt, aspect, style }: { id: string; alt: string; aspect: "video" | "square" | "wide"; style: CSSProperties }) {
-  const [failedSeed, setFailedSeed] = useState<string | null>(null);
-  const seed = `${id}-${alt}`;
-  const aspectClass = aspect === "square" ? "aspect-square" : aspect === "wide" ? "aspect-[21/9]" : "aspect-video";
-  return (
-    <figure
-      className={`relative w-full overflow-hidden rounded-xl ${aspectClass}`}
-      style={{ background: "var(--muted)", ...style }}
-    >
-      {failedSeed !== seed ? (
-        <img
-          src={`https://picsum.photos/seed/${encodeURIComponent(seed)}/960/600`}
-          alt={alt}
-          loading="lazy"
-          draggable={false}
-          onError={() => setFailedSeed(seed)}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <div
-          className="flex h-full w-full items-center justify-center p-4 text-center text-sm"
-          style={{ background: "linear-gradient(135deg, var(--muted), var(--surface))", color: "var(--fg-muted)" }}
-        >
-          {alt}
-        </div>
-      )}
-    </figure>
-  );
-}
-
-function Leaf({ node, fill }: { node: Exclude<Node, Container>; fill: boolean }) {
-  const o = overrides(node.style);
-  const boxed = o.background ? "px-2 py-1 rounded-md" : "";
-  switch (node.type) {
-    case "heading": {
-      const cls =
-        node.level === 1
-          ? "text-4xl font-bold tracking-tight md:text-5xl"
-          : node.level === 2
-            ? "text-2xl font-semibold tracking-tight"
-            : "text-lg font-semibold";
-      const Tag = `h${node.level}` as const;
-      return (
-        <Tag className={`${cls} ${boxed}`} style={o}>
-          <EditableText nodeId={node.id} field="text" value={node.text} />
-        </Tag>
-      );
-    }
-    case "text":
-      return (
-        <p
-          className={`text-base leading-relaxed ${boxed}`}
-          style={{ ...(node.tone === "muted" ? { color: "var(--fg-muted)" } : {}), ...o }}
-        >
-          <EditableText nodeId={node.id} field="text" value={node.text} />
-        </p>
-      );
-    case "textbox":
-      return (
-        <Label nodeId={node.id} text={node.label}>
-          {node.multiline ? (
-            <textarea rows={4} placeholder={node.placeholder} className={inputClass} style={{ ...inputBase, ...o }} />
-          ) : (
-            <input type="text" placeholder={node.placeholder} className={inputClass} style={{ ...inputBase, ...o }} />
-          )}
-        </Label>
-      );
-    case "button": {
-      const base = `rounded-lg px-4 py-2 text-sm font-medium transition active:scale-[0.98] ${fill ? "w-full" : ""}`;
-      const variant: CSSProperties =
-        node.variant === "primary"
-          ? { background: "var(--accent)", color: "var(--accent-fg)" }
-          : node.variant === "secondary"
-            ? { border: "1px solid var(--border)", background: "var(--surface)", color: "var(--fg)" }
-            : { color: "var(--accent)" };
-      return (
-        <button type="button" className={base} style={{ ...variant, ...o }}>
-          <EditableText nodeId={node.id} field="label" value={node.label} />
-        </button>
-      );
-    }
-    case "image":
-      return <ImageNode id={node.id} alt={node.alt} aspect={node.aspect} style={o} />;
-    case "checkbox":
-      return (
-        <label className={`flex items-center gap-2 text-sm ${boxed}`} style={o}>
-          <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" />
-          <EditableText nodeId={node.id} field="label" value={node.label} />
-        </label>
-      );
-    case "select":
-      return (
-        <Label nodeId={node.id} text={node.label}>
-          <select className={inputClass} style={{ ...inputBase, ...o }} defaultValue="">
-            <option value="" disabled>
-              Select…
-            </option>
-            {[...new Set(node.options.map((o) => o.trim()).filter(Boolean))].map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </Label>
-      );
-    case "link":
-      return (
-        <a
-          href="#"
-          onClick={(e) => e.preventDefault()}
-          className={`text-sm font-medium underline-offset-4 hover:underline ${fill ? "block" : ""} ${boxed}`}
-          style={{ color: "var(--accent)", ...o }}
-        >
-          <EditableText nodeId={node.id} field="text" value={node.text} />
-        </a>
-      );
-    case "divider":
-      return (
-        <hr
-          className="w-full border-0 border-t"
-          style={{ borderColor: node.style?.color ?? "var(--border)", ...(node.style?.background ? { borderColor: node.style.background } : {}) }}
-        />
-      );
-  }
-}
+import { NodeAIBox } from "../editor/NodeAIBox";
 
 // ---------------------------------------------------------------- editor chrome
 
@@ -372,6 +167,7 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
   const ed = useEditor();
   const selected = useScreenStore((s) => ed.editable && s.selectedId === node.id);
   const editingThis = useScreenStore((s) => s.editingId === node.id);
+  const aiBusy = useScreenStore((s) => s.aiBusyId === node.id);
   const ref = useRef<HTMLElement | null>(null);
 
   const isContainer = node.type === "container";
@@ -420,7 +216,8 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
         },
         onDoubleClick: (e: React.MouseEvent) => {
           e.stopPropagation();
-          if (INLINE_FIELD[node.type] && (node.type !== "textbox" && node.type !== "select" ? true : Boolean(node.label))) {
+          const field = TEXT_FIELD[node.type];
+          if (field && (node as Record<string, unknown>)[field]) {
             useScreenStore.getState().setEditing(node.id);
           }
         },
@@ -436,6 +233,8 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
       {indicator && <DropIndicator position={indicator.position} axis={indicator.axis} />}
       {selected && !ed.draggingId && <SelectionToolbar node={node} />}
       {selected && !ed.draggingId && node.type !== "divider" && <ResizeHandle nodeId={node.id} targetRef={ref} />}
+      {selected && !ed.draggingId && !ed.resizing && editingThis === false && <NodeAIBox node={node} targetRef={ref} />}
+      {aiBusy && <div className="shimmer-light pointer-events-none absolute inset-0 z-20 rounded-xl" />}
       {resizingThis && (
         <div className="absolute -bottom-7 right-0 z-30 rounded bg-neutral-900 px-1.5 py-0.5 text-[11px] font-medium text-white">
           {ed.resizing!.pct}%
@@ -452,15 +251,26 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
   };
 
   if (node.type === "container") {
-    const flow = node.direction === "row" ? "flex-row flex-wrap md:flex-nowrap" : "flex-col";
+    // Wrapping rows of cards or photos become an even grid; wrapping rows of small things
+    // (buttons, links, badges) just flow onto the next line.
+    const cardLike = node.children.filter((c) => ["container", "image", "video", "map", "table"].includes(c.type)).length >= 3;
+    const flow =
+      node.direction === "row" && node.wrap
+        ? cardLike
+          ? "grid-wrap"
+          : "flex flex-row flex-wrap"
+        : node.direction === "row"
+          ? "flex flex-row flex-wrap md:flex-nowrap"
+          : "flex flex-col";
     const empty = node.children.length === 0;
     return (
       <motion.div
         ref={setRef}
         {...motionProps}
         {...interactive}
-        className={`relative flex rounded-xl ${flow} ${gapClass[node.gap]} ${alignClass[node.align]} ${justifyClass[node.justify]} ${padClass[node.padding]} ${widthCls} ${editCls} ${empty && ed.editable ? "min-h-16" : ""}`}
-        style={{ ...containerStyle(node.background, node.style), ...overrides(node.style), ...widthStyle }}
+        className={`relative rounded-xl ${flow} ${gapClass[node.gap]} ${alignClass[node.align]} ${justifyClass[node.justify]} ${padClass[node.padding]} ${widthCls} ${editCls} ${empty && ed.editable ? "min-h-16" : ""}`}
+        data-node-id={node.id}
+        style={{ ...containerStyle(node), ...overrides(node.style), ...widthStyle }}
       >
         {empty && ed.editable && (
           <span className="pointer-events-none m-auto text-xs opacity-50">Empty group: drop elements here</span>
@@ -486,11 +296,12 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
       ref={setRef}
       {...motionProps}
       {...interactive}
+      data-node-id={node.id}
       className={`relative ${widthCls} ${parentDirection === "column" ? textAlignFor[parentAlign] : ""} ${editCls}`}
       style={widthStyle}
     >
       <div className={ed.editable && !editingThis ? "pointer-events-none select-none" : ""}>
-        <Leaf node={node} fill={pct !== null} />
+        <Leaf node={node} fill={pct !== null} interactive={!ed.editable} />
       </div>
       {chrome}
     </motion.div>
@@ -498,6 +309,12 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
 }
 
 // ---------------------------------------------------------------- root + dnd
+/** Headings use the page font; body text uses it only where it stays easy to read. */
+function fontVars(font: Screen["font"]): CSSProperties {
+  const heading = FONT_FAMILY[font] ?? FONT_FAMILY.sans;
+  const body = font === "serif" || font === "mono" || font === "rounded" ? heading : font === "handwritten" ? FONT_FAMILY.rounded : FONT_FAMILY.sans;
+  return { "--font-heading": heading, fontFamily: body } as CSSProperties;
+}
 
 function RootView({ screen, counter }: { screen: Screen; counter: Counter }) {
   const ed = useEditor();
@@ -516,8 +333,9 @@ function RootView({ screen, counter }: { screen: Screen; counter: Counter }) {
   return (
     <div
       ref={drop.setNodeRef}
-      className={`screen-${screen.theme} relative flex flex-1 flex-col gap-4 p-4 md:p-6 ${ed.editable ? "pt-10 md:pt-10" : ""}`}
-      style={{ background: "var(--bg)", color: "var(--fg)" }}
+      data-screen-root
+      className={`screen-${screen.theme} relative flex flex-1 flex-col gap-4 p-4 md:p-6 ${ed.editable ? "pt-10 pb-24 md:pt-10 md:pb-24" : ""}`}
+      style={{ background: "var(--bg)", color: "var(--fg)", ...accentVars(screen.accent), ...fontVars(screen.font) }}
       onClick={() => ed.editable && useScreenStore.getState().select(null)}
       onPointerLeave={() => ed.setHovered(null)}
       onPointerOver={() => ed.editable && ed.setHovered(null)}
@@ -571,7 +389,7 @@ export function ScreenRenderer({ screen, editable = false }: { screen: Screen; e
   screenRef.current = screen;
   const dropRef = useRef<DropTarget | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
 
   // Pick the smallest droppable under the pointer, skipping the dragged node and its children.
   const collision = useCallback<CollisionDetection>((args) => {
@@ -627,7 +445,9 @@ export function ScreenRenderer({ screen, editable = false }: { screen: Screen; e
         onDragEnd={(e) => {
           const target = dropRef.current;
           const id = String(e.active.id);
-          if (target) {
+          // Ignore "drags" that barely moved: those were meant as clicks.
+          const moved = Math.hypot(e.delta.x, e.delta.y);
+          if (target && moved >= 16) {
             const s = useScreenStore.getState();
             s.move(id, target.parentId, target.index);
             s.select(id);

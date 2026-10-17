@@ -1,7 +1,6 @@
 import { useEffect } from "react";
-import { findNode } from "@create/shared";
+import { TEXT_FIELD, findNode } from "@create/shared";
 import { useScreenStore } from "../store/screenStore";
-import { INLINE_FIELD } from "./EditorContext";
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -32,11 +31,17 @@ export function useEditorShortcuts() {
       } else if ((key === "backspace" || key === "delete") && s.selectedId) {
         e.preventDefault();
         s.remove(s.selectedId);
+      } else if (key === "/" && s.selectedId) {
+        const input = document.querySelector<HTMLInputElement>("[data-ai-box] input");
+        if (input) {
+          e.preventDefault();
+          input.focus();
+        }
       } else if (key === "escape") {
         s.select(null);
       } else if (key === "enter" && s.selectedId) {
         const node = findNode(s.screen, s.selectedId);
-        if (node && INLINE_FIELD[node.type]) {
+        if (node && TEXT_FIELD[node.type]) {
           e.preventDefault();
           s.setEditing(node.id);
         }

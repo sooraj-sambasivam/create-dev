@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useScreenStore } from "../store/screenStore";
 import { ScreenRenderer } from "./ScreenRenderer";
 import { AddMenu } from "../editor/AddMenu";
+import { PublishMenu } from "../editor/PublishMenu";
 import { RedoIcon, UndoIcon } from "../editor/icons";
 
 function EditorToolbar() {
@@ -25,6 +26,7 @@ function EditorToolbar() {
           <AddMenu />
         </>
       )}
+      <PublishMenu />
       <div className="ml-1 flex rounded-md border border-white/10 p-0.5 text-xs">
         {(["edit", "preview"] as const).map((m) => {
           const active = (m === "edit") === editMode;

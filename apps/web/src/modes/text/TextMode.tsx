@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useScreenStore } from "../../store/screenStore";
-import { useSelectedLabel } from "../../editor/useSelectedLabel";
 import { PromptComposer } from "../../components/PromptComposer";
 
 const SUGGESTIONS = [
@@ -16,7 +15,22 @@ export function TextMode() {
   const status = useScreenStore((s) => s.status);
   const generate = useScreenStore((s) => s.generate);
   const busy = status === "loading";
-  const selectedLabel = useSelectedLabel();
+
+  // On the start screen, catch typing that happens before the box has focus (e.g. during the
+  // opening animation) so no letters are lost.
+  useEffect(() => {
+    if (screen) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
+      e.preventDefault();
+      setValue((v) => v + e.key);
+      document.querySelector<HTMLTextAreaElement>("[data-composer] textarea")?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen]);
 
   const send = (text: string) => {
     setValue("");
@@ -45,13 +59,7 @@ export function TextMode() {
         onSubmit={send}
         disabled={busy}
         autoFocus
-        placeholder={
-          selectedLabel
-            ? `Change the selected ${selectedLabel}: “make this bigger”, “rewrite it to sound friendlier”…`
-            : screen
-              ? "Refine it: “make the button green”, “add a pricing section”…"
-              : "Describe the screen you want…"
-        }
+        placeholder={screen ? "Change the whole page: “add a pricing section”, “make it feel more premium”…" : "Describe the screen you want…"}
         hint={busy ? "Building your screen…" : "Enter to send · Shift+Enter for a new line"}
       />
     </div>
