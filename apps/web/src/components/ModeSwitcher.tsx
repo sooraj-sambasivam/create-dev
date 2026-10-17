@@ -1,4 +1,3 @@
-import { motion } from "motion/react";
 import { useScreenStore, type Mode } from "../store/screenStore";
 
 const MODES: { id: Mode; label: string }[] = [
@@ -12,7 +11,7 @@ export function ModeSwitcher() {
   const mode = useScreenStore((s) => s.mode);
   const setMode = useScreenStore((s) => s.setMode);
   return (
-    <div role="tablist" className="flex items-center gap-1 rounded-full border border-white/10 bg-neutral-900/70 p-1 backdrop-blur">
+    <div role="tablist" aria-label="Input mode" className="flex items-center gap-0.5 rounded-full bg-tray p-0.5">
       {MODES.map((m) => {
         const active = m.id === mode;
         return (
@@ -21,16 +20,11 @@ export function ModeSwitcher() {
             role="tab"
             aria-selected={active}
             onClick={() => setMode(m.id)}
-            className={`relative rounded-full px-4 py-1.5 text-sm font-medium transition ${active ? "text-white" : "text-neutral-400 hover:text-neutral-200"}`}
+            className={`rounded-full px-3 py-1 text-xs transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+              active ? "bg-surface text-ink shadow-soft" : "text-ink-2 hover:text-ink"
+            }`}
           >
-            {active && (
-              <motion.span
-                layoutId="mode-pill"
-                className="absolute inset-0 rounded-full bg-indigo-500/80"
-                transition={{ type: "spring", stiffness: 400, damping: 32 }}
-              />
-            )}
-            <span className="relative">{m.label}</span>
+            {m.label}
           </button>
         );
       })}

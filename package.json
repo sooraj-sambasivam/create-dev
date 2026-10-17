@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "concurrently -n server,web -c blue,magenta \"pnpm --filter @create/server dev\" \"pnpm --filter @create/web dev\"",
     "typecheck": "pnpm -r typecheck",
-    "build": "pnpm -r build"
+    "build": "pnpm -r build",
+    "test": "pnpm -r test"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",
