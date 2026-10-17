@@ -37,7 +37,7 @@ export function PromptComposer({ value, onChange, onSubmit, disabled, placeholde
   };
 
   return (
-    <motion.div layout className="w-full">
+    <motion.div layout className="w-full" data-composer>
       <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-neutral-900/80 p-2 shadow-xl shadow-black/30 backdrop-blur focus-within:border-indigo-400/50">
         {leading}
         <textarea

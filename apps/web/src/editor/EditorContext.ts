@@ -42,25 +42,24 @@ export const EditorContext = createContext<EditorState>({
 export const useEditor = () => useContext(EditorContext);
 
 export const TYPE_LABELS: Record<string, string> = {
-  container: "Group",
+  container: "Box",
   heading: "Heading",
   text: "Text",
-  textbox: "Text box",
   button: "Button",
+  link: "Link",
+  icon: "Icon",
   image: "Image",
+  avatar: "Avatar",
+  badge: "Badge",
+  list: "List",
+  rating: "Rating",
+  table: "Table",
+  accordion: "FAQ",
+  video: "Video",
+  map: "Map",
+  textbox: "Text box",
   checkbox: "Checkbox",
   select: "Dropdown",
-  link: "Link",
   divider: "Divider",
-};
-
-/** Node types whose main text can be edited by double-clicking it. */
-export const INLINE_FIELD: Record<string, string | undefined> = {
-  heading: "text",
-  text: "text",
-  button: "label",
-  link: "text",
-  checkbox: "label",
-  textbox: "label",
-  select: "label",
+  spacer: "Spacer",
 };

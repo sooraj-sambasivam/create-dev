@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useScreenStore } from "./store/screenStore";
 import { ModeSwitcher } from "./components/ModeSwitcher";
@@ -30,7 +31,22 @@ export default function App() {
   const history = useScreenStore((s) => s.history);
   const reset = useScreenStore((s) => s.reset);
   const editMode = useScreenStore((s) => s.editMode);
+  const lastSummary = useScreenStore((s) => s.lastSummary);
+  const dismissSummary = useScreenStore((s) => s.dismissSummary);
   useEditorShortcuts();
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  // Open at the top of the page after a reload, not wherever the browser last was.
+  useEffect(() => {
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    if (!confirmReset) return;
+    const t = setTimeout(() => setConfirmReset(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirmReset]);
 
   const docked = screen !== null || status === "loading";
 
@@ -44,11 +60,18 @@ export default function App() {
         <ModeSwitcher />
         <button
           type="button"
-          onClick={reset}
+          onClick={() => {
+            if (confirmReset) {
+              setConfirmReset(false);
+              reset();
+            } else setConfirmReset(true);
+          }}
           disabled={!screen}
-          className="text-sm text-neutral-400 transition hover:text-white disabled:opacity-0"
+          className={`rounded-md px-2 py-1 text-sm transition disabled:opacity-0 ${
+            confirmReset ? "bg-rose-500/20 text-rose-200 hover:bg-rose-500/30" : "text-neutral-400 hover:text-white"
+          }`}
         >
-          Start over
+          {confirmReset ? "Delete this page? Click again" : "Start over"}
         </button>
       </header>
 
@@ -96,6 +119,7 @@ export default function App() {
                     title={h.summary}
                     className="max-w-[16rem] truncate rounded-full border border-white/10 bg-neutral-900/60 px-2.5 py-1 text-xs text-neutral-400"
                   >
+                    {h.kind === "element" ? "✦ " : ""}
                     {h.prompt}
                   </span>
                 ))}
@@ -103,6 +127,23 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          <AnimatePresence>
+            {lastSummary && !error && status !== "loading" && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                role="status"
+                className="mb-2 flex items-start gap-2 rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-100"
+              >
+                <span aria-hidden className="text-indigo-300">✦</span>
+                <span className="flex-1">{lastSummary}</span>
+                <button type="button" onClick={dismissSummary} aria-label="Dismiss" className="text-indigo-300/70 hover:text-white">
+                  ×
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <AnimatePresence>
             {error && (
               <motion.div

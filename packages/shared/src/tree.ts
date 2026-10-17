@@ -1,4 +1,4 @@
-import type { Container, Node, Screen, Style } from "./schema";
+import { NodeSchema, type Node, type NodeType, type Screen, type Style } from "./schema";
 
 /**
  * Immutable helpers for editing a Screen tree. Every function returns a new Screen and
@@ -66,8 +66,7 @@ export function updateNode(screen: Screen, id: string, patch: Partial<Node>): Sc
 export function updateStyle(screen: Screen, id: string, patch: Partial<Style>): Screen {
   const node = findNode(screen, id);
   if (!node) return screen;
-  const base: Style = node.style ?? { color: null, background: null, radius: null };
-  return updateNode(screen, id, { style: { ...base, ...patch } });
+  return updateNode(screen, id, { style: { ...(node.style ?? {}), ...patch } });
 }
 
 export function removeNode(screen: Screen, id: string): Screen {
@@ -100,6 +99,36 @@ export function moveNode(screen: Screen, id: string, parentId: string | null, in
   return insertNode(removeNode(screen, id), node, parentId, target);
 }
 
+/**
+ * Replace one node with a list of nodes (empty list deletes it). Ids in the new nodes that
+ * clash with ids elsewhere on the screen are renamed (cta -> cta-2) so the tree stays valid.
+ * Returns the screen and the final ids of the new top-level nodes.
+ */
+export function replaceNode(screen: Screen, id: string, replacement: Node[]): { screen: Screen; ids: string[] } {
+  const target = findNode(screen, id);
+  if (!target) return { screen, ids: [] };
+  const inTarget = new Set<string>();
+  walkNodes([target], (n) => inTarget.add(n.id));
+  const taken = new Set<string>();
+  walkNodes(screen.children, (n) => {
+    if (!inTarget.has(n.id)) taken.add(n.id);
+  });
+  const rename = (n: Node): Node => {
+    let nid = n.id;
+    for (let i = 2; taken.has(nid); i++) nid = `${n.id}-${i}`;
+    taken.add(nid);
+    return n.type === "container" ? { ...n, id: nid, children: n.children.map(rename) } : { ...n, id: nid };
+  };
+  const fresh = replacement.map(rename);
+  const parentId = findParentId(screen, id) ?? null;
+  const index = childrenOf(screen, parentId).findIndex((n) => n.id === id);
+  let next = removeNode(screen, id);
+  fresh.forEach((n, i) => {
+    next = insertNode(next, n, parentId, index + i);
+  });
+  return { screen: next, ids: fresh.map((n) => n.id) };
+}
+
 let counter = 0;
 export function uniqueId(screen: Screen, prefix: string): string {
   const taken = new Set<string>();
@@ -109,42 +138,32 @@ export function uniqueId(screen: Screen, prefix: string): string {
   return candidate;
 }
 
-/** A sensible default node of each type, for an "Add element" menu. */
+/** A sensible default node of each type, for an "Add element" menu. Parsed so defaults fill in. */
 export function defaultNode(screen: Screen, type: Node["type"]): Node {
   const nid = uniqueId(screen, type);
-  switch (type) {
-    case "heading":
-      return { id: nid, type, text: "New heading", level: 2 };
-    case "text":
-      return { id: nid, type, text: "Some text that explains what this section is about.", tone: "default" };
-    case "textbox":
-      return { id: nid, type, label: "Label", placeholder: "Type here…", multiline: false };
-    case "button":
-      return { id: nid, type, label: "Button", variant: "primary" };
-    case "image":
-      return { id: nid, type, alt: "Placeholder image", aspect: "video" };
-    case "checkbox":
-      return { id: nid, type, label: "I agree" };
-    case "select":
-      return { id: nid, type, label: "Choose one", options: ["Option A", "Option B"] };
-    case "link":
-      return { id: nid, type, text: "Learn more" };
-    case "divider":
-      return { id: nid, type };
-    case "container":
-      return {
-        id: nid,
-        type,
-        direction: "row",
-        gap: "md",
-        align: "center",
-        justify: "start",
-        padding: "md",
-        background: "surface",
-        width: "full",
-        children: [],
-      } satisfies Container;
-  }
+  const raw: Record<NodeType, Record<string, unknown>> = {
+    heading: { text: "New heading", level: 2 },
+    text: { text: "Some text that explains what this section is about." },
+    button: { label: "Button" },
+    link: { text: "Learn more" },
+    icon: { name: "lucide:star", size: "lg" },
+    image: { alt: "Placeholder image", query: "abstract texture" },
+    avatar: { name: "Alex Rivera", query: "smiling person portrait" },
+    badge: { text: "New" },
+    list: { items: ["First point", "Second point", "Third point"], marker: "check" },
+    rating: { value: 4.8, label: "120 reviews" },
+    table: { columns: ["Item", "Price"], rows: [["Espresso", "$3.50"], ["Latte", "$4.75"]] },
+    accordion: { items: [{ question: "A common question?", answer: "A clear, friendly answer." }] },
+    video: { url: "" },
+    map: { address: "Pike Place Market, Seattle" },
+    textbox: { label: "Label", placeholder: "Type here…" },
+    checkbox: { label: "I agree" },
+    select: { label: "Choose one", options: ["Option A", "Option B"] },
+    divider: {},
+    spacer: { size: "md" },
+    container: { direction: "row", padding: "md", background: "surface", align: "center", children: [] },
+  };
+  return NodeSchema.parse({ id: nid, type, ...raw[type] });
 }
 
 /**
@@ -163,7 +182,8 @@ export function preserveStyles(prev: Screen | null | undefined, next: Screen): S
       if (!before) return n;
       const style = n.style ?? before.style ?? null;
       const widthPct = n.widthPct ?? before.widthPct ?? null;
-      return style === n.style && widthPct === n.widthPct ? n : ({ ...n, style, widthPct } as Node);
+      if (style === n.style && widthPct === n.widthPct) return n;
+      return { ...n, style, widthPct } as Node;
     }),
   };
 }

@@ -9,13 +9,23 @@ const ITEMS: { type: NodeType; hint: string }[] = [
   { type: "heading", hint: "A title" },
   { type: "text", hint: "A paragraph" },
   { type: "button", hint: "Something to click" },
+  { type: "link", hint: "Text or icon that links" },
+  { type: "icon", hint: "Line, cartoon or brand icon" },
+  { type: "image", hint: "A photo or your upload" },
+  { type: "avatar", hint: "A person's photo" },
+  { type: "badge", hint: "A small label" },
+  { type: "list", hint: "Bullets or checkmarks" },
+  { type: "rating", hint: "Star reviews" },
+  { type: "table", hint: "Menu, prices, hours" },
+  { type: "accordion", hint: "FAQ questions" },
+  { type: "video", hint: "YouTube or Vimeo" },
+  { type: "map", hint: "Your address on a map" },
   { type: "textbox", hint: "A field to type in" },
-  { type: "image", hint: "A picture" },
-  { type: "link", hint: "Text that links" },
   { type: "checkbox", hint: "A tick box" },
   { type: "select", hint: "Pick from a list" },
-  { type: "divider", hint: "A line between sections" },
-  { type: "container", hint: "A row or column of elements" },
+  { type: "divider", hint: "A line" },
+  { type: "spacer", hint: "Empty space" },
+  { type: "container", hint: "A box to group things in a row or column" },
 ];
 
 export function AddMenu() {
@@ -43,7 +53,7 @@ export function AddMenu() {
     return () => window.removeEventListener("pointerdown", close);
   }, [open]);
 
-  const where = selectedType === "container" ? "inside the selected group" : selectedType ? "after the selected element" : "at the end of the page";
+  const where = selectedType === "container" ? "inside the selected box" : selectedType ? "after the selected element" : "at the end of the page";
 
   return (
     <div ref={ref} className="relative">
@@ -60,7 +70,7 @@ export function AddMenu() {
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className="absolute right-0 top-8 z-50 w-60 rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl"
+            className="absolute right-0 top-8 z-50 max-h-[70vh] w-64 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl"
           >
             <p className="px-2 pb-1 pt-0.5 text-[11px] text-neutral-500">Adds {where}</p>
             {ITEMS.map((item) => (

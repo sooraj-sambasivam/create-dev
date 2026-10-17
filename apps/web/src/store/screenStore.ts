@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import {
   childrenOf,
   defaultNode,
@@ -7,8 +8,11 @@ import {
   insertNode,
   moveNode,
   removeNode,
+  ScreenSchema,
+  replaceNode,
   updateNode,
   updateStyle,
+  type Asset,
   type Node,
   type NodeType,
   type Screen,
@@ -22,6 +26,20 @@ export type Status = "idle" | "loading" | "transcribing" | "error";
 export interface HistoryEntry {
   prompt: string;
   summary: string;
+  /** "element" for ✦ requests about one element, "page" for whole-page requests. */
+  kind?: "page" | "element";
+}
+
+/** Keep the AI's edited element on screen instead of letting the view jump. */
+function revealNode(id: string | null | undefined) {
+  if (!id) return;
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-screen-root] [data-node-id="${CSS.escape(id)}"]`)
+        ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }),
+  );
 }
 
 const UNDO_LIMIT = 60;
@@ -37,6 +55,12 @@ interface ScreenState {
   editMode: boolean;
   selectedId: string | null;
   editingId: string | null;
+  /** Element currently being changed by the AI box, if any. */
+  aiBusyId: string | null;
+  /** The AI's latest message to the user (what it did, or what it couldn't do). */
+  lastSummary: string | null;
+  /** Images the user uploaded; sent to the AI so it can place them. */
+  assets: Asset[];
   past: Screen[];
   future: Screen[];
 
@@ -62,6 +86,10 @@ interface ScreenState {
   move: (id: string, parentId: string | null, index: number) => void;
   /** Insert a new node next to the selection (or inside it if it's an empty container). */
   addNode: (type: NodeType) => void;
+  /** Ask the AI to change just this element. */
+  editNodeWithAI: (id: string, prompt: string) => Promise<{ error?: string; summary?: string }>;
+  uploadAsset: (file: File) => Promise<Asset>;
+  dismissSummary: () => void;
   undo: () => void;
   redo: () => void;
 }
@@ -84,7 +112,16 @@ function cloneWithNewIds(node: Node, screen: Screen): Node {
   return copy;
 }
 
-export const useScreenStore = create<ScreenState>((set, get) => {
+function validScreens(list: unknown): Screen[] {
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((s) => {
+    const r = ScreenSchema.safeParse(s);
+    return r.success ? [r.data] : [];
+  });
+}
+
+export const useScreenStore = create<ScreenState>()(
+  persist((set, get) => {
   const record = (next: Screen) =>
     set((s) => ({
       screen: next,
@@ -109,6 +146,9 @@ export const useScreenStore = create<ScreenState>((set, get) => {
     editMode: true,
     selectedId: null,
     editingId: null,
+    aiBusyId: null,
+    lastSummary: null,
+    assets: [],
     past: [],
     future: [],
 
@@ -128,24 +168,36 @@ export const useScreenStore = create<ScreenState>((set, get) => {
     generate: async (prompt) => {
       const trimmed = prompt.trim();
       if (!trimmed || get().status === "loading") return;
-      set({ status: "loading", error: null, editingId: null });
+      set({ status: "loading", error: null, editingId: null, lastSummary: null });
       try {
-        const { screen, history, selectedId, editMode } = get();
-        const target = editMode && screen && selectedId && findNode(screen, selectedId) ? selectedId : null;
-        const result = await api.generate(trimmed, screen, history.map((h) => h.prompt), target);
+        const { screen, history, assets } = get();
+        const result = await api.generate(trimmed, screen, history.map((h) => h.prompt), assets);
         record(result.screen);
         set((s) => ({
           status: "idle",
-          history: [...s.history, { prompt: trimmed, summary: result.summary }],
+          lastSummary: result.summary,
+          history: [...s.history, { prompt: trimmed, summary: result.summary, kind: "page" }],
           selectedId: s.selectedId && findNode(result.screen, s.selectedId) ? s.selectedId : null,
         }));
+        revealNode(get().selectedId);
       } catch (err) {
         set({ status: "error", error: err instanceof Error ? err.message : "Something went wrong." });
       }
     },
 
     reset: () =>
-      set({ screen: null, status: "idle", error: null, history: [], selectedId: null, editingId: null, past: [], future: [] }),
+      set({
+        screen: null,
+        status: "idle",
+        error: null,
+        history: [],
+        selectedId: null,
+        editingId: null,
+        aiBusyId: null,
+        lastSummary: null,
+        past: [],
+        future: [],
+      }),
 
     setEditMode: (on) => set({ editMode: on, selectedId: on ? get().selectedId : null, editingId: null }),
     select: (id) => set((s) => ({ selectedId: id, editingId: s.editingId === id ? s.editingId : null })),
@@ -197,6 +249,42 @@ export const useScreenStore = create<ScreenState>((set, get) => {
       set({ selectedId: node.id });
     },
 
+    editNodeWithAI: async (id, prompt) => {
+      const trimmed = prompt.trim();
+      const { screen, aiBusyId, assets } = get();
+      if (!trimmed || !screen || aiBusyId || !findNode(screen, id)) return {};
+      set({ aiBusyId: id, editingId: null });
+      try {
+        const result = await api.editNode(screen, id, trimmed, assets);
+        // Apply to the latest screen so manual edits made while waiting are kept.
+        const latest = get().screen;
+        if (!latest || !findNode(latest, id)) {
+          set({ aiBusyId: null });
+          return { error: "That element was removed while the AI was working." };
+        }
+        const { screen: next, ids } = replaceNode(latest, id, result.nodes);
+        record(next);
+        set((s) => ({
+          aiBusyId: null,
+          selectedId: ids[0] ?? null,
+          history: [...s.history, { prompt: trimmed, summary: result.summary, kind: "element" }],
+        }));
+        revealNode(ids[0]);
+        return { summary: result.summary };
+      } catch (err) {
+        set({ aiBusyId: null });
+        return { error: err instanceof Error ? err.message : "The AI edit failed." };
+      }
+    },
+
+    uploadAsset: async (file) => {
+      const asset = await api.uploadImage(file);
+      set((s) => ({ assets: [...s.assets, asset] }));
+      return asset;
+    },
+
+    dismissSummary: () => set({ lastSummary: null }),
+
     undo: () =>
       set((s) => {
         const prev = s.past[s.past.length - 1];
@@ -210,4 +298,58 @@ export const useScreenStore = create<ScreenState>((set, get) => {
         return { screen: next, future: s.future.slice(1), past: [...s.past, s.screen], editingId: null };
       }),
   };
-});
+  },
+    {
+      // Autosave the page in this browser so a refresh or closed tab doesn't lose work.
+      name: "create-dev:page",
+      version: 1,
+      storage: createJSONStorage(() => ({
+        getItem: (k) => {
+          try {
+            return localStorage.getItem(k);
+          } catch {
+            return null;
+          }
+        },
+        setItem: (k, v) => {
+          try {
+            localStorage.setItem(k, v);
+          } catch {
+            // Storage full or blocked: keep working, just without autosave.
+          }
+        },
+        removeItem: (k) => {
+          try {
+            localStorage.removeItem(k);
+          } catch {
+            // Ignore.
+          }
+        },
+      })),
+      // Undo history is kept too (most recent steps only, to stay within browser storage limits).
+      partialize: (s) => ({
+        screen: s.screen,
+        history: s.history,
+        assets: s.assets,
+        mode: s.mode,
+        editMode: s.editMode,
+        past: s.past.slice(-15),
+        future: s.future.slice(0, 15),
+      }),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<ScreenState>;
+        // Drop a saved page that no longer matches the schema (e.g. after an upgrade).
+        const screen = p.screen ? ScreenSchema.safeParse(p.screen) : null;
+        return {
+          ...current,
+          ...p,
+          screen: screen?.success ? screen.data : null,
+          history: Array.isArray(p.history) ? p.history : [],
+          assets: Array.isArray(p.assets) ? p.assets : [],
+          past: validScreens(p.past),
+          future: validScreens(p.future),
+        };
+      },
+    },
+  ),
+);

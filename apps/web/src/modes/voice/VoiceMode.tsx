@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { useScreenStore } from "../../store/screenStore";
-import { useSelectedLabel } from "../../editor/useSelectedLabel";
 import { PromptComposer } from "../../components/PromptComposer";
 import { useRecorder } from "../../lib/useRecorder";
 import { transcribe } from "../../lib/api";
@@ -17,7 +16,6 @@ export function VoiceMode() {
   const recorder = useRecorder();
 
   const busy = status === "loading" || status === "transcribing";
-  const selectedLabel = useSelectedLabel();
 
   const send = (text: string) => {
     setValue("");
@@ -96,7 +94,6 @@ export function VoiceMode() {
   else if (status === "transcribing") hint = "Transcribing…";
   else if (status === "loading" && heard) hint = `Heard: “${heard}” — building it…`;
   else if (heard) hint = `Heard: “${heard}”`;
-  else if (selectedLabel) hint = `Tap the mic and say what to change about the selected ${selectedLabel}.`;
   else hint = screen ? "Tap the mic and say what to change, or type." : "Tap the mic and describe the screen, or type.";
 
   return (
