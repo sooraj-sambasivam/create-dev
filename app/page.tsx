@@ -68,7 +68,7 @@ export default function Home() {
           <iframe
             title="Preview"
             className="h-full w-full border-0 bg-white"
-            sandbox=""
+            sandbox="allow-scripts"
             srcDoc={html}
           />
         ) : null}
