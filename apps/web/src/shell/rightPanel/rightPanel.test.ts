@@ -36,23 +36,24 @@ beforeEach(() => {
 });
 
 describe("width", () => {
-  it("max is 70vw, never below 420; default is 50vw within min..max", () => {
-    expect(maxRightPanelWidth(1920)).toBe(1344);
-    expect(maxRightPanelWidth(500)).toBe(420);
-    expect(defaultRightPanelWidth(1600)).toBe(800);
-    expect(defaultRightPanelWidth(600)).toBe(420);
+  it("max is 50vw, never below 280; Output default is 440", () => {
+    expect(maxRightPanelWidth(1920)).toBe(960);
+    expect(maxRightPanelWidth(500)).toBe(280);
+    expect(defaultRightPanelWidth(1600)).toBe(440);
+    expect(defaultRightPanelWidth(500)).toBe(280);
+    expect(defaultRightPanelWidth(1600, "context")).toBe(320);
     expect(useRightPanel.getState().width).toBe(800);
   });
-  it("clamps, resets to half the viewport and persists", () => {
+  it("clamps, resets to the default and persists", () => {
     rp().setWidth(100);
-    expect(rp().width).toBe(420);
+    expect(rp().width).toBe(280);
     rp().setWidth(99999);
-    expect(rp().width).toBe(1120);
-    rp().setWidth(500);
-    expect(JSON.parse(memory.getItem(RIGHT_PANEL_STORAGE_KEY)!).state).toEqual({ open: false, tab: "output", width: 500 });
-    rp().reset();
     expect(rp().width).toBe(800);
-    expect(clampRightPanelWidth(Number.NaN, 1600)).toBe(800);
+    rp().setWidth(500);
+    expect(JSON.parse(memory.getItem(RIGHT_PANEL_STORAGE_KEY)!).state).toEqual({ open: false, tab: "output", width: 500, contextWidth: 320 });
+    rp().reset();
+    expect(rp().width).toBe(440);
+    expect(clampRightPanelWidth(Number.NaN, 1600)).toBe(440);
   });
   it("does not persist the dragging flag", () => {
     rp().setDragging(true);

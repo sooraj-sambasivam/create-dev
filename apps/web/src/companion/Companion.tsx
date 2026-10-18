@@ -5,6 +5,8 @@ import { useScreenStore } from "../store/screenStore";
 import { ICON, STROKE, button, focusRing, surface } from "../ui/styles";
 import { duration, ease, fadeUp, spring } from "../ui/motion";
 import { Face } from "./Face";
+import { PipBody, faceTone, pipButtonClass } from "./PipBody";
+import { useLook } from "../ui/look";
 import { NotesCard } from "./NotesCard";
 import { activeByEvents, initialState, nextWake, reduce, type FaceKind, type MachineEvent } from "./machine";
 import { readPref, writePref, type CompanionPref } from "./prefs";
@@ -35,6 +37,7 @@ const KEYFRAMED = new Set<FaceKind>(["celebrate", "cancelled"]);
 /** Pip: the Narrate-mode companion. Visual only; the live regions already announce results. */
 export function Companion() {
   const mode = useScreenStore((s) => s.mode);
+  const look = useLook((s) => s.look);
   const reduced = !!useReducedMotion();
   const [pref, setPref] = useState<CompanionPref>(readPref);
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -62,7 +65,7 @@ export function Companion() {
   const idleLoop = face === "idle" && !reduced;
 
   return (
-    <div className="pointer-events-none fixed right-5 bottom-6 z-40 flex items-end gap-3">
+    <div className={`pointer-events-none fixed right-5 bottom-6 flex items-end gap-3 ${mode === "narrate" ? "z-[101]" : "z-40"}`}>
       <AnimatePresence>
         {visible && pref === "on" && (
           <motion.div
@@ -81,20 +84,20 @@ export function Companion() {
                 aria-label="Hide companion"
                 aria-pressed={false}
                 onClick={() => choose("dot")}
-                className={`pointer-events-auto relative block size-[60px] rounded-full border border-line bg-surface shadow-soft ${focusRing}`}
+                className={`pointer-events-auto relative block size-[60px] ${pipButtonClass(look)} ${focusRing}`}
               >
                 {!reduced && face === "celebrate" &&
                   [0, 0.18, 0.36].map((d) => (
                     <motion.span
                       key={`${state.nonce}-${d}`}
-                      className="pointer-events-none absolute inset-0 rounded-full border border-ink-3"
+                      className="pointer-events-none absolute inset-0 rounded-full border border-accent"
                       initial={{ scale: 1, opacity: 0.5 }}
                       animate={{ scale: 1.9, opacity: 0 }}
                       transition={{ duration: 0.9, delay: d, ease: ease.standard }}
                     />
                   ))}
                 <motion.span
-                  className="block rounded-full"
+                  className="relative block size-[60px] rounded-full"
                   animate={orbAnim}
                   transition={
                     reduced
@@ -106,7 +109,8 @@ export function Companion() {
                           : spring.gentle
                   }
                 >
-                  <Face face={face} nod={state.nod} reduced={reduced} />
+                  <PipBody look={look} />
+                  <Face face={face} nod={state.nod} reduced={reduced} tone={faceTone(look)} />
                 </motion.span>
               </button>
               <AnimatePresence>

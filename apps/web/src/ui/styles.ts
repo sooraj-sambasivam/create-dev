@@ -29,13 +29,15 @@ export const button = {
 } as const;
 
 /** The round account button (initials) at the foot of the sidebar. */
-export const avatar = `${base} size-8 rounded-full border border-line bg-surface text-[12px] font-medium text-ink-2 hover:bg-hover`;
+export const avatar = `${base} size-8 rounded-full bg-tray text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink`;
 
 /** Pill-shaped segmented control (Chat | Code, Output | Inspect | Backend, Edit | Preview). */
 export const segmented = {
   root: "isolate inline-flex h-8 items-center gap-0.5 rounded-full bg-tray p-0.5",
-  item: `${base} relative h-7 rounded-full px-3 text-[14px] text-ink-2 hover:text-ink`,
-  active: "text-ink",
+  /** Idle hover changes the fill only; the selected item keeps ink, weight 500 and no hover fill. */
+  item: `${base} relative h-7 rounded-full px-3 text-[14px] text-ink-2 hover:bg-hover/60 aria-selected:font-medium aria-selected:text-ink aria-selected:hover:bg-transparent`,
+  /** For items that use aria-pressed instead of aria-selected. */
+  active: "!bg-transparent font-medium !text-ink",
   /** The sliding highlight (render <ActivePill/> inside the active item). */
   pill: "absolute inset-0 -z-10 rounded-full bg-surface shadow-soft",
 } as const;
@@ -58,6 +60,25 @@ export const dot = {
   idle: "size-1.5 rounded-full bg-ink-3",
 } as const;
 
+/** A card sitting on the shell: the main work card and the side panel. 12px radius, 1px ring. */
+export const card = "rounded-xl bg-surface shadow-card";
+
+/** Sidebar rows (nav, chats, avatar). Icons sit on one axis: x=24 from the sidebar edge. */
+export const row = {
+  base: "flex h-8 w-full items-center gap-[9px] rounded-lg px-[7px] text-left text-[14px]",
+  hover: "hover:bg-hover-shell",
+  active: "bg-selected font-medium text-ink",
+  idle: "text-ink-2",
+} as const;
+
+/** Hairline between sidebar groups. */
+export const hairline = "mx-2 my-2 h-px bg-line/60";
+
+/** Highlighter swipe behind inline text (Paper yellow, Luminous rose). */
+export const highlight = "bg-highlight rounded-sm px-0.5 [box-decoration-break:clone]";
+
+/** Looks add: text-pen, bg-highlight, bg-glow, bg-spotlight-dim, font-display, font-ui, font-mono, font-note. */
+
 /** Floating surfaces. */
 export const surface = {
   card: "rounded-xl border border-line bg-surface shadow-soft",
@@ -73,6 +94,12 @@ export const input = `h-8 w-full rounded-lg border border-line bg-surface px-3 t
 
 /** Type scale: 12 meta, 14 UI, 16 body; display sizes only for page-level headings. */
 export const text = {
+  /** Spoken words and page-level lines: Fraunces in Paper, italic Instrument Serif in Luminous. */
+  spoken: "font-display text-[24px] leading-8 text-ink",
+  /** Handwritten margin note (Paper only; Luminous falls back to the UI face). 16px minimum. */
+  note: "font-note text-[18px] leading-6 text-pen",
+  /** Numbers, timings, confidence: Geist Mono with tabular figures. */
+  mono: "font-mono text-[14px] leading-5 tabular-nums text-ink-2",
   meta: "text-[12px] leading-4 text-ink-3",
   ui: "text-[14px] leading-5 text-ink",
   body: "text-[16px] leading-6 text-ink",

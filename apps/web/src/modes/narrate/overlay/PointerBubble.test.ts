@@ -19,4 +19,14 @@ describe("chipPosition", () => {
   it("follows the cursor with no element", () => {
     expect(chipPosition({ el: null, cursor: { x: 50, y: 60 }, chip, viewport })).toEqual({ x: 64, y: 74 });
   });
+  it("puts a tall card beside the element when it fits above nor below", () => {
+    const card = { w: 272, h: 250 };
+    const left = chipPosition({ el: { left: 500, top: 100, width: 400, height: 650 }, cursor: { x: 600, y: 300 }, chip: card, viewport });
+    expect(left).toEqual({ x: 500 - 6 - 272, y: 276 });
+    const right = chipPosition({ el: { left: 100, top: 100, width: 400, height: 650 }, cursor: { x: 200, y: 700 }, chip: card, viewport });
+    expect(right).toEqual({ x: 506, y: 800 - 250 - 4 });
+  });
+  it("keeps a small chip below its element, clamped on screen", () => {
+    expect(chipPosition({ el: { left: 100, top: 10, width: 300, height: 770 }, cursor: { x: 150, y: 20 }, chip, viewport }).y).toBe(800 - 24 - 4);
+  });
 });

@@ -342,3 +342,42 @@ describe("replay safety: exact match vs fallback", () => {
     expect(toasts()).toHaveLength(0);
   });
 });
+
+describe("ask / locate / extract / lift replay", () => {
+  const paths = ["/api/ask", "/api/locate", "/api/extract", "/api/lift"];
+  const setup = (mode: "record" | "replay") => {
+    const store = createMemoryStore();
+    const calls: string[] = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push(String(input));
+      return new Response(JSON.stringify({ echo: init?.body }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    const win = { addEventListener: vi.fn(), removeEventListener: vi.fn(), fetch: fetchMock as unknown as typeof fetch, location: { href: "http://localhost/" } };
+    const c = installReplay({ store, win, storage: { getItem: () => mode, setItem: () => {} } });
+    return { store, calls, win, c };
+  };
+
+  it.each(paths)("records %s and replays an exact match with no network call", async (p) => {
+    const rec = setup("record");
+    const body = JSON.stringify({ q: "a", n: 1 });
+    await rec.win.fetch(p, { method: "POST", body });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(rec.calls).toHaveLength(1);
+    rec.c.setMode("replay");
+    const res = await rec.win.fetch(p, { method: "POST", body: JSON.stringify({ n: 1, q: "a" }) });
+    expect(await res.json()).toEqual({ echo: body });
+    expect(rec.calls).toHaveLength(1);
+    rec.c.uninstall();
+  });
+
+  it.each(paths)("does not fall back to the latest run for %s on a different body", async (p) => {
+    const rec = setup("record");
+    await rec.win.fetch(p, { method: "POST", body: JSON.stringify({ t: "one" }) });
+    await new Promise((r) => setTimeout(r, 20));
+    rec.c.setMode("replay");
+    const res = await rec.win.fetch(p, { method: "POST", body: JSON.stringify({ t: "two" }) });
+    expect(await res.json()).toEqual({ echo: JSON.stringify({ t: "two" }) });
+    expect(rec.calls).toHaveLength(2);
+    rec.c.uninstall();
+  });
+});

@@ -14,10 +14,12 @@ Defined once as CSS variables in `src/index.css` (`@theme` for Tailwind 4) and u
 
 | Token | Value | Use |
 |---|---|---|
-| `--shell` | `#F3F2F2` | App background, sidebar, collapsed rail |
-| `--surface` | `#FFFFFF` | Main work card, composer, menus, windows |
+| `--shell` | `#ECECEC` (dark `#0F0F0F`) | App background, sidebar, collapsed rail |
+| `--surface` | `#FFFFFF` (dark `#1C1C1C`) | Main work card, side panel card, composer, menus, windows |
 | `--tray` | `#F4F4F4` | Tray under the composer, hover fill |
-| `--hover` | `#EDEDED` | Hover on shell items |
+| `--hover` | `#EDEDED` | Hover on surface and tray controls |
+| `--hover-shell` | `rgb(0 0 0 / .05)` (dark `rgb(255 255 255 / .06)`) | Row hover on the shell (sidebar). Alpha, so it holds on any shell tone |
+| `--selected` | `rgb(0 0 0 / .08)` (dark `rgb(255 255 255 / .10)`) | Selected sidebar row; always visibly stronger than hover |
 | `--line` | `#E6E6E6` | All borders and dividers (1px) |
 | `--ink` | `#0D0D0D` | Primary text, headline |
 | `--ink-2` | `#5D5D5D` | Icons, secondary labels |
@@ -28,9 +30,32 @@ Defined once as CSS variables in `src/index.css` (`@theme` for Tailwind 4) and u
 
 **Radius scale:** 6 (chips, small icon buttons) · 8 (buttons, inputs, menu items) · 12 (menus, popovers, windows, the main card) · 24 (composer and the tray's bottom corners) · full (Go, fan bubbles, avatar, segmented controls). Nothing else: no `rounded-[Npx]`, no bare `rounded`.
 
-**Shadow:** one soft shadow, Tailwind `shadow-soft` (`0 4px 20px rgba(0,0,0,0.05)`; heavier in dark), on the composer, menus, fan bubbles and floating windows. No `shadow-sm`, no inline shadows, no second menu shadow. The main card uses no shadow; it is set off from the shell by colour alone.
+**Shadow:** two tokens. `shadow-soft` (`0 4px 20px rgba(0,0,0,0.05)`; heavier in dark) on the composer, menus, fan bubbles and floating windows. `shadow-card` (`0 0 0 1px rgb(0 0 0 / .06), 0 1px 3px rgb(0 0 0 / .05)`; dark: a 1px `rgb(255 255 255 / .06)` ring only) on the cards that sit on the shell: the main card and the side panel. No `shadow-sm`, no inline shadows. Shell against surface is only about 1.2:1, so the 1px ring is what separates a card from the shell.
 
 **Spacing:** 4px grid. Composer padding is 14/16. Menu items are 32px tall with 8px horizontal padding.
+
+## Looks (Paper and Luminous)
+
+Two selectable looks, picked in onboarding and changeable in Settings. `html[data-look="paper"|"luminous"]` defines the whole token set in `src/index.css`; the neutral tokens above remain the fallback when no look is set. `ui/look.ts` exports `useLook()` (zustand, persisted as `create-look`), `applyLook`, `defaultLook`, `LOOKS`, `LOOK_LABEL`, `LOOK_BLURB`, `LOOK_SWATCH`. `setLook(look)` sets `data-look`, mirrors the `dark` class and `color-scheme` (Paper light, Luminous dark) and marks the choice as made. Until chosen, the default is data-theme dark -> luminous, light -> paper, system -> prefers-color-scheme. `index.html` applies the saved look before first paint.
+
+| Token | Paper | Luminous |
+|---|---|---|
+| `shell` / `surface` / `tray` | `#F1EBDD` / `#FBF8F0` / `#F6F0E2` | `#0A0912` / `#14122A` / `#1B1836` |
+| `hover` / `hover-shell` / `selected` | `#EFE8D6` / ink alpha .06 / ink alpha .10 | `#231F44` / white alpha .06 / magenta alpha .14 |
+| `line` | `#DDD4BF` | `#2B2750` |
+| `ink` / `ink-2` / `ink-3` | `#1F1C17` / `#4B453A` / `#6B6354` | `#F3F1FA` / `#B9B5D0` / `#9490B0` |
+| `accent` / `on-accent` | vermilion `#B8361D` / `#FFF8F0` | magenta `#FF3D9A` / `#14020B` |
+| `ok` / `warn` / `bad` | `#2F6B3A` / `#8F5A00` / `#B3261E` | `#4ADE9A` / `#FFB86B` / `#FF7B72` |
+| `pen` | pen blue `#2C4A93` | rose `#FF8AC2` |
+| `highlight` | highlighter yellow, alpha .62 | rose, alpha .28 |
+| `glow` | vermilion alpha .14 | magenta-rose alpha .40 |
+| `spotlight-dim` | warm brown alpha .18 | near-black alpha .70 |
+| `shadow-soft` / `shadow-card` | warm brown shadows | black shadow; card adds a faint magenta bloom |
+| `--paper-grain` | 1 (SVG noise on the body only) | 0 (ambient magenta and violet gradient instead) |
+
+Utilities: `text-pen`, `bg-highlight`, `bg-glow`, `bg-spotlight-dim`, plus `font-display`, `font-ui`, `font-mono`, `font-note`. Luminous accent is magenta only, never green. Contrast was computed: ink, ink-2, ink-3, accent, ok, warn, bad and pen are all at least 4.5:1 on shell, surface and tray in both looks, and on-accent on accent is at least 4.5:1.
+
+**Fonts** (Google Fonts `<link>` in `index.html`; exposed as CSS variables): `--font-display` Fraunces (Paper) or Instrument Serif italic (Luminous) for spoken words and page lines; `--font-ui` Figtree (Paper) or Inter (Luminous); `--font-mono` Geist Mono for numbers and timings; `--font-note` Caveat (Paper margin notes, never below 16px; Luminous falls back to Inter). `ui/styles.ts` adds `text.spoken`, `text.note`, `text.mono` and `highlight`. Readability floor in both looks: no text under 12px, body at least 14px.
 
 ## Type
 
@@ -46,9 +71,20 @@ Defined once as CSS variables in `src/index.css` (`@theme` for Tailwind 4) and u
 
 ## Layout (from the sketch)
 
-- **Shell:** full window `--shell`. The main card is `--surface`, radius 12, inset 8px from the top, right and bottom, sitting next to the sidebar.
-- **Sidebar, 260px, on the shell (no border):** the `PanelLeft` toggle at top-left (collapses the sidebar to a 56px icon rail like the reference), then "New chat", a "Projects" label in 12px `--ink-3` caps-free, then numbered projects (1., 2., 3.) with their chats indented beneath in 14px `--ink-2`. The active chat gets a `--hover` fill, radius 8. The avatar sits at the bottom.
-- **Header, inside the main card, top right only:** Share (icon + "Share"), `Ellipsis` menu (Rename, View files, Delete, Archive, Move to project ▸), `Menu` app menu. Each is a 32px ghost button, radius 8.
+One composed window: a shell with an 8px inset, a rail or sidebar on the shell, and up to two cards. Everything below shares one frame.
+
+- **Frame:** window inset 8px top, right and bottom. Cards (`card` in `styles.ts`: radius 12, `--surface`, `shadow-card`) are 8px apart and 8px from the window edge. Header rows are 48px (`h-12`) in the sidebar toggle row, the main card and the side panel, so their controls all centre on y=32.
+- **Icon axis:** the toggle, New chat, New project, folder and avatar icon centres sit on x=24, in the rail and when expanded. Rows are 32px (`h-8`), icons 18px, row padding 7px and icon-to-label gap 9px, so labels start at x=42 and icon-less chat titles align under them.
+- **Rail, 48px, on the shell (no card):** toggle, New chat, folder (expands the sidebar), avatar at the foot. Labels fade, icons never move. The main card starts at x=48, 8px from the icon edge.
+- **Sidebar, 260px (min 220, max 420), on the shell:** `py-2 px-2`. Top: the `PanelLeft` toggle in a 48px row. Group A: New chat, New project (4px apart). A hairline (`hairline` in `styles.ts`). Then, scrolling: a "Projects" label (12px `--ink-2`, medium) with numbered projects and their chats, then "Chats" with the unassigned chats, then Archived. Empty: "Your chats appear here". The avatar sits at the bottom in a 32px row, `--tray`, no border. The main card starts at the sidebar edge, so the sidebar's own 8px padding is the gutter.
+- **Row states:** hover `--hover-shell`, selected `--selected` with `--ink` and weight 500, idle `--ink-2`. Row actions float over the row end with no fill; the title fades under them with a mask, so hover never changes the title width or adds a box.
+- **Main card:** `--surface`, radius 12, `shadow-card`, minimum width 520. The header is a 3-column grid: title (truncates), Chat | Work (centred), actions (never shrinks below its content). Below a 560px card the Share label folds into its icon.
+- **Side panel (Output, Inspect, Backend):** a floating context card beside the main card, not a second main card. Width 440 for Output and 320 for Inspect and Backend, remembered per class; min 280, max 50% of the viewport. The sidebar drops to its rail only when sidebar, 520 card and panel no longer fit (around 1100px). The resize handle is a transparent strip centred on the 8px gutter; a hairline shows on hover and accent while dragging.
+  - Header 48px, `px-4`: segmented tabs left, close (`button.icon`) right. Selected tab is `--ink` weight 500; an idle tab's hover changes the fill only. The Inspect dot is absolutely positioned, so tabs never shift.
+  - Content inset is `px-4` everywhere. Scrolling bodies end in `pb-6` and a 24px fade into the surface.
+  - Output: the toolbar is flat under the tabs and the preview is the only bordered element. The footer is folded into the panel as one `px-4` row of ghost buttons (Copy link, History) with no top border.
+  - Empty states: a centred 14px `--ink-2` line (16px `--ink` title above it where present), `gap-2`.
+- **Header, inside the main card:** Share (icon + "Share"), theme, `Ellipsis` menu (Rename, View files, Delete, Archive, Move to project ▸), and the side-panel toggle. Each is a 32px ghost button, radius 8.
 - **Empty state:** the headline "What should we work on?" is centered, with the composer 20px below it. The pair sits slightly above the vertical centre.
 - **Composer:** 740px max width, built from Tailwind tokens only (no `--c-*` aliases), `--surface`, 1px `--line`, radius 24, the one shadow.
   - Row 1: textarea, 16px, placeholder "Work with create-dev" (the headline already asks the question), auto-grows to 8 lines.
@@ -110,8 +146,11 @@ One set of class strings; surfaces compose these and never re-declare their own.
 | `button.ghost` | Text action in toolbars, menus and the header (Share) |
 | `button.icon` / `iconSm` | 32px / 24px icon-only; hover `--hover`; always with `aria-label`. Toggled on = `--hover` fill and `--ink` |
 | `button.danger` | Destructive confirm |
-| `segmented.root/item/active/pill` | The one segmented control: Chat \| Code, Output \| Inspect \| Backend, Edit \| Preview. Render `<ActivePill layoutId>` (ui/ActivePill.tsx) inside the active item so the highlight slides |
-| `avatar` | The round account button |
+| `segmented.root/item/active/pill` | The one segmented control (selected: `--ink`, weight 500; idle hover fills only): Chat \| Code, Output \| Inspect \| Backend, Edit \| Preview. Render `<ActivePill layoutId>` (ui/ActivePill.tsx) inside the active item so the highlight slides |
+| `avatar` | The round account button (`--tray`, no border) |
+| `card` | Card on the shell: radius 12, `--surface`, `shadow-card` (main card, side panel) |
+| `row.base/hover/active/idle` | Sidebar rows: 32px, icon axis x=24, `--hover-shell` / `--selected` |
+| `hairline` | Divider between sidebar groups |
 | `chip.action` / `tag` / `status` | Suggestion chip, element reference, status pill with a dot |
 | `dot.*` | Status dots, always beside text |
 | `surface.card` / `pill` / `menu` / `inset` | Floating card (radius 12), floating pill, menu panel (radius 12, 6px padding), bordered block inside a panel with no shadow |

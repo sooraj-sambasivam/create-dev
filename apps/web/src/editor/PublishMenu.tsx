@@ -50,7 +50,7 @@ export function PublishMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`${button.secondary} shrink-0`}
+        className={`${button.ghost} shrink-0`}
       >
         Export HTML
       </button>

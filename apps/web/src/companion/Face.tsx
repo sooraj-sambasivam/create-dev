@@ -47,7 +47,16 @@ function eyeRot(face: FaceKind, side: "l" | "r"): number {
   return side === "l" ? -12 : 12;
 }
 
-export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; reduced: boolean }) {
+/** Feature colours per Pip body: default (a card face), light (on the ink blot), dark (on the light orb). */
+export type FaceTone = "default" | "light" | "dark";
+const TONE: Record<FaceTone, { fill: string; stroke: string; soft: string }> = {
+  default: { fill: "fill-ink", stroke: "stroke-ink", soft: "stroke-ink-2" },
+  light: { fill: "fill-surface", stroke: "stroke-surface", soft: "stroke-surface" },
+  dark: { fill: "fill-on-accent", stroke: "stroke-on-accent", soft: "stroke-on-accent" },
+};
+
+export function Face({ face, nod, reduced, tone = "default" }: { face: FaceKind; nod: number; reduced: boolean; tone?: FaceTone }) {
+  const T = TONE[tone];
   const track = useRef<SVGGElement>(null);
   const ring = useRef<HTMLSpanElement>(null);
   const pointer = useRef({ x: 0, y: 0, moved: false });
@@ -166,7 +175,7 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
               cy={EYE_Y}
               rx={3}
               ry={EYE_RY}
-              className="fill-ink"
+              className={T.fill}
               initial={false}
               animate={{ scaleY: eyeScaleY(face, "l", blink), opacity: eyeShown, rotate: eyeRot(face, "l") }}
               style={{ transformOrigin: `${EYE_L}px ${EYE_Y}px` }}
@@ -177,28 +186,28 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
               cy={EYE_Y}
               rx={3}
               ry={EYE_RY}
-              className="fill-ink"
+              className={T.fill}
               initial={false}
               animate={{ scaleY: eyeScaleY(face, "r", blink), opacity: eyeShown, rotate: eyeRot(face, "r") }}
               style={{ transformOrigin: `${EYE_R}px ${EYE_Y}px` }}
               transition={blink ? { duration: 0.06, ease: ease.standard } : eyeSpring}
             />
             <motion.g initial={false} animate={{ opacity: happy ? 1 : 0 }} transition={{ duration: dur }}>
-              <path d="M17.5 28.5 Q21 21.5 24.5 28.5" className="fill-none stroke-ink" strokeWidth={2} strokeLinecap="round" />
-              <path d="M35.5 28.5 Q39 21.5 42.5 28.5" className="fill-none stroke-ink" strokeWidth={2} strokeLinecap="round" />
+              <path d="M17.5 28.5 Q21 21.5 24.5 28.5" className={`fill-none ${T.stroke}`} strokeWidth={2} strokeLinecap="round" />
+              <path d="M35.5 28.5 Q39 21.5 42.5 28.5" className={`fill-none ${T.stroke}`} strokeWidth={2} strokeLinecap="round" />
             </motion.g>
           </motion.g>
         </g>
         <motion.g initial={false} animate={{ opacity: brows ? 1 : 0 }} transition={{ duration: dur }}>
           <path
             d={face === "confused" ? "M16 20 L25 20" : "M16 20 L25 16.5"}
-            className="fill-none stroke-ink-2"
+            className={`fill-none ${T.soft}`}
             strokeWidth={1.5}
             strokeLinecap="round"
           />
           <path
             d={face === "confused" ? "M35 15.5 L44 14.5" : "M35 16.5 L44 20"}
-            className="fill-none stroke-ink-2"
+            className={`fill-none ${T.soft}`}
             strokeWidth={1.5}
             strokeLinecap="round"
           />
@@ -207,7 +216,7 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
           initial={false}
           animate={{ d: MOUTH[face] }}
           transition={{ duration: dur, ease: ease.standard }}
-          className="fill-none stroke-ink-2"
+          className={`fill-none ${T.soft}`}
           strokeWidth={1.75}
           strokeLinecap="round"
         />

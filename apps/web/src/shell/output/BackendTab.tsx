@@ -36,7 +36,7 @@ function Section({ icon: Icon, title, children }: { icon: LucideIcon; title: str
         <Icon size={ICON.md} strokeWidth={STROKE} className="text-ink-2" aria-hidden />
         {title}
       </h3>
-      <div className="flex flex-col gap-2 pl-6">{children}</div>
+      <div className="flex flex-col gap-2">{children}</div>
     </motion.section>
   );
 }
@@ -208,12 +208,12 @@ export function BackendTab() {
   const origin = typeof location !== "undefined" ? location.origin : "";
 
   return (
-    <motion.div variants={v(listStagger)} initial="hidden" animate="show" className="flex flex-col gap-4 overflow-y-auto px-4 py-3">
+    <motion.div variants={v(listStagger)} initial="hidden" animate="show" className="flex flex-col gap-4 py-2">
       <Section icon={FileText} title="Pages">
         {b.pages.map((p) => (
           <div key={p.id} className={`${card} flex-row items-center justify-between`}>
             <span className="min-w-0 truncate text-[14px] text-ink">{p.title}</span>
-            <span className="shrink-0 font-mono text-[12px] text-ink-2">{dev ? `${p.path} · ${p.elements} elements` : `${p.elements} elements`}</span>
+            <span className="shrink-0 text-[12px] tabular-nums text-ink-2">{dev ? `${p.path} · ${p.elements} elements` : `${p.elements} elements`}</span>
           </div>
         ))}
       </Section>
@@ -260,10 +260,10 @@ export function BackendTab() {
         {b.actions.length === 0 && <p className="text-[14px] text-ink-2">No buttons or links.</p>}
         {b.actions.map((a) => (
           <div key={a.id} className={`${card} flex-row items-center justify-between`}>
-            <span className="min-w-0 truncate text-[14px] text-ink">{a.label}</span>
+            <span className="min-w-[4.5rem] flex-1 truncate text-[14px] text-ink">{a.label}</span>
             <span className="flex shrink-0 items-center gap-2">
-              <span className="max-w-[160px] truncate font-mono text-[12px] text-ink-2">
-                {a.kind === "submit" ? "sends the form" : a.target || "does nothing yet"}
+              <span className="max-w-[120px] truncate text-[12px] text-ink-2">
+                {a.kind === "submit" ? "sends the form" : a.target || "no target yet"}
               </span>
               <Pill status={a.kind === "button" ? "setup" : "connected"} />
             </span>

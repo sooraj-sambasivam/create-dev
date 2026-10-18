@@ -1,20 +1,90 @@
-import { useEffect, useMemo, useRef, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { motion } from "motion/react";
 import type { Leaf } from "@create/shared";
 import { useLiveRows } from "./useLiveRows";
 import { mapRows, mergeChart, parseNumber, type ChartData } from "./liveRows";
 import { duration, ease, spring, staggerDelay, useReducedMotionSafe } from "../ui/motion";
+import { useLook } from "../ui/look";
+
+/** Smallest text the chart may paint, in screen pixels (the canvas scales pages down to fit). */
+const MIN_LABEL_PX = 12.5;
+/** Axis and legend text: the page's text colour eased toward its background, always >= 4.5:1. */
+const AXIS_INK = "color-mix(in srgb, var(--fg) 74%, var(--bg))";
+
+/** Layout px that paint as MIN_LABEL_PX on screen, even when an ancestor scales the page down. */
+function useScreenMinPx(ref: React.RefObject<Element | null>): { px: number; width: number } {
+  const [m, setM] = useState({ px: 12.5, width: 640 });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      const w = (el as HTMLElement).clientWidth || (el as SVGSVGElement).getBoundingClientRect().width;
+      const scale = w ? el.getBoundingClientRect().width / w : 1;
+      const px = Math.round((MIN_LABEL_PX / Math.min(1, scale || 1)) * 10) / 10;
+      const width = Math.round(w) || 640;
+      setM((p) => (p.px === px && p.width === width ? p : { px, width }));
+    };
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    window.addEventListener("resize", measure);
+    // An ancestor transform (the canvas scale) does not fire ResizeObserver, so re-check lightly.
+    const iv = window.setInterval(measure, 500);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", measure);
+      window.clearInterval(iv);
+    };
+  }, [ref]);
+  return m;
+}
 
 type TableNode = Extract<Leaf, { type: "table" }>;
 type ChartNode = Extract<Leaf, { type: "chart" }>;
 
 const reduceMotion = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
+/** New-row wash: Paper = a light highlighter swipe, Luminous = a magenta glow. Light enough for any page theme. */
+function freshTint(look: "paper" | "luminous"): string {
+  return look === "paper"
+    ? "color-mix(in srgb, var(--color-highlight) 38%, transparent)"
+    : "color-mix(in srgb, var(--color-accent) 18%, transparent)";
+}
+
+/**
+ * "via phone" mark on a row that just arrived. Paper: an ink stamp that thumps down.
+ * Luminous: a magenta chip with a pulsing ring. Self-contained colours so it reads on any page theme.
+ */
+function ViaPhoneStamp({ look, reduce }: { look: "paper" | "luminous"; reduce: boolean }) {
+  const paper = look === "paper";
+  return (
+    <motion.span
+      data-via-phone=""
+      initial={reduce ? { opacity: 0 } : paper ? { opacity: 0, scale: 1.7, rotate: -9 } : { opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1, rotate: paper ? -3 : 0 }}
+      transition={reduce ? { duration: duration.fast } : spring.bouncy}
+      className={`mr-2 inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 align-middle leading-5 ${
+        paper ? "border-2 border-ink font-note text-[16px] text-ink" : "border border-accent font-ui text-[12px] font-semibold text-accent"
+      }`}
+      style={{ background: "var(--color-surface)" }}
+    >
+      {!paper && (
+        <span className="relative inline-flex size-2">
+          <span className={`absolute inset-0 rounded-full bg-accent ${reduce ? "" : "animate-ping"}`} />
+          <span className="relative size-2 rounded-full bg-accent" />
+        </span>
+      )}
+      via phone
+    </motion.span>
+  );
+}
+
 export function TableBlock({ node, style }: { node: TableNode; style: CSSProperties }) {
   const { subs, fresh } = useLiveRows(null, node.liveFormId);
   const live = useMemo(() => mapRows(node.columns, subs), [node.columns, subs]);
   const rows = [...node.rows.map((cells, i) => ({ id: `s${i}`, cells })), ...live];
   const { reduce } = useReducedMotionSafe();
+  const look = useLook((st) => st.look);
   // Rows present at first paint stagger in (24ms apart); rows that arrive later spring in on their own.
   const first = useRef(true);
   useEffect(() => {
@@ -46,13 +116,15 @@ export function TableBlock({ node, style }: { node: TableNode; style: CSSPropert
               data-new={fresh.has(row.id) ? "true" : undefined}
               style={{
                 borderTop: "1px solid var(--border)",
-                background: fresh.has(row.id) ? "color-mix(in srgb, var(--accent) 14%, transparent)" : "transparent",
+                background: fresh.has(row.id) ? freshTint(look) : "transparent",
+                boxShadow: fresh.has(row.id) ? `inset 3px 0 0 ${look === "paper" ? "var(--color-ink)" : "var(--color-accent)"}` : "none",
                 // Paint-only tint that fades out; the row's own entrance is transform and opacity.
-                transition: reduceMotion() ? "none" : "background-color 1.5s ease-out",
+                transition: reduceMotion() ? "none" : "background-color 1.5s ease-out, box-shadow 1.5s ease-out",
               }}
             >
               {row.cells.map((cell, c) => (
                 <td key={c} className={`px-4 py-2.5 ${c === row.cells.length - 1 && row.cells.length > 1 ? "text-right tabular-nums" : ""}`}>
+                  {c === 0 && fresh.has(row.id) && <ViaPhoneStamp look={look} reduce={reduce} />}
                   {cell}
                 </td>
               ))}
@@ -86,18 +158,25 @@ export function ChartBlock({ node, style }: { node: ChartNode; style: CSSPropert
   );
   const { labels, series } = data;
   const { reduce } = useReducedMotionSafe();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const { px: labelPx, width: svgWidth } = useScreenMinPx(svgRef);
+  // Font size in viewBox units that paints at labelPx layout px, never under 12.
+  const fs = Math.min(26, Math.max(12, (labelPx * W) / Math.max(svgWidth, 1)));
   const all = series.flatMap((s) => s.values);
   const min = Math.min(0, ...all);
   const top = niceMax(Math.max(0, ...all));
   const span = top - min || 1;
-  const iw = W - PAD.l - PAD.r;
-  const ih = H - PAD.t - PAD.b;
+  const maxTick = Math.max(...[0, 1, 2, 3, 4].map((t) => fmt(min + (span * t) / 4).length));
+  const padL = Math.max(PAD.l, Math.ceil(10 + fs * 0.62 * maxTick));
+  const padB = Math.max(PAD.b, Math.ceil(fs + 14));
+  const iw = W - padL - PAD.r;
+  const ih = H - PAD.t - padB;
   const y = (v: number) => PAD.t + ih - ((v - min) / span) * ih;
   const n = Math.max(labels.length, 1);
   const band = iw / n;
-  const x = (i: number) => PAD.l + band * (i + 0.5);
+  const x = (i: number) => padL + band * (i + 0.5);
   const ticks = [0, 1, 2, 3, 4].map((t) => min + (span * t) / 4);
-  const every = Math.ceil(n / 8);
+  const every = Math.max(Math.ceil(n / 8), Math.ceil((n * (fs * 6 + 6)) / Math.max(iw, 1)));
   const barW = Math.min(36, (band * 0.7) / series.length);
   const summary = `${node.kind === "line" ? "Line" : "Bar"} chart${node.title ? `: ${node.title}` : ""}. ${series
     .map((s) => `${s.name} from ${fmt(Math.min(...s.values, 0))} to ${fmt(Math.max(...s.values, 0))}`)
@@ -105,18 +184,18 @@ export function ChartBlock({ node, style }: { node: ChartNode; style: CSSPropert
   return (
     <figure className="w-full" style={style}>
       {node.title && <figcaption className="mb-2 text-base font-semibold">{node.title}</figcaption>}
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} className="h-auto w-full max-w-[720px]">
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} className="h-auto w-full max-w-[720px]">
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeWidth={1} />
-            <text x={PAD.l - 8} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={12} fill="var(--fg-muted)">
+            <line x1={padL} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeWidth={1} />
+            <text x={padL - 8} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={fs} fill={AXIS_INK}>
               {fmt(t)}
             </text>
           </g>
         ))}
         {labels.map((l, i) =>
           i % every === 0 ? (
-            <text key={i} x={x(i)} y={H - 10} textAnchor="middle" fontSize={12} fill="var(--fg-muted)">
+            <text key={i} x={x(i)} y={H - 8} textAnchor="middle" fontSize={fs} fill={AXIS_INK}>
               {l.length > 10 ? `${l.slice(0, 9)}…` : l}
             </text>
           ) : null,
@@ -172,7 +251,7 @@ export function ChartBlock({ node, style }: { node: ChartNode; style: CSSPropert
             )}
       </svg>
       {series.length > 1 && (
-        <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: "var(--fg-muted)" }}>
+        <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1" style={{ color: AXIS_INK, fontSize: Math.max(12, labelPx) }}>
           {series.map((s, i) => (
             <li key={i} className="inline-flex items-center gap-1.5">
               <span className="inline-block size-2 rounded-full" style={{ background: SERIES_COLORS[i] }} />

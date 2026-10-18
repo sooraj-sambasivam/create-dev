@@ -10,7 +10,6 @@ import {
   modelEnabled,
   modelLabel,
   useComposerPrefs,
-  usePendingChange,
   type SwitchableProvider,
 } from "../../store/composerPrefs";
 import type { Health } from "../../lib/api";
@@ -19,7 +18,6 @@ import { Popover } from "./Popover";
 import { useServerInfo } from "./useHealth";
 import { useId } from "react";
 import { ActivePill } from "../../ui/ActivePill";
-import { applyPendingChange, discardPendingChange } from "./staging";
 
 const ROW_ICON = { size: ICON.lg, strokeWidth: STROKE } as const;
 const TRAY_ICON = { size: ICON.md, strokeWidth: STROKE } as const;
@@ -269,28 +267,5 @@ export function PluginsMenu() {
         <span>Plugins</span>
       </button>
     </Popover>
-  );
-}
-
-/** "Review change · Heading" with Apply / Discard, shown while Approve for me is off. */
-export function ReviewCard() {
-  const pending = usePendingChange((s) => s.pending);
-  const staging = usePendingChange((s) => s.staging);
-  if (!pending && !staging) return null;
-  return (
-    <div role="group" aria-label="Review change" data-testid="review-card" className="mb-2 rounded-xl border border-line bg-surface p-3 shadow-soft">
-      {pending ? (
-        <>
-          <p className={text.title}>Review change · {pending.label}</p>
-          <p className={`${text.ui} mt-1 text-ink-2`}>{pending.summary}</p>
-          <div className="mt-2 flex gap-2">
-            <button type="button" data-testid="review-apply" className={button.primary} onClick={applyPendingChange}>Apply</button>
-            <button type="button" data-testid="review-discard" className={button.secondary} onClick={discardPendingChange}>Discard</button>
-          </div>
-        </>
-      ) : (
-        <p className={text.ui} role="status">Preparing a change to review…</p>
-      )}
-    </div>
   );
 }

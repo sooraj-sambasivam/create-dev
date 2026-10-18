@@ -21,3 +21,10 @@ describe("markdown-light", () => {
     expect(parseBlocks("  \n ")).toEqual([]);
   });
 });
+
+import { plainText } from "./markdown";
+describe("plainText", () => {
+  it("strips markers and keeps lists as lines", () => {
+    expect(plainText("A **bold** `code` line.\n\n- one\n- two\n\n1. first")).toBe("A bold code line.\n\n- one\n- two\n\n1. first");
+  });
+});

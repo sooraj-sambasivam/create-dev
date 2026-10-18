@@ -22,7 +22,7 @@ function EditorToolbar() {
   const addSlot =
     "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!gap-1.5 [&>div>button]:!rounded-lg [&>div>button]:!bg-transparent [&>div>button]:!px-2.5 [&>div>button]:!text-[14px] [&>div>button]:!font-normal [&>div>button]:!text-ink-2 [&>div>button:hover]:!bg-hover [&_.absolute]:!max-h-[min(70vh,22rem)] [&_.absolute]:!w-64";
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-1">
+    <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1">
       {editMode && (
         <>
           <button type="button" title="Undo (⌘Z)" aria-label="Undo" className={iconBtn} disabled={!canUndo} onClick={undo}>
@@ -92,10 +92,10 @@ export function ScreenCanvas() {
       variants={v(scaleIn)}
       initial="hidden"
       animate="show"
-      className="relative flex min-h-[420px] flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface"
+      className="relative flex min-h-[420px] flex-1 flex-col overflow-hidden rounded-xl bg-surface"
     >
-      <div className="flex h-11 shrink-0 items-center gap-2 bg-surface px-3">
-        <span className="min-w-0 truncate text-[14px] text-ink-2">{screen?.title ?? "Generating…"}</span>
+      <div className="flex min-h-11 shrink-0 items-center gap-2 bg-surface px-1">
+        {!screen && <span className="min-w-0 truncate text-[14px] text-ink-2">Generating…</span>}
         <span className="flex shrink-0 items-center gap-2 text-[12px] text-ink-3" aria-live="polite">
           <AnimatePresence>
             {loading && screen && (
@@ -115,7 +115,7 @@ export function ScreenCanvas() {
         {screen && <EditorToolbar />}
       </div>
 
-      <div className="relative flex flex-1 flex-col overflow-auto border-t border-line bg-shell p-2" onClick={() => select(null)}>
+      <div className="relative flex flex-1 flex-col overflow-auto rounded-xl bg-tray p-2" onClick={() => select(null)}>
         <div className="relative flex flex-1 flex-col overflow-hidden rounded-lg ring-1 ring-line">
           {screen ? <ScreenRenderer screen={screen} editable={editMode && !loading} /> : <Skeleton />}
         </div>

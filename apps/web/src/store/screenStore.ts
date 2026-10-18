@@ -22,6 +22,7 @@ import {
 import * as api from "../lib/api";
 import { askHistory } from "./askHistory";
 import { friendlyError } from "../shell/thread/friendlyError";
+import { StepTracker, askSteps, buildResult, editSteps, type LiveRun, type ResultData, type StepRecord } from "../shell/thread/runs";
 
 export type Mode = "text" | "voice" | "canvas" | "narrate";
 export type Status = "idle" | "loading" | "transcribing" | "error";
@@ -38,6 +39,12 @@ export interface HistoryEntry {
   /** Element edits: the edited node and its label ("Heading · Ember"), kept even if the node is later removed. */
   nodeId?: string;
   label?: string;
+  /** How long the turn took, in milliseconds. Drives the "Built in 12s" run line. */
+  ms?: number;
+  /** The step log of the turn ("Planning layout", "Writing 6 sections"). */
+  steps?: StepRecord[];
+  /** What the turn changed, for its result card. */
+  result?: ResultData;
 }
 
 /** "Heading · Ember": node type plus up to 28 characters of its text. Same rule as the pointer label. */
@@ -133,7 +140,7 @@ export function cancelInFlight(): void {
   pendingEdit = null;
   p?.resolve({ error: "Cancelled." });
   // A chat switch or reset must not carry the old attempt into the new thread.
-  useScreenStore.setState({ lastAttempt: null });
+  useScreenStore.setState({ lastAttempt: null, run: null });
 }
 
 interface ScreenState {
@@ -146,6 +153,8 @@ interface ScreenState {
   asking: boolean;
   /** The prompt of the build request in flight or just failed; shown as the user bubble and re-run by Retry. Not persisted. */
   lastAttempt: string | null;
+  /** The run in flight (kind, start time, steps so far) for the thread's live run line. Not persisted. */
+  run: LiveRun | null;
 
   /** Editor state. Any mode can read `selectedId` (e.g. Narrate: "put a button here"). */
   editMode: boolean;
@@ -239,12 +248,13 @@ export const useScreenStore = create<ScreenState>()(
 
   type EditResult = { error?: string; summary?: string };
 
-  const finishEdit = (prompt: string, summary: string, nextScreen: Screen, focusId: string | null, edited: Node) => {
+  const finishEdit = (prompt: string, summary: string, nextScreen: Screen, focusId: string | null, edited: Node, ms: number) => {
     record(nextScreen);
+    const label = elementLabel(edited);
     set((s) => ({
       aiBusyId: null,
       selectedId: focusId,
-      history: [...s.history, { prompt, summary, kind: "element", nodeId: edited.id, label: elementLabel(edited) }],
+      history: [...s.history, { prompt, summary, kind: "element", nodeId: edited.id, label, ms, steps: editSteps(ms, label) }],
     }));
     revealNode(focusId);
   };
@@ -282,6 +292,7 @@ export const useScreenStore = create<ScreenState>()(
     }
 
     const mine = epoch;
+    const t0 = Date.now();
     set({ aiBusyId: id, editingId: null });
     try {
       const result = await api.editNode(screen, id, trimmed, assets);
@@ -294,7 +305,7 @@ export const useScreenStore = create<ScreenState>()(
         return { error: "That element was removed while the AI was working." };
       }
       const { screen: next, ids } = replaceNode(latest, id, result.nodes);
-      finishEdit(trimmed, result.summary, next, ids[0] ?? null, node);
+      finishEdit(trimmed, result.summary, next, ids[0] ?? null, node, Date.now() - t0);
       return { summary: result.summary };
     } catch (err) {
       if (epoch === mine && get().aiBusyId === id) set({ aiBusyId: null });
@@ -319,6 +330,7 @@ export const useScreenStore = create<ScreenState>()(
     history: [],
     asking: false,
     lastAttempt: null,
+    run: null,
 
     editMode: true,
     selectedId: null,
@@ -345,7 +357,16 @@ export const useScreenStore = create<ScreenState>()(
     generate: async (prompt) => {
       const trimmed = prompt.trim();
       if (!trimmed || get().status === "loading") return;
-      set({ status: "loading", error: null, editingId: null, lastSummary: null, lastAttempt: trimmed });
+      const t0 = Date.now();
+      const tracker = new StepTracker(t0, get().screen !== null);
+      set({
+        status: "loading",
+        error: null,
+        editingId: null,
+        lastSummary: null,
+        lastAttempt: trimmed,
+        run: { kind: "build", startedAt: t0, steps: tracker.steps.map((x) => ({ ...x })) },
+      });
       const mine = epoch;
       const ctrl = new AbortController();
       genAbort = ctrl;
@@ -358,11 +379,23 @@ export const useScreenStore = create<ScreenState>()(
         const result = await api.generateStream(
           request,
           (partial) => {
-            if (epoch === mine) set({ screen: partial });
+            if (epoch !== mine) return;
+            if (tracker.frame(partial, Date.now())) {
+              set({ screen: partial, run: { kind: "build", startedAt: t0, steps: tracker.steps.map((x) => ({ ...x })) } });
+            } else set({ screen: partial });
           },
           ctrl.signal,
         );
         if (epoch !== mine) return; // chat switched or reset: this result belongs to another page
+        const { ms, steps } = tracker.finish(Date.now());
+        const done: HistoryEntry = {
+          prompt: trimmed,
+          summary: result.summary,
+          kind: "page",
+          ms,
+          steps,
+          result: buildResult(before, result.screen, elementLabel),
+        };
         // One undo entry for the whole generation: the page as it was before.
         set((s) => ({
           screen: result.screen,
@@ -371,7 +404,8 @@ export const useScreenStore = create<ScreenState>()(
           status: "idle",
           lastAttempt: null,
           lastSummary: result.summary,
-          history: [...s.history, { prompt: trimmed, summary: result.summary, kind: "page" }],
+          run: null,
+          history: [...s.history, done],
           selectedId: s.selectedId && findNode(result.screen, s.selectedId) ? s.selectedId : null,
         }));
         revealNode(get().selectedId);
@@ -379,6 +413,7 @@ export const useScreenStore = create<ScreenState>()(
         if (epoch !== mine) return;
         set({
           screen: before,
+          run: null,
           status: "error",
           error: friendlyError(err),
         });
@@ -397,6 +432,7 @@ export const useScreenStore = create<ScreenState>()(
         history: [],
         asking: false,
         lastAttempt: null,
+        run: null,
         selectedId: null,
         editingId: null,
         aiBusyId: null,
@@ -414,7 +450,8 @@ export const useScreenStore = create<ScreenState>()(
       const label = target ? elementLabel(target) : undefined;
       const turns = askHistory(history);
       const mine = epoch;
-      set({ asking: true });
+      const t0 = Date.now();
+      set({ asking: true, run: { kind: "ask", startedAt: t0, steps: askSteps(0, screen !== null, target !== null).slice(0, 1) } });
       let entry: HistoryEntry;
       try {
         const res = await api.ask({
@@ -429,7 +466,9 @@ export const useScreenStore = create<ScreenState>()(
       }
       // A chat switch or reset while waiting: the answer belongs to another thread.
       if (epoch !== mine) return;
-      set((s) => ({ asking: false, history: [...s.history, entry] }));
+      const ms = Date.now() - t0;
+      entry = { ...entry, ms, steps: askSteps(ms, screen !== null, target !== null) };
+      set((s) => ({ asking: false, run: null, history: [...s.history, entry] }));
     },
 
     setEditMode: (on) => set({ editMode: on, selectedId: on ? get().selectedId : null, editingId: null }),

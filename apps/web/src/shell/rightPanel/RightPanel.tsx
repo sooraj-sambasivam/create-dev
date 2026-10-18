@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useId, useRef, type KeyboardEvent } from "react";
+import { Suspense, lazy, useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { X } from "lucide-react";
 const Inspector = lazy(() => import("../../editor/Inspector").then((m) => ({ default: m.Inspector })));
 import { MotionControls } from "../../motion";
@@ -7,8 +7,7 @@ import { useWorkspaceStore } from "../../store/workspaceStore";
 import { BackendTab } from "../output/BackendTab";
 import { OutputTab } from "../output/OutputTab";
 import { ActivePill } from "../../ui/ActivePill";
-import { ICON, STROKE, button, segmented } from "../../ui/styles";
-import { ResizeHandle } from "./ResizeHandle";
+import { ICON, STROKE, button, card, segmented } from "../../ui/styles";
 import { RIGHT_PANEL_TABS, useRightPanel, type RightPanelTab } from "./rightPanelStore";
 
 const LABELS: Record<RightPanelTab, string> = { output: "Output", inspect: "Inspect", backend: "Backend" };
@@ -116,10 +115,9 @@ export function RightPanel() {
       role="complementary"
       aria-label="Side panel"
       data-right-panel
-      className="relative flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl bg-surface outline-none"
+      className={`${card} relative flex h-full w-full min-w-0 flex-col overflow-hidden outline-none`}
     >
-      <ResizeHandle />
-      <header className="flex h-12 shrink-0 items-center gap-2 pl-4 pr-3">
+      <header className="flex h-12 shrink-0 items-center gap-2 px-4">
         <div role="tablist" aria-label="Side panel view" className={segmented.root}>
           {RIGHT_PANEL_TABS.map((t) => {
             const disabled = t === "inspect" && !canInspect;
@@ -143,7 +141,7 @@ export function RightPanel() {
                 >
                   {selected && <ActivePill layoutId={pillId} />}
                   {LABELS[t]}
-                  {t === "inspect" && canInspect && hasSelection && !selected && <span aria-label="Element selected" className="ml-1.5 inline-block size-1.5 rounded-full bg-accent align-middle" />}
+                  {t === "inspect" && canInspect && hasSelection && !selected && <span aria-label="Element selected" className="absolute right-2 top-1.5 size-1.5 rounded-full bg-accent" />}
                 </button>
               </span>
             );
@@ -167,18 +165,30 @@ export function RightPanel() {
           <OutputTab />
         </div>
         {active === "inspect" ? (
-          <div data-right-panel-inspect className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          <ScrollBody data-right-panel-inspect>
             <Suspense fallback={null}>
               <Inspector />
             </Suspense>
             {hasSelection && <MotionControls />}
-          </div>
+          </ScrollBody>
         ) : active === "backend" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <ScrollBody>
             <BackendTab />
-          </div>
+          </ScrollBody>
         ) : null}
       </div>
     </aside>
+  );
+}
+
+/** Scrolling tab body: one px-4 inset, room at the end, and a soft fade where content runs under the card edge. */
+function ScrollBody({ children, ...rest }: { children: ReactNode } & Record<`data-${string}`, boolean>) {
+  return (
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div {...rest} className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-1">
+        {children}
+      </div>
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-surface to-transparent" />
+    </div>
   );
 }

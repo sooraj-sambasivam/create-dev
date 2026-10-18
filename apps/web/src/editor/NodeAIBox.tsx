@@ -115,7 +115,7 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
           <button
             type="submit"
             disabled={busy || !value.trim()}
-            className="h-8 rounded-lg bg-accent px-3 text-sm font-medium text-white dark:text-shell transition-opacity duration-120 hover:opacity-90 disabled:opacity-40"
+            className="h-8 rounded-lg bg-accent px-3 text-sm font-medium text-on-accent transition-opacity duration-120 hover:opacity-90 disabled:opacity-40"
           >
             {busy ? (
               <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current/40 border-t-current align-[-2px]" />

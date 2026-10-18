@@ -1,5 +1,5 @@
 {
- "startedAt": "2026-10-18T07:50:37.855Z",
+ "startedAt": "2026-10-18T07:52:55.459Z",
  "base": "http://localhost:5175",
  "api": "http://localhost:3001",
  "note": "MOCK_AI responses unless the server has provider keys; recorded bodies are what the server returned.",
@@ -7,9 +7,9 @@
   "liftStages": [
    {
     "stage": "locate",
-    "ms": 23,
+    "ms": 25,
     "status": 200,
-    "traceId": "tr_mvdj01til6l6qx",
+    "traceId": "tr_mvdj2zzui8jw25",
     "ask": null,
     "source": "dom"
    },
@@ -18,7 +18,7 @@
     "ms": 2,
     "status": 200,
     "provider": "mock",
-    "traceId": "tr_mvdj01tmret5j3"
+    "traceId": "tr_mvdj2zzzl2ebn0"
    },
    {
     "stage": "act:lift",
@@ -30,22 +30,22 @@
    {
     "name": "open lifted app (table + chart)",
     "ok": true,
-    "ms": 553
+    "ms": 552
    },
    {
     "name": "editor: prompt renders the app in the right panel",
     "ok": true,
-    "ms": 2029
+    "ms": 2063
    },
    {
     "name": "Chat: ask about the chart",
     "ok": true,
-    "ms": 1069
+    "ms": 1070
    },
    {
     "name": "Narrate: make the heading bigger",
     "ok": true,
-    "ms": 3507
+    "ms": 3537
    }
   ],
   "recordings": [
@@ -53,45 +53,49 @@
     "route": "POST /api/generate",
     "kind": "ndjson",
     "chunks": 2,
-    "latencyMs": 236
+    "latencyMs": 237
+   },
+   {
+    "route": "POST /api/ask",
+    "kind": "body",
+    "chunks": 0,
+    "latencyMs": 17
    },
    {
     "route": "POST /api/route-intent",
     "kind": "body",
     "chunks": 0,
-    "latencyMs": 84
+    "latencyMs": 153
    }
   ],
-  "liftedUrl": "http://localhost:5175/?p=8mTKssinpi"
+  "liftedUrl": "http://localhost:5175/?p=Dx3YprAjDR"
  },
  "replay": {
   "steps": [
    {
     "name": "open lifted app (table + chart)",
     "ok": true,
-    "ms": 532
+    "ms": 533
    },
    {
     "name": "editor: prompt renders the app in the right panel",
     "ok": true,
-    "ms": 2027
+    "ms": 2046
    },
    {
     "name": "Chat: ask about the chart",
     "ok": true,
-    "ms": 1069
+    "ms": 1294
    },
    {
     "name": "Narrate: make the heading bigger",
     "ok": true,
-    "ms": 3492
+    "ms": 3636
    }
   ],
   "replayDotVisible": true,
   "aiRequestsOnNetwork": [],
-  "uncoveredAiRequestsOnNetwork": [
-   "/api/ask"
-  ]
+  "uncoveredAiRequestsOnNetwork": []
  },
- "finishedAt": "2026-10-18T07:50:54.310Z"
+ "finishedAt": "2026-10-18T07:53:12.359Z"
 }

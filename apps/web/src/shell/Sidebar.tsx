@@ -12,12 +12,12 @@ import { motion } from "motion/react";
 import { Archive, ArchiveRestore, ChevronDown, ChevronRight, Folder, PanelLeft, Pencil, Plus, SquarePen, Trash2 } from "lucide-react";
 import { isBlankChat as isBlankWorkspaceChat, useWorkspaceStore } from "../store/workspaceStore";
 import { AvatarMenu } from "../onboarding";
-import { ICON, STROKE, button, focusRing, input } from "../ui/styles";
+import { ICON, STROKE, button, focusRing, hairline, input, row } from "../ui/styles";
 import { duration, ease, spring, useReducedMotionSafe } from "../ui/motion";
 
 const AVATAR_INITIALS = "SS";
 
-/** Nav icons are 18; icons inside rows and row actions are 16 (DESIGN.md icon roles). */
+/** Nav icons are 18; row actions are 16 (DESIGN.md icon roles). Icon centres sit on x=24 in the rail and expanded. */
 const NAV = { size: ICON.lg, strokeWidth: STROKE } as const;
 const ROW = { size: ICON.md, strokeWidth: STROKE } as const;
 
@@ -25,7 +25,7 @@ const ROW = { size: ICON.md, strokeWidth: STROKE } as const;
 export const SIDEBAR_MIN = 220;
 export const SIDEBAR_MAX = 420;
 export const SIDEBAR_DEFAULT = 260;
-export const SIDEBAR_RAIL = 56;
+export const SIDEBAR_RAIL = 48;
 /** localStorage key holding the expanded sidebar width as a plain number. */
 export const SIDEBAR_WIDTH_KEY = "create-sidebar-width";
 /** Arrow-key step for the resize handle. */
@@ -89,7 +89,7 @@ export interface SidebarProject {
 
 /**
  * Left navigation on the grey shell. Reads chats, projects and the active chat from
- * `useWorkspaceStore` and calls its actions. Collapses to a 56px icon rail.
+ * `useWorkspaceStore` and calls its actions. Collapses to a 48px icon rail.
  */
 export function Sidebar({
   forceCollapsed = false,
@@ -215,21 +215,21 @@ export function Sidebar({
         onAnimationStart={() => setSliding(true)}
         onAnimationComplete={() => setSliding(false)}
         style={{ willChange: sliding ? "width" : undefined }}
-        className="flex h-full shrink-0 flex-col overflow-hidden bg-shell px-2 py-3"
+        className="flex h-full shrink-0 flex-col overflow-hidden bg-shell px-2 py-2"
       >
         <motion.div
           key="rail"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={reduce ? { duration: 0 } : { duration: duration.base, delay: 0.08, ease: ease.standard }}
-          className="flex min-h-0 flex-1 flex-col items-center"
+          className="flex min-h-0 flex-1 flex-col"
         >
-        <div className="flex h-[44px] items-center px-1">
+        <div className="flex h-12 shrink-0 items-center">
           <IconButton label={toggleLabel} onClick={expand}>
             <PanelLeft {...NAV} className="text-ink-2" />
           </IconButton>
         </div>
-        <div className="mt-2 flex flex-col items-center gap-1">
+        <div className="flex flex-col gap-1">
           <IconButton label="New chat" onClick={() => newChat()}>
             <SquarePen {...NAV} className="text-ink-2" />
           </IconButton>
@@ -237,7 +237,7 @@ export function Sidebar({
             <Folder {...NAV} className="text-ink-2" />
           </IconButton>
         </div>
-        <div className="mt-auto flex h-8 items-center">
+        <div className="mt-auto flex h-8 shrink-0 items-center">
           <Avatar />
         </div>
         </motion.div>
@@ -254,7 +254,7 @@ export function Sidebar({
       onAnimationStart={() => setSliding(true)}
       onAnimationComplete={() => setSliding(false)}
       style={{ willChange: sliding ? "width" : undefined }}
-      className="relative flex h-full shrink-0 flex-col overflow-hidden bg-shell px-2 py-3"
+      className="relative flex h-full shrink-0 flex-col overflow-hidden bg-shell px-2 py-2"
     >
       <div
         role="separator"
@@ -275,8 +275,8 @@ export function Sidebar({
       >
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-y-0 right-[3px] w-px transition-colors duration-120 ${
-            dragging ? "bg-ink-3" : "bg-transparent group-hover:bg-line group-focus-visible:bg-accent"
+          className={`pointer-events-none absolute inset-y-2 right-[3px] w-px transition-colors duration-120 ${
+            dragging ? "bg-accent" : "bg-transparent group-hover:bg-ink-3/40 group-focus-visible:bg-accent"
           }`}
         />
       </div>
@@ -288,72 +288,59 @@ export function Sidebar({
         style={{ width: width - 16 }}
         className="flex min-h-0 flex-1 flex-col"
       >
-      <div className="flex h-[44px] items-center px-1">
+      <div className="flex h-12 shrink-0 items-center">
         <IconButton label={toggleLabel} onClick={collapse}>
           <PanelLeft {...NAV} className="text-ink-2" />
         </IconButton>
       </div>
 
-      <button
-        type="button"
-        onClick={() => newChat()}
-        className={`mt-2 flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[14px] text-ink transition-colors duration-120 hover:bg-hover ${focusRing}`}
-      >
-        <SquarePen {...NAV} className="shrink-0 text-ink-2" />
-        New chat
-      </button>
+      <div className="flex shrink-0 flex-col gap-1">
+        <button
+          type="button"
+          onClick={() => newChat()}
+          className={`${row.base} ${row.hover} text-ink transition-colors duration-120 ${focusRing}`}
+        >
+          <SquarePen {...NAV} className="shrink-0 text-ink-2" />
+          New chat
+        </button>
+        <button
+          type="button"
+          data-testid="new-project"
+          aria-label="New project"
+          onClick={() => setCreating(true)}
+          className={`${row.base} ${row.hover} text-ink transition-colors duration-120 ${focusRing}`}
+        >
+          <Folder {...NAV} className="shrink-0 text-ink-2" />
+          New project
+        </button>
+      </div>
 
-      <nav aria-label="Chats" className="mt-4 min-h-0 flex-1 overflow-y-auto pb-4">
-        {hasProjects ? (
-          <div className="flex h-8 items-center justify-between pr-1 pl-2">
-            <h2 className="text-[12px] text-ink-3">Projects</h2>
-            {creating ? null : (
-              <button
-                type="button"
-                data-testid="new-project"
-                onClick={() => setCreating(true)}
-                aria-label="New project"
-                title="New project"
-                className={button.icon}
-              >
-                <Plus {...ROW} />
-              </button>
-            )}
-          </div>
-        ) : null}
+      {creating ? (
+        <form className="mt-2 shrink-0 px-0" onSubmit={submitProject}>
+          <input
+            autoFocus
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setName("");
+                setCreating(false);
+              }
+            }}
+            onBlur={() => {
+              if (!name.trim()) setCreating(false);
+            }}
+            placeholder="Project name"
+            aria-label="New project name"
+            className={input}
+          />
+        </form>
+      ) : null}
 
-        {creating ? (
-          <form className="px-2" onSubmit={submitProject}>
-            <input
-              autoFocus
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  setName("");
-                  setCreating(false);
-                }
-              }}
-              onBlur={() => {
-                if (!name.trim()) setCreating(false);
-              }}
-              placeholder="Project name"
-              aria-label="New project name"
-              className={input}
-            />
-          </form>
-        ) : null}
+      <div aria-hidden="true" className={`${hairline} shrink-0`} />
 
-        {!hasProjects && !creating ? (
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className={`flex h-8 w-full items-center gap-2 rounded-lg pr-2 pl-2 text-left text-[14px] text-ink-2 transition-colors duration-120 hover:bg-hover hover:text-ink ${focusRing}`}
-          >
-            <Plus {...NAV} className="shrink-0" />
-            New project
-          </button>
-        ) : null}
+      <nav aria-label="Chats" className="min-h-0 flex-1 overflow-y-auto pb-2">
+        {hasProjects ? <h2 className={sectionLabel}>Projects</h2> : null}
 
         {/* A plain list: the visible "1." "2." are the only numbers, so no list counter is applied. */}
         <ul className="flex list-none flex-col">
@@ -369,7 +356,7 @@ export function Sidebar({
                   onNewChat={(id) => newChat(id)}
                 />
                 {rows.length === 0 ? (
-                  <p className="flex h-8 items-center pr-2 pl-8 text-[14px] text-ink-2">No chats yet</p>
+                  <p className="flex h-8 items-center pr-2 pl-[34px] text-[14px] text-ink-2">No chats yet</p>
                 ) : (
                   <ul className="flex flex-col">
                     {rows.map((chat) => (
@@ -377,7 +364,6 @@ export function Sidebar({
                         <ChatRow
                           chat={chat}
                           active={chat.id === activeChatId}
-                          nested
                           onSelect={selectChat}
                           onArchive={archiveChat}
                           onRename={renameChat}
@@ -392,9 +378,13 @@ export function Sidebar({
           })}
         </ul>
 
+        {openChats.length === 0 && !hasProjects ? (
+          <p className="px-[7px] pt-2 text-[12px] text-ink-2">Your chats appear here</p>
+        ) : null}
+
         {unassigned.length > 0 ? (
-          <div className="mt-4">
-            <h2 className="flex h-8 items-center pl-2 text-[12px] text-ink-3">Chats</h2>
+          <div className={hasProjects ? "mt-2" : ""}>
+            <h2 className={sectionLabel}>Chats</h2>
             <ul className="flex flex-col">
               {unassigned.map((chat) => (
                 <li key={chat.id}>
@@ -413,12 +403,12 @@ export function Sidebar({
         ) : null}
 
         {archived.length > 0 ? (
-          <div className="mt-4">
+          <div className="mt-2">
             <button
               type="button"
               aria-expanded={archivedOpen}
               onClick={() => setArchivedOpen((value) => !value)}
-              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-left text-[12px] text-ink-3 transition-colors duration-120 hover:bg-hover ${focusRing}`}
+              className={`flex h-8 w-full items-center gap-1 rounded-lg px-[7px] text-left text-[12px] font-medium text-ink-2 transition-colors duration-120 ${row.hover} ${focusRing}`}
             >
               Archived
               <span className="ml-auto tabular-nums">{archived.length}</span>
@@ -435,8 +425,6 @@ export function Sidebar({
                     <ChatRow
                       chat={chat}
                       active={chat.id === activeChatId}
-                      nested
-                      muted
                       onSelect={selectChat}
                       onArchive={archiveChat}
                       onRename={renameChat}
@@ -450,7 +438,7 @@ export function Sidebar({
         ) : null}
       </nav>
 
-      <div className="flex h-8 items-center px-1">
+      <div className="flex h-8 shrink-0 items-center">
         <Avatar />
       </div>
       </motion.div>
@@ -459,8 +447,16 @@ export function Sidebar({
 }
 
 const actionButton = button.iconSm;
+/** Section label ("Projects", "Chats"): 12px, aligned with the row icons. */
+const sectionLabel = "flex h-8 items-center px-[7px] text-[12px] font-medium text-ink-2";
+/**
+ * Row actions float over the row end with no fill of their own. The title fades out under them on
+ * hover or focus (a mask), so its width never changes and no opaque box appears.
+ */
 const revealActions =
-  "absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 rounded-lg bg-shell opacity-0 transition-opacity duration-120 group-hover:opacity-100 group-focus-within:opacity-100";
+  "absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity duration-120 group-hover:opacity-100 group-focus-within:opacity-100";
+const titleFade =
+  "group-hover:[mask-image:linear-gradient(to_right,#000_calc(100%-92px),transparent_calc(100%-72px))] group-focus-within:[mask-image:linear-gradient(to_right,#000_calc(100%-92px),transparent_calc(100%-72px))]";
 
 /** Inline text field used to rename a row. Enter saves, Escape or blur cancels. */
 function RenameField({
@@ -511,12 +507,10 @@ function RenameField({
 /** Inline two-step delete: the row asks once, in words, before anything is removed. */
 function ConfirmDelete({
   what,
-  nested,
   onConfirm,
   onCancel,
 }: {
   what: string;
-  nested: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -530,7 +524,7 @@ function ConfirmDelete({
           onCancel();
         }
       }}
-      className={`flex h-8 items-center gap-1 pr-1 text-[14px] ${nested ? "pl-8" : "pl-2"}`}
+      className="flex h-8 items-center gap-1 pr-1 pl-[34px] text-[14px]"
     >
       <span className="min-w-0 flex-1 truncate text-ink-2">Delete?</span>
       <button
@@ -570,15 +564,14 @@ function ProjectRow({
     return (
       <ConfirmDelete
         what={project.name}
-        nested={false}
         onConfirm={() => onDelete(project.id)}
         onCancel={() => setMode("view")}
       />
     );
   }
   return (
-    <div className="group relative flex h-8 items-center gap-2 pr-2 pl-2 text-[14px] text-ink">
-      <span className="w-4 shrink-0 text-right tabular-nums text-ink-2">{index + 1}.</span>
+    <div className={`group relative ${row.base} ${row.hover} text-ink`}>
+      <span className="w-[18px] shrink-0 text-center tabular-nums text-ink-2">{index + 1}.</span>
       {mode === "rename" ? (
         <RenameField
           initial={project.name}
@@ -592,7 +585,7 @@ function ProjectRow({
         />
       ) : (
         <>
-          <span className="truncate" title={project.name}>{project.name}</span>
+          <span className={`min-w-0 flex-1 truncate ${titleFade}`} title={project.name}>{project.name}</span>
           <div className={revealActions}>
             <button
               type="button"
@@ -631,8 +624,6 @@ function ProjectRow({
 function ChatRow({
   chat,
   active,
-  nested = false,
-  muted = false,
   onSelect,
   onArchive,
   onRename,
@@ -640,8 +631,6 @@ function ChatRow({
 }: {
   chat: SidebarChat;
   active: boolean;
-  nested?: boolean;
-  muted?: boolean;
   onSelect: (id: string) => void;
   onArchive?: (id: string) => void;
   onRename?: (id: string, title: string) => void;
@@ -652,7 +641,6 @@ function ChatRow({
     return (
       <ConfirmDelete
         what={chat.title}
-        nested={nested}
         onConfirm={() => onDelete(chat.id)}
         onCancel={() => setMode("view")}
       />
@@ -660,7 +648,7 @@ function ChatRow({
   }
   if (mode === "rename" && onRename) {
     return (
-      <div className={`flex items-center pr-1 ${nested ? "pl-6" : "pl-0"}`}>
+      <div className="flex items-center pl-[30px]">
         <RenameField
           initial={chat.title}
           label={`Rename ${chat.title}`}
@@ -682,15 +670,11 @@ function ChatRow({
         onClick={() => onSelect(chat.id)}
         aria-current={active ? "true" : undefined}
         title={chat.title}
-        className={`flex h-8 min-w-0 flex-1 items-center truncate rounded-lg text-left text-[14px] transition-colors duration-120 ${focusRing} ${
-          nested ? "pl-8" : "pl-2"
-        } ${hasActions ? "pr-2 group-hover:pr-[88px] group-focus-within:pr-[88px]" : "pr-2"} ${
-          active
-            ? "bg-hover text-ink"
-            : `hover:bg-hover/60 ${muted ? "text-ink-2" : "text-ink-2"}`
+        className={`flex h-8 min-w-0 flex-1 items-center rounded-lg pr-[7px] pl-[34px] text-left text-[14px] transition-colors duration-120 ${focusRing} ${
+          active ? row.active : `${row.idle} ${row.hover}`
         }`}
       >
-        <span className="truncate">{chat.title}</span>
+        <span className={`min-w-0 flex-1 truncate ${titleFade}`}>{chat.title}</span>
       </button>
       {hasActions ? (
         <div className={revealActions}>

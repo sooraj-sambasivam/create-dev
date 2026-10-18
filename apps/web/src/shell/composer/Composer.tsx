@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowUp, AtSign, AudioWaveform, Crosshair, ExternalLink, Loader2, Mic, Monitor, Paperclip, PanelsTopLeft, Square, X } from "lucide-react";
+import { ArrowUp, AtSign, AudioWaveform, Crosshair, Loader2, Mic, Monitor, Paperclip, PanelsTopLeft, Square, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useScreenStore } from "../../store/screenStore";
 import { useWorkMode } from "../../store/modeStore";
@@ -10,10 +10,12 @@ import { transcribe } from "../../lib/api";
 import { shouldStage, usePendingChange, useComposerPrefs } from "../../store/composerPrefs";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { toast } from "../../ui/toastStore";
-import { ApproveToggle, ModelPicker, PlusMenu, PluginsMenu, ReviewCard } from "./controls";
+import { ApproveToggle, ModelPicker, PlusMenu, PluginsMenu } from "./controls";
 import { LiftOverlay } from "./LiftOverlay";
 import { canLift, grabFrame, cropToDataUrl, toSource, type Frame, type Rect } from "./lift";
 import { stageNodeEdit, stagePageEdit } from "./staging";
+import { useLiftLog } from "../thread/liftLog";
+import { liftSteps } from "../thread/runs";
 import { GoFan } from "./GoFan";
 import { VoiceBar } from "./VoiceBar";
 import { chooseEngine, getSpeechCtor, probeTranscribe, speechErrorEvent, startSpeech, type SpeechSession, type VoiceEngine } from "./speech";
@@ -43,7 +45,6 @@ export function Composer() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [liftFrame, setLiftFrame] = useState<Frame | null>(null);
   const [lifting, setLifting] = useState(false);
-  const [lifted, setLifted] = useState<{ url: string; title: string } | null>(null);
 
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -106,7 +107,7 @@ export function Composer() {
   // A staged change belongs to the page it was made for.
   useEffect(() => {
     usePendingChange.getState().setPending(null);
-    setLifted(null);
+    useLiftLog.getState().clear();
   }, [activeChatId]);
 
   useEffect(() => () => {
@@ -378,15 +379,30 @@ export function Composer() {
     setLiftFrame(null);
     if (!frame) return;
     setLifting(true);
+    const t0 = Date.now();
+    useLiftLog.getState().begin();
     try {
       const src = toSource(shown, size, { w: frame.canvas.width, h: frame.canvas.height });
       const { entity } = await api.extractEntity(cropToDataUrl(frame.canvas, src));
+      const readMs = Date.now() - t0;
       const out = await api.liftEntity(entity, value.trim() || undefined);
-      setLifted({ url: out.url, title: entity.title || "Lifted app" });
+      const ms = Date.now() - t0;
+      useLiftLog.getState().add({
+        id: `${t0}`,
+        afterCount: useScreenStore.getState().history.length,
+        title: entity.title || "app",
+        url: out.url,
+        rows: entity.rows.length,
+        columns: entity.columns.map((c) => ({ label: c.label, type: c.type })),
+        sourceTitle: entity.source.title || entity.source.url || null,
+        ms,
+        steps: liftSteps(ms, readMs),
+      });
       toast("Lifted into an app");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't lift that region.");
     } finally {
+      useLiftLog.getState().end();
       setLifting(false);
     }
   };
@@ -440,25 +456,11 @@ export function Composer() {
       ) : null}
       </AnimatePresence>
 
-      <ReviewCard />
-      {lifted ? (
-        <div role="status" data-testid="lift-result" className="mb-2 flex items-center gap-2 rounded-xl border border-line bg-surface p-2 pl-3 shadow-soft">
-          <Monitor size={ICON.lg} strokeWidth={STROKE} aria-hidden className="shrink-0 text-ink-2" />
-          <span className={`${text.ui} min-w-0 flex-1 truncate`}>Lifted · {lifted.title}</span>
-          <a href={lifted.url} target="_blank" rel="noreferrer" className={button.secondary}>
-            Open app
-            <ExternalLink size={ICON.sm} strokeWidth={STROKE} aria-hidden />
-          </a>
-          <button type="button" aria-label="Dismiss" onClick={() => setLifted(null)} className={button.icon}>
-            <X size={ICON.lg} strokeWidth={STROKE} aria-hidden />
-          </button>
-        </div>
-      ) : null}
-
       <form
         ref={formRef}
         aria-label="Composer"
         data-testid="composer"
+        data-part="composer"
         onSubmit={(e) => {
           e.preventDefault();
           submit();

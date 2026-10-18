@@ -1,5 +1,5 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { RIGHT_PANEL_DEFAULT_WIDTH, RIGHT_PANEL_MIN_WIDTH, maxRightPanelWidth, useRightPanel } from "./rightPanelStore";
+import { RIGHT_PANEL_DEFAULT_WIDTH, RIGHT_PANEL_MIN_WIDTH, maxRightPanelWidth, selectPanelWidth, useRightPanel } from "./rightPanelStore";
 
 const STEP = 16;
 const STEP_BIG = 64;
@@ -28,9 +28,12 @@ function renderedPanelWidth(handle: HTMLElement, fallback: number): number {
   return w && w > 0 ? w : fallback;
 }
 
-/** Left-edge vertical separator of the right panel. Dragging left widens it. */
+/**
+ * Vertical separator centred on the 8px gutter left of the panel card. Render it inside the
+ * (positioned) panel wrapper, not inside the clipped card. Dragging left widens the panel.
+ */
 export function ResizeHandle() {
-  const width = useRightPanel((s) => s.width);
+  const width = useRightPanel(selectPanelWidth);
   const setWidth = useRightPanel((s) => s.setWidth);
   const reset = useRightPanel((s) => s.reset);
   const setDragging = useRightPanel((s) => s.setDragging);
@@ -89,11 +92,11 @@ export function ResizeHandle() {
       onDoubleClick={reset}
       onKeyDown={onKeyDown}
       data-default-width={RIGHT_PANEL_DEFAULT_WIDTH}
-      className="group absolute inset-y-0 left-0 z-10 w-2 cursor-col-resize touch-none outline-none"
+      className="group absolute inset-y-0 -left-2 z-10 w-2 cursor-col-resize touch-none outline-none"
     >
       <span
         aria-hidden
-        className={`absolute inset-y-2 left-0 w-0.5 rounded-full transition-colors duration-120 group-hover:bg-accent group-focus-visible:bg-accent ${active ? "bg-accent" : "bg-transparent"}`}
+        className={`pointer-events-none absolute inset-y-3 left-1/2 w-px -translate-x-1/2 rounded-full transition-colors duration-120 group-hover:bg-ink-3/40 group-focus-visible:bg-accent ${active ? "!bg-accent" : "bg-transparent"}`}
       />
     </div>
   );

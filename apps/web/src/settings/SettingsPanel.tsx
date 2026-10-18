@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { fade, scaleIn, useReducedMotionSafe } from "../ui/motion";
 import { RotateCcw, X } from "lucide-react";
-import { useThemeStore, THEME_LABEL, THEME_ORDER } from "../shell/theme";
+import { LookPicker } from "../onboarding/LookPicker";
 import { useProfile, type ProfileDefaultMode, type ProfileLevel } from "../onboarding/profile";
 import { useMic } from "../onboarding/useMic";
 import { MicBody } from "../onboarding/MicBody";
@@ -13,7 +13,6 @@ import { useOnboarding } from "../onboarding/onboardingStore";
 import { button, focusRing, ICON, STROKE, surface, text } from "../ui/styles";
 
 const TEST_MS = 5000;
-const THEME_OPTIONS = THEME_ORDER.map((id) => ({ id, label: THEME_LABEL[id] }));
 const MODE_OPTIONS: { id: ProfileDefaultMode; label: string }[] = [
   { id: "chat", label: MODE_LABEL.chat },
   { id: "code", label: MODE_LABEL.code },
@@ -42,8 +41,6 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 /** Floating Settings window opened from the avatar menu. Changes apply immediately. */
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
-  const theme = useThemeStore((s) => s.theme);
-  const setTheme = useThemeStore((s) => s.setTheme);
   const profile = useProfile();
   const replay = useOnboarding((s) => s.open);
   const mic = useMic();
@@ -91,10 +88,9 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         </button>
       </div>
       <div className="overflow-y-auto">
-        <Section title="Appearance">
-          <Row label="Theme">
-            <SegmentedControl label="Theme" options={THEME_OPTIONS} value={theme} onChange={setTheme} />
-          </Row>
+        <Section title="Look">
+          <LookPicker compact />
+          <p className="text-[12px] leading-4 text-ink-2">Paper is light, Luminous is dark. Applies everywhere right away.</p>
         </Section>
         <Section title="General">
           <Row label="Start in">

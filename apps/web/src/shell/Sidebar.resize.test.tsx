@@ -57,9 +57,9 @@ describe("sidebar width", () => {
     expect(html).toContain(`aria-valuenow="${SIDEBAR_DEFAULT}"`);
   });
 
-  it("expanded state offers the collapse toggle, and the rail width is 56px", () => {
+  it("expanded state offers the collapse toggle, and the rail width is 48px", () => {
     const html = renderToStaticMarkup(<Sidebar />);
     expect(html).toContain('aria-label="Collapse sidebar"');
-    expect(SIDEBAR_RAIL).toBe(56);
+    expect(SIDEBAR_RAIL).toBe(48);
   });
 });

@@ -28,6 +28,7 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flashCopied = () => {
@@ -56,7 +57,7 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
 
   const { reduce } = useReducedMotionSafe();
   const iconBtn = button.iconSm;
-  const action = button.secondary;
+  const action = button.ghost;
 
   const status = useScreenStore((st) => st.status);
   const generating = status === "loading";
@@ -64,77 +65,82 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {screen || generating ? (
-        <div className="flex min-h-0 flex-1 flex-col px-3 pb-2">
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-2">
           <ScreenCanvas />
         </div>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center gap-1 px-6 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
           <p className="text-[16px] text-ink">Your page will appear here</p>
           <p className="text-[14px] text-ink-2">Describe what to build in the chat. You can edit it right here.</p>
         </div>
       )}
 
-      <div className="max-h-[40%] shrink-0 overflow-y-auto border-t border-line px-4 py-3">
-        <div className="flex flex-col gap-3">
-          {screen && (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <button onClick={share} disabled={busy !== null} className={action}>
-                  <span className="relative grid size-4 place-items-center">
-                    <AnimatePresence mode="wait" initial={false}>
-                      <motion.span
-                        key={copied ? "ok" : "link"}
-                        initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
-                        transition={reduce ? { duration: duration.fast } : { ...spring.snappy, opacity: { duration: duration.fast } }}
-                        className="grid place-items-center"
-                      >
-                        {copied ? <Check size={ICON.md} strokeWidth={STROKE} className="text-ok" /> : <Link2 size={ICON.md} strokeWidth={STROKE} />}
-                      </motion.span>
-                    </AnimatePresence>
-                  </span>
-                  {busy === "share" ? "Saving…" : copied ? "Copied" : "Copy link"}
-                </button>
-                {shareUrl && <ShowQrButton url={shareUrl} className={button.secondary} />}
-                {shareUrl && (
-                  <div className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg bg-tray pl-3 pr-1">
-                    <a href={shareUrl} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink">
-                      {shareUrl}
-                    </a>
-                    <button aria-label="Copy link" title="Copy link" className={iconBtn} onClick={() => navigator.clipboard?.writeText(shareUrl).then(flashCopied, () => {})}>
-                      <Copy size={ICON.md} strokeWidth={STROKE} />
-                    </button>
-                  </div>
-                )}
-              </div>
-              {error && (
-                <p role="alert" className="flex items-center gap-1.5 text-[14px] text-bad">
-                  <CircleAlert size={ICON.md} strokeWidth={STROKE} aria-hidden className="shrink-0" />
-                  {error}
-                </p>
-              )}
-            </>
-          )}
-
-          <details className="group" aria-label="History">
-            <summary className="flex h-8 cursor-pointer list-none items-center gap-1 text-[14px] text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
-              <ChevronRight size={ICON.md} strokeWidth={STROKE} className="transition-transform duration-120 group-open:rotate-90" aria-hidden />
-              History{history.length > 0 ? ` (${history.length})` : ""}
-            </summary>
-            {history.length === 0 ? (
-              <p className="py-2 text-[12px] text-ink-2">No edits yet.</p>
-            ) : (
-              <ul className="flex flex-col">
-                {[...history].reverse().map((h, i) => (
-                  <li key={i} className="flex flex-col gap-0.5 border-b border-line py-1.5 text-[12px] last:border-b-0">
-                    <span className="text-ink">{h.prompt}</span>
-                    <span className="text-ink-2">{h.summary}</span>
-                  </li>
-                ))}
-              </ul>
+      <div className="max-h-[40%] shrink-0 overflow-y-auto px-4 pb-3 pt-1">
+        <div className="flex flex-col gap-1">
+          <div className="-ml-2.5 flex flex-wrap items-center gap-1">
+            {screen && (
+              <button onClick={share} disabled={busy !== null} className={action}>
+                <span className="relative grid size-4 place-items-center">
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                      key={copied ? "ok" : "link"}
+                      initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
+                      transition={reduce ? { duration: duration.fast } : { ...spring.snappy, opacity: { duration: duration.fast } }}
+                      className="grid place-items-center"
+                    >
+                      {copied ? <Check size={ICON.md} strokeWidth={STROKE} className="text-ok" /> : <Link2 size={ICON.md} strokeWidth={STROKE} />}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
+                {busy === "share" ? "Saving…" : copied ? "Copied" : "Copy link"}
+              </button>
             )}
-          </details>
+            {screen && shareUrl && <ShowQrButton url={shareUrl} className={button.ghost} />}
+            <button
+              type="button"
+              aria-expanded={historyOpen}
+              aria-controls="output-history"
+              onClick={() => setHistoryOpen((o) => !o)}
+              className={`${button.ghost} ml-auto`}
+            >
+              <ChevronRight size={ICON.md} strokeWidth={STROKE} className={`transition-transform duration-120 ${historyOpen ? "rotate-90" : ""}`} aria-hidden />
+              History{history.length > 0 ? ` (${history.length})` : ""}
+            </button>
+          </div>
+          {screen && shareUrl && (
+            <div className="flex h-8 min-w-0 items-center gap-2 rounded-lg bg-tray pl-3 pr-1">
+              <a href={shareUrl} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink">
+                {shareUrl}
+              </a>
+              <button aria-label="Copy link" title="Copy link" className={iconBtn} onClick={() => navigator.clipboard?.writeText(shareUrl).then(flashCopied, () => {})}>
+                <Copy size={ICON.md} strokeWidth={STROKE} />
+              </button>
+            </div>
+          )}
+          {screen && error && (
+            <p role="alert" className="flex items-center gap-1.5 text-[14px] text-bad">
+              <CircleAlert size={ICON.md} strokeWidth={STROKE} aria-hidden className="shrink-0" />
+              {error}
+            </p>
+          )}
+          {historyOpen && (
+            <div id="output-history" aria-label="History" className="pt-1">
+              {history.length === 0 ? (
+                <p className="py-1 text-[12px] text-ink-2">No edits yet.</p>
+              ) : (
+                <ul className="flex flex-col">
+                  {[...history].reverse().map((h, i) => (
+                    <li key={i} className="flex flex-col gap-0.5 py-1.5 text-[12px]">
+                      <span className="text-ink">{h.prompt}</span>
+                      <span className="text-ink-2">{h.summary}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

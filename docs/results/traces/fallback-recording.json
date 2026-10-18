@@ -1,8 +1,8 @@
 {
- "exportedAt": "2026-10-18T07:50:46.759Z",
+ "exportedAt": "2026-10-18T07:53:04.428Z",
  "baseUrl": "http://localhost:5175",
- "liftedUrl": "http://localhost:5175/?p=8mTKssinpi",
- "count": 2,
+ "liftedUrl": "http://localhost:5175/?p=Dx3YprAjDR",
+ "count": 3,
  "recordings": [
   {
    "key": "POST /api/generate 26d0eb60",
@@ -34,7 +34,7 @@
     ],
     [
      "date",
-     "Sun, 18 Oct 2026 07:50:39 GMT"
+     "Sun, 18 Oct 2026 07:52:57 GMT"
     ],
     [
      "transfer-encoding",
@@ -53,8 +53,8 @@
      "Express"
     ]
    ],
-   "latency": 236,
-   "createdAt": 1792309839894,
+   "latency": 237,
+   "createdAt": 1792309977573,
    "kind": "ndjson",
    "chunks": [
     {
@@ -62,13 +62,66 @@
      "text": "{\"type\":\"partial\",\"screen\":{\"title\":\"Turn This Train Schedule Into A Small Tr\",\"theme\":\"light\",\"accent\":\"#4f46e5\",\"font\":\"sans\",\"children\":[{\"id\":\"nav\",\"type\":\"container\",\"direction\":\"row\",\"gap\":\"md\",\"align\":\"center\",\"justify\":\"between\",\"padding\":\"md\",\"background\":\"none\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"brand\",\"type\":\"heading\",\"text\":\"Turn This Train Schedule Into A Small Tr\",\"level\":3},{\"id\":\"nav-links\",\"type\":\"container\",\"direction\":\"row\",\"gap\":\"md\",\"align\":\"center\",\"justify\":\"start\",\"padding\":\"none\",\"background\":\"none\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"nav-features\",\"type\":\"link\",\"text\":\"Features\",\"href\":\"#features\"},{\"id\":\"nav-cta\",\"type\":\"button\",\"label\":\"Get started\",\"variant\":\"primary\",\"icon\":\"lucide:arrow-right\"}]}]}]}}\n"
     },
     {
-     "t": 159,
+     "t": 222,
      "text": "{\"type\":\"partial\",\"screen\":{\"title\":\"Turn This Train Schedule Into A Small Tr\",\"theme\":\"light\",\"accent\":\"#4f46e5\",\"font\":\"sans\",\"children\":[{\"id\":\"nav\",\"type\":\"container\",\"direction\":\"row\",\"gap\":\"md\",\"align\":\"center\",\"justify\":\"between\",\"padding\":\"md\",\"background\":\"none\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"brand\",\"type\":\"heading\",\"text\":\"Turn This Train Schedule Into A Small Tr\",\"level\":3},{\"id\":\"nav-links\",\"type\":\"container\",\"direction\":\"row\",\"gap\":\"md\",\"align\":\"center\",\"justify\":\"start\",\"padding\":\"none\",\"background\":\"none\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"nav-features\",\"type\":\"link\",\"text\":\"Features\",\"href\":\"#features\"},{\"id\":\"nav-cta\",\"type\":\"button\",\"label\":\"Get started\",\"variant\":\"primary\",\"icon\":\"lucide:arrow-right\"}]}]},{\"id\":\"hero\",\"type\":\"container\",\"direction\":\"column\",\"gap\":\"md\",\"align\":\"center\",\"justify\":\"start\",\"padding\":\"xl\",\"background\":\"none\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"hero-badge\",\"type\":\"badge\",\"text\":\"Mock mode\"},{\"id\":\"hero-title\",\"style\":{\"align\":\"center\"},\"type\":\"heading\",\"text\":\"Describe it. See it.\",\"level\":1},{\"id\":\"hero-sub\",\"style\":{\"align\":\"center\"},\"type\":\"text\",\"text\":\"Set MOCK_AI=0 to build real pages with Claude.\",\"tone\":\"muted\"},{\"id\":\"hero-rating\",\"type\":\"rating\",\"value\":4.9,\"label\":\"from 1,200 makers\"}]}]}}\n{\"type\":\"done\",\"summary\":\"Mock mode: built a sample layout for \\\"Turn this train schedule into a small tracker app with a chart\\\".\",\"screen\":{\"title\":\"Turn This Train Schedule Into A Small Tr\",\"theme\":\"light\",\"accent\":\"#4f46e5\",\"font\":\"sans\",\"children\":[{\"id\":\"nav\",\"type\":\"container\",\"direction\":\"row\",\"gap\":\"md\",\"align\":\"center\",\"justify\":\"between\",\"padding\":\"md\",\"background\":\"none\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"brand\",\"type\":\"heading\",\"text\":\"Turn This Train Schedule Into A Small Tr\",\"level\":3},{\"id\":\"nav-links\",\"type\":\"container\",\"direction\":\"row\",\"gap\":\"md\",\"align\":\"center\",\"justify\":\"start\",\"padding\":\"none\",\"background\":\"none\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"nav-features\",\"type\":\"link\",\"text\":\"Features\",\"href\":\"#features\"},{\"id\":\"nav-cta\",\"type\":\"button\",\"label\":\"Get started\",\"variant\":\"primary\",\"icon\":\"lucide:arrow-right\"}]}]},{\"id\":\"hero\",\"type\":\"container\",\"direction\":\"column\",\"gap\":\"md\",\"align\":\"center\",\"justify\":\"start\",\"padding\":\"xl\",\"background\":\"none\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"hero-badge\",\"type\":\"badge\",\"text\":\"Mock mode\"},{\"id\":\"hero-title\",\"style\":{\"align\":\"center\"},\"type\":\"heading\",\"text\":\"Describe it. See it.\",\"level\":1},{\"id\":\"hero-sub\",\"style\":{\"align\":\"center\"},\"type\":\"text\",\"text\":\"Set MOCK_AI=0 to build real pages with Claude.\",\"tone\":\"muted\"},{\"id\":\"hero-rating\",\"type\":\"rating\",\"value\":4.9,\"label\":\"from 1,200 makers\"}]},{\"id\":\"features\",\"type\":\"container\",\"direction\":\"row\",\"gap\":\"md\",\"align\":\"stretch\",\"justify\":\"start\",\"padding\":\"lg\",\"background\":\"muted\",\"width\":\"full\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"feature-0\",\"type\":\"container\",\"direction\":\"column\",\"gap\":\"sm\",\"align\":\"stretch\",\"justify\":\"start\",\"padding\":\"md\",\"background\":\"surface\",\"width\":\"third\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"feature-0-icon\",\"type\":\"icon\",\"name\":\"lucide:keyboard\",\"size\":\"lg\"},{\"id\":\"feature-0-title\",\"type\":\"heading\",\"text\":\"Type\",\"level\":3},{\"id\":\"feature-0-text\",\"type\":\"text\",\"text\":\"A short sentence explaining why this matters.\",\"tone\":\"muted\"}]},{\"id\":\"feature-1\",\"type\":\"container\",\"direction\":\"column\",\"gap\":\"sm\",\"align\":\"stretch\",\"justify\":\"start\",\"padding\":\"md\",\"background\":\"surface\",\"width\":\"third\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"feature-1-icon\",\"type\":\"icon\",\"name\":\"lucide:mic\",\"size\":\"lg\"},{\"id\":\"feature-1-title\",\"type\":\"heading\",\"text\":\"Talk\",\"level\":3},{\"id\":\"feature-1-text\",\"type\":\"text\",\"text\":\"A short sentence explaining why this matters.\",\"tone\":\"muted\"}]},{\"id\":\"feature-2\",\"type\":\"container\",\"direction\":\"column\",\"gap\":\"sm\",\"align\":\"stretch\",\"justify\":\"start\",\"padding\":\"md\",\"background\":\"surface\",\"width\":\"third\",\"wrap\":false,\"overlay\":\"dark\",\"children\":[{\"id\":\"feature-2-icon\",\"type\":\"icon\",\"name\":\"lucide:pencil\",\"size\":\"lg\"},{\"id\":\"feature-2-title\",\"type\":\"heading\",\"text\":\"Draw\",\"level\":3},{\"id\":\"feature-2-text\",\"type\":\"text\",\"text\":\"A short sentence explaining why this matters.\",\"tone\":\"muted\"}]}]}]}}\n"
     }
    ],
    "body": "",
    "route": "POST /api/generate",
    "id": 1
+  },
+  {
+   "key": "POST /api/ask a3e3e43d",
+   "method": "POST",
+   "path": "/api/ask",
+   "bodyHash": "a3e3e43d",
+   "status": 200,
+   "statusText": "OK",
+   "headers": [
+    [
+     "access-control-allow-origin",
+     "http://localhost:5175"
+    ],
+    [
+     "access-control-expose-headers",
+     "x-model-fallback"
+    ],
+    [
+     "connection",
+     "close"
+    ],
+    [
+     "content-length",
+     "206"
+    ],
+    [
+     "content-type",
+     "application/json; charset=utf-8"
+    ],
+    [
+     "date",
+     "Sun, 18 Oct 2026 07:52:58 GMT"
+    ],
+    [
+     "etag",
+     "W/\"ce-ig0iWYmUrDK7tbazB4LbxxWxAWw\""
+    ],
+    [
+     "vary",
+     "Origin"
+    ],
+    [
+     "x-powered-by",
+     "Express"
+    ]
+   ],
+   "latency": 17,
+   "createdAt": 1792309978842,
+   "kind": "body",
+   "chunks": [],
+   "body": "{\"answer\":\"This page is \\\"Turn This Train Schedule Into A Small Tr\\\" with 3 top-level sections, covering \\\"Turn This Train Schedule Into A Small Tr\\\", \\\"Describe it. See it.\\\", \\\"Type\\\".\",\"provider\":\"mock\"}",
+   "route": "POST /api/ask",
+   "id": 2
   },
   {
    "key": "POST /api/route-intent 25fbaea3",
@@ -100,7 +153,7 @@
     ],
     [
      "date",
-     "Sun, 18 Oct 2026 07:50:45 GMT"
+     "Sun, 18 Oct 2026 07:53:02 GMT"
     ],
     [
      "etag",
@@ -119,13 +172,13 @@
      "Express"
     ]
    ],
-   "latency": 84,
-   "createdAt": 1792309845117,
+   "latency": 153,
+   "createdAt": 1792309982841,
    "kind": "body",
    "chunks": [],
    "body": "{\"isCommand\":true,\"targetId\":\"brand\",\"action\":\"resize\",\"confidence\":0.94}",
    "route": "POST /api/route-intent",
-   "id": 2
+   "id": 3
   }
  ]
 }

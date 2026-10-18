@@ -45,3 +45,13 @@ export function parseBlocks(src: string): Block[] {
   flush();
   return blocks;
 }
+
+/** The answer as plain text for copy and read aloud: markers removed, lists kept as lines. */
+export function plainText(src: string): string {
+  return parseBlocks(src)
+    .map((b) => {
+      const flat = (inl: Inline[]) => inl.map((n) => n.v).join("");
+      return b.t === "p" ? flat(b.inlines) : b.items.map((it, i) => `${b.t === "ol" ? `${i + 1}.` : "-"} ${flat(it)}`).join("\n");
+    })
+    .join("\n\n");
+}

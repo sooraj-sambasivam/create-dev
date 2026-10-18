@@ -20,14 +20,27 @@ export const REPLAY_PATHS = [
   "/api/route-intent",
   "/api/demo",
   "/api/transcribe",
+  "/api/ask",
+  "/api/locate",
+  "/api/extract",
+  "/api/lift",
 ] as const;
 
 /**
  * Paths whose output is applied to existing canvas elements. A recording for a
- * different request could edit the wrong element, so these only replay on an
- * exact body match and otherwise pass through to the network.
+ * different request could edit the wrong element (route-intent, canvas-ops), or
+ * answer about / point at / lift the wrong thing (ask, locate, extract, lift: targets
+ * differ per request), so these only replay on an exact body match and otherwise
+ * pass through to the network.
  */
-export const EXACT_ONLY_PATHS = ["/api/route-intent", "/api/canvas-ops"] as const;
+export const EXACT_ONLY_PATHS = [
+  "/api/route-intent",
+  "/api/canvas-ops",
+  "/api/ask",
+  "/api/locate",
+  "/api/extract",
+  "/api/lift",
+] as const;
 
 export const MODE_STORAGE_KEY = "create.replay.mode";
 
@@ -447,7 +460,7 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
     if (mode === "replay") {
       // Exact body match first. Otherwise the latest run for this path is shown
       // with a visible toast, so another prompt's recording is never silent.
-      // route-intent and canvas-ops never fall back (see EXACT_ONLY_PATHS).
+      // route-intent, canvas-ops, ask, locate, extract and lift never fall back (see EXACT_ONLY_PATHS).
       // With no usable recording, the request goes to the network.
       try {
         const exact = await store.getByKey(key);

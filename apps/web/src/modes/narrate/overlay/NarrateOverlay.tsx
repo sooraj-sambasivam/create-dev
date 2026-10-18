@@ -6,6 +6,8 @@ import { createRecorder } from "../../../narrate/session";
 import { createVoice, DRAIN_TIMEOUT_MS } from "../../../narrate/voice";
 import { Lasso, type LassoEvent } from "./Lasso";
 import { PointerBubble, type PointerPhase } from "./PointerBubble";
+import { KeyHintBar } from "./KeyHintBar";
+import { actionNote, type PointerAction } from "./pointerActions";
 import { usePagePointer } from "./usePagePointer";
 import type { MicState } from "./MicPill";
 import { NarrateBarView } from "./NarrateBarView";
@@ -286,6 +288,32 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
     }
   }, [pointer]);
 
+  const pinnedNow = usePin((st) => st.pinned);
+
+  /** The action card's pick on the pinned thing. Understand asks; the rest are recorded for the build. */
+  const onPointerAction = useCallback((action: PointerAction, target: { id: string; label: string }) => {
+    const ctx = cmdCtx.current;
+    const add = recorder.current?.add as unknown as Add | undefined;
+    add?.({ kind: "note", text: actionNote(action, target.label).slice(0, 4000) });
+    if (action === "understand" && ctx) {
+      void runAsk(ctx, "Explain this to me.", target);
+      return;
+    }
+    emitCompanion({ type: "note", label: target.label, text: action === "keep" ? "Kept" : action === "app" ? "Live app" : "Transform" });
+    if (action === "transform") {
+      // The pin stays, so the next thing said binds to it.
+      setPhase({ kind: "ask", message: "Say how to change this." });
+      return;
+    }
+    usePin.getState().unpin();
+    setPhase({
+      kind: "done",
+      targetId: target.id,
+      label: target.label,
+      message: action === "keep" ? "Kept" : "Noted · Enter to build",
+    });
+  }, []);
+
   const tail = transcript.length > 56 ? "…" + transcript.slice(-56) : transcript;
   const dur = reduce ? 0 : 0.2;
 
@@ -340,12 +368,12 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
             micHint={micHint}
             text={finishing ? "Finishing…" : tail || "Listening…"}
             finishing={finishing}
-            hint={POINTER_HINT}
+            hint={<KeyHintBar pinned={Boolean(pinnedNow)} />}
             onFinish={() => void finish()}
             onCancel={cancel}
           />
           <Lasso resolve={resolve} onLasso={onLasso} />
-          <PointerBubble pointer={pointer} phase={phase} reduce={reduce} />
+          <PointerBubble pointer={pointer} phase={phase} reduce={reduce} transcript={transcript} onAction={onPointerAction} />
         </>
       )}
     </div>

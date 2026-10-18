@@ -7,12 +7,15 @@ import { Sidebar, SIDEBAR_RAIL, readSidebarWidth } from "./Sidebar";
 import { Header, type ShareOutcome, type WorkspaceActions } from "./Header";
 import { shareAndCopy } from "./output";
 import { RightPanel, useInspectFollow, usePanelAutoOpen } from "./rightPanel/RightPanel";
-import { planRightPanelLayout, useRightPanel, selectOutputOpen, LAYOUT_CARD_MIN } from "./rightPanel/rightPanelStore";
+import { ResizeHandle } from "./rightPanel/ResizeHandle";
+import { planRightPanelLayout, useRightPanel, selectOutputOpen, selectPanelWidth, LAYOUT_CARD_MIN } from "./rightPanel/rightPanelStore";
+import { card } from "../ui/styles";
 import { selectActiveChat, useWorkspaceStore } from "../store/workspaceStore";
 import { useScreenStore } from "../store/screenStore";
 import "./builder.css";
+import "./looks.css";
 
-/** Gap between the card and the window edge / panel (the card's mr-2). */
+/** Window inset and card-to-card gap (the card's mr-2, the panel's mr-2). */
 const GUTTER = 8;
 
 /**
@@ -38,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const log = useWorkspaceStore((s) => s.log);
   const open = useRightPanel((s) => s.open);
   const outputOpen = useRightPanel(selectOutputOpen);
-  const wantedWidth = useRightPanel((s) => s.width);
+  const wantedWidth = useRightPanel(selectPanelWidth);
   const dragging = useRightPanel((s) => s.dragging);
   useInspectFollow();
   usePanelAutoOpen();
@@ -105,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div ref={rowRef} className="relative flex h-dvh overflow-x-auto overflow-y-hidden bg-shell text-ink">
       <Sidebar forceCollapsed={collapseSidebar && !railExpanded} onForcedExpandChange={setRailExpanded} />
-      <main style={{ minWidth: LAYOUT_CARD_MIN }} className="relative my-2 mr-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl bg-surface">
+      <main data-part="main-card" style={{ minWidth: LAYOUT_CARD_MIN }} className={`${card} relative my-2 mr-2 flex min-w-0 flex-1 flex-col overflow-hidden`}>
         {chat && (
           <Header
             pageTitle={chat.title}
@@ -122,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
       <motion.div
         initial={false}
-        animate={{ width: open ? panelWidth + GUTTER : 0 }}
+        animate={{ width: open ? panelWidth + GUTTER * 2 : 0 }}
         transition={slotTransition}
         onAnimationStart={() => setAnimating(true)}
         onAnimationComplete={() => {
@@ -130,7 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           if (!openRef.current) setPanelMounted(false);
         }}
         style={{ willChange: animating ? "width" : undefined }}
-        className="flex h-full shrink-0 justify-end overflow-hidden"
+        className="-ml-2 flex h-full shrink-0 justify-end overflow-hidden pl-2"
       >
         {panelMounted ? (
           <motion.div
@@ -138,8 +141,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             initial="hidden"
             animate={open ? "show" : "exit"}
             style={{ width: panelWidth, willChange: animating ? "transform, opacity" : undefined }}
-            className="my-2 mr-2 h-[calc(100%-1rem)] shrink-0"
+            className="relative my-2 mr-2 h-[calc(100%-1rem)] shrink-0"
           >
+            <ResizeHandle />
             <RightPanel />
           </motion.div>
         ) : null}

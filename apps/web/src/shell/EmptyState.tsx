@@ -23,6 +23,9 @@ export function EmptyState() {
           </button>
         ))}
       </motion.div>
+      <motion.p variants={v(fadeUp)} className={`${text.note} only-paper -rotate-1`} aria-hidden="true">
+        or just point at something on your screen
+      </motion.p>
       <motion.p variants={v(fadeUp)} className={text.meta}>
         Or hold <kbd className="rounded border border-line px-1 font-sans">⌥ Option</kbd> on any website to lift a table, chart or list into an app.
       </motion.p>
