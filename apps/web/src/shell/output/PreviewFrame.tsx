@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-const SKELETON = '<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0"><div id="root"></div></body></html>';
+const SKELETON = '<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;overflow:hidden"><div id="root"></div></body></html>';
 
 /** Copy the host page's stylesheets and theme attributes into the frame document. */
 export function syncFrameHead(host: Document, frame: Document): void {
@@ -53,7 +53,7 @@ export function PreviewFrame({ children, width, height, title }: { children: Rea
 
   return (
     <>
-      <iframe ref={setFrame} title={title} srcDoc={SKELETON} tabIndex={-1} aria-hidden style={{ width, height, border: 0, display: "block", background: "transparent" }} />
+      <iframe ref={setFrame} scrolling="no" title={title} srcDoc={SKELETON} tabIndex={-1} aria-hidden style={{ width, height, border: 0, display: "block", background: "transparent" }} />
       {mount && createPortal(children, mount)}
     </>
   );

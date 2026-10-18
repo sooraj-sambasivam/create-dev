@@ -14,20 +14,16 @@ export function MicPill({ state, hint }: { state: MicState; hint?: string }) {
   const Icon = unavailable ? MicOff : state === "locked" ? Lock : Mic;
   const title = hint ? `${label} · ${hint}` : label;
   const active = state === "listening" || state === "locked";
+  const text = state === "locked" ? "Locked" : state === "listening" ? "Listening" : unavailable ? "No mic" : null;
   return (
     <span
       role="status"
       aria-label={title}
       title={title}
-      className="inline-flex h-6 items-center gap-1 rounded-full px-2 text-[12px]"
-      style={{
-        background: active ? "color-mix(in srgb, var(--accent, #3E7BF0) 12%, transparent)" : "var(--tray, #F4F4F4)",
-        color: active ? "var(--accent, #3E7BF0)" : "var(--ink-2, #5D5D5D)",
-      }}
+      className={`inline-flex h-6 items-center gap-1 rounded-full px-2 text-[12px] ${active ? "bg-accent/12 text-accent" : "bg-tray text-ink-2"}`}
     >
       <Icon size={16} strokeWidth={1.75} className={state === "listening" ? "animate-pulse" : ""} />
-      {state === "locked" ? "Locked" : state === "listening" ? "Listening" : unavailable ? "No mic" : "Idle"}
-      {hint && !unavailable ? <span className="ml-0.5 max-w-[190px] truncate" style={{ color: "var(--ink-2, #5D5D5D)" }}>{hint}</span> : null}
+      {text && state !== "listening" ? text : null}
     </span>
   );
 }

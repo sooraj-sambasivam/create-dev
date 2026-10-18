@@ -14,6 +14,14 @@ export const MODELS: { id: ModelId; label: string }[] = [
   { id: "haiku-5.5", label: "Haiku 5.5" },
 ];
 
+export type Effort = "low" | "medium" | "high";
+
+export const EFFORTS: { id: Effort; label: string }[] = [
+  { id: "low", label: "Low" },
+  { id: "medium", label: "Medium" },
+  { id: "high", label: "High" },
+];
+
 export const CONNECTORS = [
   { id: "github", label: "GitHub" },
   { id: "gdrive", label: "Google Drive" },
@@ -35,12 +43,14 @@ export interface ComposerProject {
 interface ComposerSettings {
   permission: Permission;
   model: ModelId;
+  effort: Effort;
   connectors: Record<string, boolean>;
   plugins: Record<string, boolean>;
   projects: ComposerProject[];
   projectId: string | null;
   setPermission: (p: Permission) => void;
   setModel: (m: ModelId) => void;
+  setEffort: (e: Effort) => void;
   toggleConnector: (id: string) => void;
   togglePlugin: (id: string) => void;
   selectProject: (id: string | null) => void;
@@ -50,6 +60,7 @@ interface ComposerSettings {
 export const useComposerSettings = create<ComposerSettings>((set) => ({
   permission: "approve",
   model: "sonnet-5.5",
+  effort: "medium",
   connectors: {},
   plugins: {},
   projects: [
@@ -59,6 +70,7 @@ export const useComposerSettings = create<ComposerSettings>((set) => ({
   projectId: null,
   setPermission: (permission) => set({ permission }),
   setModel: (model) => set({ model }),
+  setEffort: (effort) => set({ effort }),
   toggleConnector: (id) => set((s) => ({ connectors: { ...s.connectors, [id]: !s.connectors[id] } })),
   togglePlugin: (id) => set((s) => ({ plugins: { ...s.plugins, [id]: !s.plugins[id] } })),
   selectProject: (projectId) => set({ projectId }),

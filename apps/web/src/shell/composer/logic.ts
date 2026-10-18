@@ -20,8 +20,9 @@ export function applyMention(value: string, name: string): string {
   return `${base ? `${base} ` : ""}@${name} `;
 }
 
-export const FAN_RADIUS = 56;
-export const FAN_ANGLES = [-70, -15, 40];
+/** Arc around Go. Go's centre sits 32px from the composer's right edge, so the outer bubbles clear that edge by about 8px. */
+export const FAN_RADIUS = 72;
+export const FAN_ANGLES = [-84, -36, -6];
 
 export function fanOffset(index: number): { x: number; y: number } {
   const rad = (FAN_ANGLES[index] * Math.PI) / 180;

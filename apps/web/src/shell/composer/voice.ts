@@ -1,10 +1,10 @@
 /** Pure state machine for the voice bar (no React, unit-testable). */
 
-export type VoicePhase = "idle" | "requesting" | "listening" | "transcribing" | "done" | "error" | "unavailable";
+export type VoicePhase = "idle" | "requesting" | "listening" | "transcribing" | "done" | "error" | "unavailable" | "notice";
 
 export interface VoiceState {
   phase: VoicePhase;
-  /** One-line message for the error / unavailable phases. */
+  /** One-line message for the error / unavailable / notice phases. */
   message: string | null;
   /** Set once the mic can't be used (unsupported or denied); keeps the fan's Mic disabled after dismissal. */
   blocked: string | null;
@@ -17,9 +17,13 @@ export type VoiceEvent =
   | { type: "transcribed" }
   | { type: "fail"; message: string }
   | { type: "deny"; message: string }
+  | { type: "notice"; message: string }
   | { type: "dismiss" };
 
 export const DONE_MS = 900;
+/** How long the voice bar shows a notice (e.g. Mic clicked in a browser that can't record). */
+export const NOTICE_MS = 3000;
+export const MIC_UNSUPPORTED_NOTICE = "This browser can't use the microphone — type instead";
 
 export function initialVoiceState(unsupportedReason: string | null = null): VoiceState {
   return { phase: "idle", message: null, blocked: unsupportedReason };
@@ -45,8 +49,13 @@ export function voiceReducer(s: VoiceState, e: VoiceEvent): VoiceState {
         : s;
     case "deny":
       return s.phase === "requesting" ? { phase: "unavailable", message: e.message, blocked: e.message } : s;
+    case "notice":
+      // Shown from idle (or re-shown while already showing), so a repeat click restarts the timer.
+      return s.phase === "idle" || s.phase === "notice" ? { ...s, phase: "notice", message: e.message } : s;
     case "dismiss":
-      return s.phase === "done" || s.phase === "error" || s.phase === "unavailable" ? { ...s, phase: "idle", message: null } : s;
+      return s.phase === "done" || s.phase === "error" || s.phase === "unavailable" || s.phase === "notice"
+        ? { ...s, phase: "idle", message: null }
+        : s;
   }
 }
 

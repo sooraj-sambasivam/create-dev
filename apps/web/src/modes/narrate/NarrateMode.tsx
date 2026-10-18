@@ -7,6 +7,7 @@ import { NarrateOverlay } from "./overlay/NarrateOverlay";
 import { getCanvasState } from "./overlay/canvasBridge";
 import { GeneratingDemo } from "./demo/GeneratingDemo";
 import { narrateEntry } from "./handoff";
+import { useRightPanel } from "../../shell/rightPanel/rightPanelStore";
 
 const deps = {
   reset: resetCanvasNarrate,
@@ -25,6 +26,12 @@ export function NarrateMode() {
     if (entry === "return-to-canvas") exitNarrate("canvas", deps, "close");
   }, [entry]);
 
+  // The page lives in the right panel's Output tab, so a page narration opens that tab. The lasso
+  // only ever hit-tests the panel's page preview. With no page yet, narration still records.
+  useEffect(() => {
+    if (entry === "overlay") useRightPanel.getState().openTab("output");
+  }, [entry]);
+
   // Mode switched away by something else (e.g. the switcher): still release the canvas hand-off.
   // Guarded on mode so a StrictMode mount/unmount/mount cycle does not clear it mid-run.
   useEffect(
@@ -36,7 +43,12 @@ export function NarrateMode() {
 
   if (entry === "return-to-canvas") return null;
   if (session) {
-    return <GeneratingDemo session={session} onDone={(opened) => exit(opened ?? "output")} onClose={() => exit("close")} />;
+    // The generated page is shown in the panel's Output tab, never in the main card.
+    const done = (opened?: "page" | "output") => {
+      useRightPanel.getState().openTab("output");
+      exit(opened ?? "output");
+    };
+    return <GeneratingDemo session={session} onDone={done} onClose={() => exit("close")} />;
   }
   return <NarrateOverlay onFinish={setSession} onCancel={() => exit("close")} />;
 }

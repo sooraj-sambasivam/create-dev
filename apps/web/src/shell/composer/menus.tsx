@@ -1,11 +1,13 @@
 import { useState, type RefObject } from "react";
-import { AtSign, Check, ChevronDown, Eye, Folder, GitBranch, HardDrive, LibraryBig, Mail, NotebookText, Plus, ShieldCheck, ShieldQuestion, type LucideIcon, type LucideProps } from "lucide-react";
+import { Blocks, Check, ChevronDown, Eye, Folder, GitBranch, HardDrive, LibraryBig, Mail, NotebookText, Paperclip, Plus, ShieldCheck, ShieldQuestion, Sparkles, type LucideIcon, type LucideProps } from "lucide-react";
 import type { Asset } from "@create/shared";
 import { Popover, menuItemClass as menuItem } from "./Popover";
-import { CONNECTORS, MODELS, PERMISSIONS, PLUGINS, useComposerSettings, type Permission } from "./settings";
+import { CONNECTORS, EFFORTS, MODELS, PERMISSIONS, PLUGINS, useComposerSettings, type Permission } from "./settings";
 
 const ICON = { size: 18, strokeWidth: 1.75 } as const;
-const Blank = () => <span className="w-[18px]" />;
+const TRAY_ICON = { size: 16, strokeWidth: 1.75 } as const;
+const Blank = () => <span className="w-[18px] shrink-0" />;
+const LEAD = "shrink-0 text-[var(--c-ink-2)]";
 
 const CONNECTOR_ICONS: Record<string, LucideIcon> = {
   github: GitBranch,
@@ -24,7 +26,7 @@ export function ConnectorsMenu() {
       onClose={() => setOpen(false)}
       panel={
         <div>
-          <p className="px-2 pt-1.5 pb-1 text-[12px] text-[var(--c-ink-2)]">Connectors</p>
+          <p className="px-2 pt-1.5 pb-1 text-[12px] text-[var(--c-ink-3)]">Connectors</p>
           {CONNECTORS.map((c) => {
             const Icon = CONNECTOR_ICONS[c.id] ?? Plus;
             const enabled = Boolean(on[c.id]);
@@ -46,9 +48,9 @@ export function ConnectorsMenu() {
         aria-label="Connectors"
         title="Connectors"
         onClick={() => setOpen((o) => !o)}
-        className="grid h-8 w-8 place-items-center rounded-full text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] focus-visible:outline-none"
+        className={`grid h-8 w-8 place-items-center rounded-lg text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink)] focus-visible:outline-none ${open ? "bg-[var(--c-hover)] text-[var(--c-ink)]" : ""}`}
       >
-        <Plus size={18} strokeWidth={2.25} className="text-[var(--c-ink)]" />
+        <Plus {...ICON} />
       </button>
     </Popover>
   );
@@ -56,7 +58,7 @@ export function ConnectorsMenu() {
 
 const PERM_ICONS: Record<Permission, LucideIcon> = { "read-only": Eye, ask: ShieldQuestion, approve: ShieldCheck };
 
-function ShieldTerminal({ size = 16, strokeWidth = 1.5, className }: LucideProps) {
+function ShieldTerminal({ size = 16, strokeWidth = 1.75, className }: LucideProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
       <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
@@ -109,7 +111,7 @@ export function PermissionsMenu() {
         aria-label={`Permissions: ${current.label}`}
         title={current.label}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex h-8 max-w-[200px] items-center gap-1.5 rounded-lg px-2 text-[15px] text-[var(--c-ink-3)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink-2)] focus-visible:outline-none"
+        className="inline-flex h-8 max-w-[200px] items-center gap-1.5 rounded-lg px-2 text-[14px] text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink)] focus-visible:outline-none"
       >
         <ShieldTerminal className="shrink-0" />
         <span className="truncate">{current.label}</span>
@@ -118,12 +120,12 @@ export function PermissionsMenu() {
   );
 }
 
-const EFFORT_LABEL = "Medium";
-
 export function ModelMenu() {
   const [open, setOpen] = useState(false);
   const value = useComposerSettings((s) => s.model);
   const setModel = useComposerSettings((s) => s.setModel);
+  const effort = useComposerSettings((s) => s.effort);
+  const setEffort = useComposerSettings((s) => s.setEffort);
   const current = MODELS.find((m) => m.id === value) ?? MODELS[0];
   return (
     <Popover
@@ -146,7 +148,30 @@ export function ModelMenu() {
                   setOpen(false);
                 }}
               >
+                <Sparkles {...ICON} className={LEAD} />
                 <span className="min-w-0 flex-1 truncate">{m.label}</span>
+                {selected ? <Check {...ICON} /> : <Blank />}
+              </button>
+            );
+          })}
+          <div aria-hidden="true" className="mx-2 my-1 h-px bg-[var(--c-line)]" />
+          <p className="px-2 pt-1.5 pb-1 text-[12px] text-[var(--c-ink-3)]">Effort</p>
+          {EFFORTS.map((e) => {
+            const selected = e.id === effort;
+            return (
+              <button
+                key={e.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={selected}
+                className={menuItem}
+                onClick={() => {
+                  setEffort(e.id);
+                  setOpen(false);
+                }}
+              >
+                <Blank />
+                <span className="min-w-0 flex-1 truncate">{e.label}</span>
                 {selected ? <Check {...ICON} /> : <Blank />}
               </button>
             );
@@ -164,7 +189,7 @@ export function ModelMenu() {
       >
         <span className="truncate text-[var(--c-ink)]">{current.label}</span>
         <span className="inline-flex shrink-0 items-center gap-1 text-[var(--c-ink-3)]">
-          {EFFORT_LABEL}
+          {EFFORTS.find((e) => e.id === effort)?.label ?? "Medium"}
           <ChevronDown size={12} strokeWidth={1.75} className="shrink-0" />
         </span>
       </button>
@@ -173,7 +198,7 @@ export function ModelMenu() {
 }
 
 const trayBtn =
-  "inline-flex h-8 items-center gap-2 rounded-lg px-2 text-[14px] font-normal text-[var(--c-ink)]/75 hover:bg-[var(--c-hover)] focus-visible:outline-none";
+  "inline-flex h-8 items-center gap-2 rounded-lg px-2 text-[14px] font-normal text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink)] focus-visible:outline-none";
 
 export function ProjectMenu() {
   const [open, setOpen] = useState(false);
@@ -197,6 +222,7 @@ export function ProjectMenu() {
         setOpen(false);
       }}
     >
+      <Folder {...ICON} className={LEAD} />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {projectId === id ? <Check {...ICON} /> : <Blank />}
     </button>
@@ -237,13 +263,16 @@ export function ProjectMenu() {
               <button type="submit" className="rounded-lg bg-[var(--c-ink)] px-2.5 text-[14px] text-surface">Add</button>
             </form>
           ) : (
-            <button type="button" className={`${menuItem} text-[var(--c-ink-2)]`} onClick={() => setCreating(true)}>New project</button>
+            <button type="button" className={`${menuItem} text-[var(--c-ink-2)]`} onClick={() => setCreating(true)}>
+              <Plus {...ICON} className={LEAD} />
+              <span className="min-w-0 flex-1 truncate">Create new project…</span>
+            </button>
           )}
         </div>
       }
     >
       <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label="Choose project" onClick={() => setOpen((o) => !o)} className={`${trayBtn} max-w-[200px]`}>
-        <Folder size={16} strokeWidth={1.5} className="shrink-0 text-[var(--c-ink)]/75" />
+        <Folder {...TRAY_ICON} className="shrink-0" />
         <span className="truncate">{current ? current.name : "Choose project"}</span>
       </button>
     </Popover>
@@ -277,20 +306,23 @@ export function FilesMenu({
             <ul className="mb-1">
               {assets.map((a) => (
                 <li key={a.url} className="flex h-8 items-center gap-2 rounded-lg px-2">
+                  <Paperclip {...ICON} className={LEAD} />
                   <span className="min-w-0 flex-1 truncate text-[14px] text-[var(--c-ink)]">{a.name}</span>
                 </li>
               ))}
             </ul>
           )}
           {error ? <p role="alert" className="px-2 pb-1 text-[12px] text-[var(--c-bad)]">{error}</p> : null}
-          <button type="button" disabled={uploading} className={`${menuItem} border-t border-[var(--c-line)] text-[var(--c-ink-2)] disabled:opacity-50`} onClick={() => inputRef.current?.click()}>
-            {uploading ? "Uploading…" : "Attach from disk"}
+          <div aria-hidden="true" className="mx-2 my-1 h-px bg-[var(--c-line)]" />
+          <button type="button" disabled={uploading} className={`${menuItem} text-[var(--c-ink-2)] disabled:opacity-50`} onClick={() => inputRef.current?.click()}>
+            <Paperclip {...ICON} className={LEAD} />
+            <span className="min-w-0 flex-1 truncate">{uploading ? "Uploading…" : "Attach from disk"}</span>
           </button>
         </div>
       }
     >
       <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label="Files" onClick={() => setOpen((o) => !o)} className={trayBtn}>
-        <LibraryBig size={16} strokeWidth={1.5} className="shrink-0 text-[var(--c-ink)]/75" />
+        <LibraryBig {...TRAY_ICON} className="shrink-0" />
         <span>Files</span>
         {assets.length > 0 ? <span className="text-[12px] text-[var(--c-ink-3)]">{assets.length}</span> : null}
       </button>
@@ -313,6 +345,7 @@ export function PluginsMenu() {
             const on = Boolean(plugins[p.id]);
             return (
               <button key={p.id} type="button" role="menuitemcheckbox" aria-checked={on} className={menuItem} onClick={() => toggle(p.id)}>
+                <Blocks {...ICON} className={LEAD} />
                 <span className="min-w-0 flex-1 truncate">{p.label}</span>
                 {on ? <Check {...ICON} /> : <Blank />}
               </button>
@@ -322,7 +355,7 @@ export function PluginsMenu() {
       }
     >
       <button type="button" aria-haspopup="menu" aria-expanded={open} aria-label="Plugins" onClick={() => setOpen((o) => !o)} className={trayBtn}>
-        <AtSign size={16} strokeWidth={1.5} className="shrink-0 text-[var(--c-ink)]/75" />
+        <Blocks {...TRAY_ICON} className="shrink-0" />
         <span>Plugins</span>
       </button>
     </Popover>

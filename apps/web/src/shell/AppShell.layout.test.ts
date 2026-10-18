@@ -1,27 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { planOutputLayout } from "./AppShell";
+import { LAYOUT_CARD_MIN, planRightPanelLayout } from "./rightPanel/rightPanelStore";
 
-const base = { sidebarWidth: 260, outputWidth: 480, open: true };
+const base = { sidebarWidth: 260, sidebarRail: 56, panelWidth: 640, open: true };
+const plan = (rowWidth: number, over: Partial<typeof base> = {}) => planRightPanelLayout({ ...base, ...over, rowWidth });
+/** Width left for the card: row minus sidebar, panel slot and the two gutters. */
+const cardWidth = (row: number, r: ReturnType<typeof plan>) => row - (r.collapseSidebar ? 56 : 260) - 8 - r.panelWidth - 8;
 
-describe("planOutputLayout", () => {
-  it("keeps the sidebar when the card still fits", () => {
-    expect(planOutputLayout({ ...base, rowWidth: 1920, cardMin: 640 })).toEqual({ collapseSidebar: false, paneWidth: 480 });
+describe("planRightPanelLayout", () => {
+  it("keeps the sidebar and the wanted width when both fit", () => {
+    const r = plan(1440, { panelWidth: 720 });
+    expect(r).toEqual({ collapseSidebar: false, panelWidth: 720 });
+    expect(cardWidth(1440, r)).toBeGreaterThanOrEqual(LAYOUT_CARD_MIN);
   });
-  it("1280 view mode: pane shrinks, card keeps 640, no overlay", () => {
-    const r = planOutputLayout({ ...base, rowWidth: 1280, cardMin: 640 });
-    expect(r.collapseSidebar).toBe(false);
-    expect(1280 - 260 - 8 - r.paneWidth).toBeGreaterThanOrEqual(640);
+  it("folds the sidebar to its rail before shrinking the panel", () => {
+    const r = plan(1280);
+    expect(r).toEqual({ collapseSidebar: true, panelWidth: 640 });
+    expect(cardWidth(1280, r)).toBeGreaterThanOrEqual(LAYOUT_CARD_MIN);
   });
-  it("1440 edit mode: card keeps 900", () => {
-    const r = planOutputLayout({ ...base, rowWidth: 1440, cardMin: 900 });
+  it("then caps the panel so the card keeps its minimum", () => {
+    const r = plan(1000, { panelWidth: 700 });
     expect(r.collapseSidebar).toBe(true);
-    expect(1440 - 56 - 8 - r.paneWidth).toBeGreaterThanOrEqual(900);
+    expect(r.panelWidth).toBe(1000 - 56 - 8 - LAYOUT_CARD_MIN - 8);
+    expect(cardWidth(1000, r)).toBe(LAYOUT_CARD_MIN);
   });
-  it("never goes below the pane minimum", () => {
-    expect(planOutputLayout({ ...base, rowWidth: 1100, cardMin: 900 }).paneWidth).toBe(360);
+  it("never goes below the panel minimum", () => {
+    expect(plan(700).panelWidth).toBe(420);
+  });
+  it("a wanted width above 70% of the row is capped", () => {
+    expect(plan(1920, { panelWidth: 5000 }).panelWidth).toBe(1344);
   });
   it("closed or unmeasured", () => {
-    expect(planOutputLayout({ ...base, rowWidth: 1280, cardMin: 640, open: false }).paneWidth).toBe(0);
-    expect(planOutputLayout({ ...base, rowWidth: 0, cardMin: 640 }).paneWidth).toBe(480);
+    expect(plan(1280, { open: false })).toEqual({ collapseSidebar: false, panelWidth: 0 });
+    expect(plan(0)).toEqual({ collapseSidebar: false, panelWidth: 640 });
   });
 });

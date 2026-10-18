@@ -175,7 +175,7 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
         <div
           role="group"
           aria-label="Share link"
-          className="absolute right-0 top-full z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-surface p-2 shadow-soft"
+          className="absolute right-0 top-full z-40 mt-1 w-96 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-surface p-2 shadow-soft"
         >
           <p className="px-1 pb-1.5 text-[12px] text-ink-3">
             {state.copyFailed
@@ -189,7 +189,7 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
               value={state.url}
               aria-label="Share link"
               onFocus={(event) => event.currentTarget.select()}
-              className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-[13px] text-ink outline-none focus:border-accent"
+              className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none focus:border-accent"
             />
             <button
               type="button"
@@ -200,7 +200,7 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
               }}
               className={`${ghostButton} w-8`}
             >
-              <Copy size={18} strokeWidth={1.75} aria-hidden="true" />
+              <Copy size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -209,7 +209,7 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
               onClick={() => setState({ kind: "idle" })}
               className={`${ghostButton} w-8`}
             >
-              <X size={18} strokeWidth={1.75} aria-hidden="true" />
+              <X size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -249,7 +249,7 @@ export function Header({ pageTitle, chat, projects, outputOpen, actions, onShare
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 px-4">
-      <h1 className="min-w-0 flex-1 truncate text-[14px] font-medium text-ink" title={pageTitle}>
+      <h1 className="min-w-0 flex-1 truncate text-[14px] font-normal text-ink" title={pageTitle}>
         {pageTitle}
       </h1>
       <div className="flex shrink-0 items-center gap-1">

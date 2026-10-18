@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { IntentRequestSchema } from "@create/shared";
-import { routeIntent } from "../intent/intent";
+import { routeIntentWithEngine } from "../intent/intent";
 
 /** POST /api/route-intent: is a spoken line a command, and which candidate does it target? */
 export const intentRouter = Router();
@@ -12,7 +12,9 @@ intentRouter.post("/route-intent", async (req, res) => {
     return;
   }
   try {
-    res.json(await routeIntent(parsed.data));
+    const { result, engine } = await routeIntentWithEngine(parsed.data);
+    res.setHeader("x-intent-engine", engine);
+    res.json(result);
   } catch (err) {
     console.error("[route-intent] unexpected", err);
     res.status(500).json({ error: "Intent routing failed unexpectedly." });

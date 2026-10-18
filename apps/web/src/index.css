@@ -35,6 +35,15 @@
 @layer base {
   :root {
     color-scheme: light;
+    /* Menus (role="menu" panels) read raised: a surface fill and a shadow the dark theme can override. */
+    --menu-surface: var(--color-surface);
+    --menu-shadow: 0 4px 24px color-mix(in srgb, var(--color-ink) 8%, transparent);
+  }
+
+  /* Menu panels repoint the surface and the composer shadow alias to the menu tokens. */
+  [role="menu"] {
+    --color-surface: var(--menu-surface);
+    --c-shadow: var(--menu-shadow);
   }
 
   body {
@@ -72,6 +81,9 @@
     --color-ok: #3fcf7a;
     --color-warn: #f5b041;
     --color-bad: #f2706b;
+    --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --menu-surface: var(--color-tray);
+    --menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
     color-scheme: dark;
   }
 }
@@ -89,6 +101,9 @@ html[data-theme="dark"] {
   --color-ok: #3fcf7a;
   --color-warn: #f5b041;
   --color-bad: #f2706b;
+  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --menu-surface: var(--color-tray);
+  --menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   color-scheme: dark;
 }
 

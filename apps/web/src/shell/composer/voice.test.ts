@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { formatElapsed, initialVoiceState, isDenied, unsupportedReason, voiceActive, voiceReducer, type VoiceEvent, type VoiceState } from "./voice";
+import {
+  MIC_UNSUPPORTED_NOTICE,
+  formatElapsed,
+  initialVoiceState,
+  isDenied,
+  isUnsupported,
+  unsupportedReason,
+  voiceActive,
+  voiceReducer,
+  type VoiceEvent,
+  type VoiceState,
+} from "./voice";
 
 const run = (s: VoiceState, ...e: VoiceEvent[]) => e.reduce(voiceReducer, s);
 const idle = initialVoiceState();
@@ -40,6 +51,24 @@ describe("voice reducer", () => {
     expect(s.blocked).toBeTruthy();
     expect(run(s, { type: "start" })).toBe(s);
     expect(unsupportedReason({ MediaRecorder: class {}, mediaDevices: { getUserMedia: () => 1 } })).toBeNull();
+  });
+  it("unsupported browsers show a notice that dismisses", () => {
+    const blocked = initialVoiceState(unsupportedReason({}));
+    const shown = run(blocked, { type: "notice", message: MIC_UNSUPPORTED_NOTICE });
+    expect(shown).toMatchObject({ phase: "notice", message: MIC_UNSUPPORTED_NOTICE, blocked: blocked.blocked });
+    expect(voiceActive(shown)).toBe(true);
+    expect(run(shown, { type: "dismiss" })).toMatchObject({ phase: "idle", message: null });
+    // A repeat click while showing re-shows (new object, so the timer restarts).
+    const again = voiceReducer(shown, { type: "notice", message: MIC_UNSUPPORTED_NOTICE });
+    expect(again).not.toBe(shown);
+    expect(again.phase).toBe("notice");
+    // Notices only start from idle; they never interrupt a live recording.
+    const listening = run(initialVoiceState(), { type: "start" }, { type: "granted" });
+    expect(run(listening, { type: "notice", message: "x" })).toBe(listening);
+  });
+  it("notice copy names the browser limit and the fallback", () => {
+    expect(MIC_UNSUPPORTED_NOTICE).toBe("This browser can't use the microphone — type instead");
+    expect(isUnsupported(unsupportedReason({}) ?? "")).toBe(true);
   });
   it("helpers", () => {
     expect(voiceActive(idle)).toBe(false);

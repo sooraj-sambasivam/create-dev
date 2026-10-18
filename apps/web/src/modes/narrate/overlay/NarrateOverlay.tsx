@@ -6,7 +6,7 @@ import { createRecorder } from "../../../narrate/session";
 import { createVoice, DRAIN_TIMEOUT_MS } from "../../../narrate/voice";
 import { Lasso, type LassoEvent } from "./Lasso";
 import { MicPill, type MicState } from "./MicPill";
-import { buildIntentRequest, resolveDomTargets, type LassoRect, type LassoTarget } from "./targets";
+import { buildIntentRequest, resolvePageTargets, type LassoRect, type LassoTarget } from "./targets";
 
 export type NarrateOverlayProps = {
   onFinish(session: NarrationSession): void;
@@ -22,7 +22,7 @@ export const HINTS = [
 export const BROWSER_SPEECH_HINT = "Using browser speech recognition";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent,#3E7BF0)]";
+const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 const MAX_EVENTS = 2000;
 
@@ -36,6 +36,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
   const [transcript, setTranscript] = useState("");
   const [mic, setMic] = useState<MicState>("idle");
   const [micHint, setMicHint] = useState<string | undefined>();
+  const [finishing, setFinishing] = useState(false);
 
   const recorder = useRef<ReturnType<typeof createRecorder> | null>(null);
   const voice = useRef<ReturnType<typeof createVoice> | null>(null);
@@ -112,6 +113,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
   const finish = useCallback(async () => {
     if (done.current || !recorder.current) return;
     done.current = true;
+    setFinishing(true);
     const v = voice.current;
     const wasLive = micRef.current === "listening" || micRef.current === "locked";
     v?.stop();
@@ -145,7 +147,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
     return () => window.removeEventListener("keydown", kd);
   }, [recording, cancel, finish]);
 
-  const resolve = useCallback((rect: LassoRect) => resolveDomTargets(rect), []);
+  const resolve = useCallback((rect: LassoRect) => resolvePageTargets(rect), []);
 
   const onLasso = useCallback((ev: LassoEvent) => {
     (recorder.current?.add as unknown as Add | undefined)?.({ kind: "lasso", rect: ev.rect, targets: ev.targets });
@@ -161,18 +163,17 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
         {!recording && (
           <motion.div
             key="countdown"
-            className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm"
-            style={{ background: "rgba(13,13,13,0.10)", color: "var(--ink, #0D0D0D)" }}
+            className="absolute inset-0 flex flex-col items-center justify-center bg-shell/95 text-ink backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: dur }}
           >
-            <div className="relative flex h-28 w-28 items-center justify-center" aria-live="polite">
+            <div className="relative flex h-12 w-12 items-center justify-center" aria-live="polite">
               <AnimatePresence mode="popLayout">
                 <motion.span
                   key={count}
-                  className="absolute text-[96px] font-light leading-none"
+                  className="absolute text-[28px] font-normal leading-9"
                   initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 1.3 }}
@@ -182,15 +183,14 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
                 </motion.span>
               </AnimatePresence>
             </div>
-            <ul className="mt-6 space-y-1 text-center text-[14px]" style={{ color: "var(--ink-2, #5D5D5D)" }}>
+            <ul className="mt-8 space-y-1 text-center text-[14px] text-ink-2">
               {HINTS.map((h) => <li key={h}>{h}</li>)}
             </ul>
             <button
               type="button"
               aria-label="Cancel narration"
               onClick={cancel}
-              className={`mt-8 rounded-md px-3 py-1.5 text-[14px] hover:bg-[var(--hover,#EDEDED)] ${focusRing}`}
-              style={{ color: "var(--ink-2, #5D5D5D)" }}
+              className={`mt-8 h-8 rounded-lg px-3 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
             >
               Cancel
             </button>
@@ -201,24 +201,25 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
       {recording && (
         <>
           <motion.div
-            className="pointer-events-auto absolute left-1/2 top-4 flex max-w-[min(640px,calc(100vw-32px))] -translate-x-1/2 items-center gap-3 rounded-full py-2 pl-4 pr-2"
-            style={{ background: "var(--surface, #fff)", border: "1px solid var(--line, #E6E6E6)", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", color: "var(--ink, #0D0D0D)" }}
+            className="pointer-events-auto absolute flex max-w-[min(640px,calc(100vw-32px))] -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-surface p-1 pl-4 text-ink shadow-soft"
+            style={{ left: "50%", top: 52 }}
+            aria-busy={finishing}
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: dur }}
           >
-            <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${reduce ? "" : "animate-pulse"}`} style={{ background: "var(--bad, #C93C37)" }} />
+            <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full bg-bad ${reduce ? "" : "animate-pulse"}`} />
             <span className="text-[14px] tabular-nums" aria-label="Elapsed time">{fmt(elapsed)}</span>
             <MicPill state={mic} hint={micHint} />
-            <span className="min-w-0 max-w-[260px] truncate text-[14px]" style={{ color: "var(--ink-2, #5D5D5D)" }} aria-live="polite">
-              {tail || "Listening…"}
+            <span className="min-w-0 max-w-[260px] truncate text-[14px] text-ink-2" aria-live="polite">
+              {finishing ? "Finishing…" : tail || "Listening…"}
             </span>
             <button
               type="button"
               aria-label="Finish narration"
               onClick={() => void finish()}
-              className={`rounded-full px-3 py-1 text-[14px] text-white ${focusRing}`}
-              style={{ background: "var(--accent, #3E7BF0)" }}
+              disabled={finishing}
+              className={`h-8 rounded-full bg-accent px-3 text-[14px] text-white transition-opacity duration-150 dark:text-shell disabled:opacity-50 ${focusRing}`}
             >
               Done
             </button>
@@ -226,8 +227,8 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
               type="button"
               aria-label="Cancel narration"
               onClick={cancel}
-              className={`rounded-full px-3 py-1 text-[14px] hover:bg-[var(--hover,#EDEDED)] ${focusRing}`}
-              style={{ color: "var(--ink-2, #5D5D5D)" }}
+              disabled={finishing}
+              className={`h-8 rounded-full px-3 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover disabled:opacity-50 ${focusRing}`}
             >
               Cancel
             </button>

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { judgeIntent } from "../jev/client";
 import { IntentResultSchema, type IntentRequest, type IntentResult } from "@create/shared";
 
 /**
@@ -165,18 +166,32 @@ export async function routeIntentWithClaude(req: IntentRequest, client: Anthropi
 
 let client: Anthropic | null = null;
 
+export type IntentEngine = "jev" | "haiku" | "keywords";
+
 /**
- * Entry point used by the route. Mock mode or a missing key uses the keyword router. Any model
- * error also falls back, so the caller always gets a valid IntentResult.
+ * Entry point used by the route. Order: Jev (TYPESAFE_API_KEY) -> Haiku (Anthropic key, not MOCK_AI)
+ * -> keyword router. Any engine error or unusable answer falls through, so the caller always gets
+ * a valid IntentResult and learns which engine answered. MOCK_AI only gates Claude: Jev runs
+ * whenever its own key is set, since it is cheap and fast.
  */
-export async function routeIntent(req: IntentRequest, opts: { client?: Anthropic } = {}): Promise<IntentResult> {
+export async function routeIntentWithEngine(
+  req: IntentRequest,
+  opts: { client?: Anthropic } = {},
+): Promise<{ result: IntentResult; engine: IntentEngine }> {
+  const jev = await judgeIntent(req);
+  const parsed = jev ? IntentResultSchema.safeParse(jev) : null;
+  if (parsed?.success) return { result: parsed.data, engine: "jev" };
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (process.env.MOCK_AI === "1" || (!opts.client && !apiKey)) return routeIntentFallback(req);
+  if (process.env.MOCK_AI === "1" || (!opts.client && !apiKey)) return { result: routeIntentFallback(req), engine: "keywords" };
   try {
     client ??= new Anthropic({ apiKey: apiKey ?? "unset", timeout: INTENT_TIMEOUT_MS, maxRetries: 0 });
-    return await routeIntentWithClaude(req, opts.client ?? client);
+    return { result: await routeIntentWithClaude(req, opts.client ?? client), engine: "haiku" };
   } catch (err) {
     console.warn("[route-intent] falling back to keyword router:", err instanceof Error ? err.message : "unknown error");
-    return routeIntentFallback(req);
+    return { result: routeIntentFallback(req), engine: "keywords" };
   }
+}
+
+export async function routeIntent(req: IntentRequest, opts: { client?: Anthropic } = {}): Promise<IntentResult> {
+  return (await routeIntentWithEngine(req, opts)).result;
 }

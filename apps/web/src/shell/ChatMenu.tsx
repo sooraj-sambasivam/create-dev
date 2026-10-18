@@ -345,6 +345,7 @@ export function ChatMenu({
               close(true);
             }}
           >
+            <span aria-hidden="true" className="size-[18px] shrink-0" />
             <span className="flex-1">No project</span>
             {projectId === null ? (
               <Check size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
@@ -363,6 +364,7 @@ export function ChatMenu({
                 close(true);
               }}
             >
+              <Folder size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
               <span className="flex-1 truncate">{project.name}</span>
               {project.id === projectId ? (
                 <Check size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />

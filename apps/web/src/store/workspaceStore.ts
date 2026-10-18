@@ -60,7 +60,8 @@ export interface WorkspaceState {
   chats: Chat[];
   projects: Project[];
   activeChatId: string | null;
-  outputOpen: boolean;
+  /** @deprecated The Output pane state moved to the right panel store (shell/rightPanel). Never read or written here. */
+  outputOpen?: boolean;
   runLog: RunLogEntry[];
   /** Ids of deleted chats, kept so another tab's stale copy cannot restore them. */
   deletedChatIds: string[];
@@ -85,7 +86,6 @@ export interface WorkspaceState {
   moveChat: (chatId: string, projectId: string | null) => void;
   /** Create a project and return its id. Empty names become "Untitled project". */
   createProject: (name: string, moveChatId?: string) => string;
-  toggleOutput: () => void;
   /** Append to the run log, keeping the most recent RUN_LOG_LIMIT entries. */
   log: (kind: string, detail: string) => void;
 }
@@ -313,7 +313,6 @@ function restoreState(p: Loose): Partial<WorkspaceState> {
     chats,
     projects: parseProjects(p.projects),
     activeChatId,
-    outputOpen: p.outputOpen === true,
     runLog: parseRunLog(p.runLog),
     deletedChatIds,
   };
@@ -402,7 +401,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         chats: [],
         projects: [],
         activeChatId: null,
-        outputOpen: false,
         runLog: [],
         deletedChatIds: [],
 
@@ -501,8 +499,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           return project.id;
         },
 
-        toggleOutput: () => set((s) => ({ outputOpen: !s.outputOpen })),
-
         log: (kind, detail) =>
           set((s) => ({
             runLog: [...s.runLog, { id: uid(), at: Date.now(), kind, detail }].slice(-RUN_LOG_LIMIT),
@@ -517,7 +513,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         chats: s.chats,
         projects: s.projects,
         activeChatId: s.activeChatId,
-        outputOpen: s.outputOpen,
         runLog: s.runLog,
         deletedChatIds: s.deletedChatIds,
       }),

@@ -177,22 +177,26 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
       <aside
         aria-label="Sidebar"
         style={{ width: SIDEBAR_RAIL }}
-        className="flex h-full shrink-0 flex-col items-center gap-1 bg-shell py-3"
+        className="flex h-full shrink-0 flex-col items-center bg-shell px-2 py-3"
       >
-        <IconButton label={toggleLabel} onClick={() => setCollapsed(false)}>
-          <PanelLeft {...ICON} className="text-ink-2" />
-        </IconButton>
-        <IconButton label="New chat" onClick={() => newChat()}>
-          <SquarePen {...ICON} className="text-ink-2" />
-        </IconButton>
-        <IconButton
-          label="Projects"
-          onClick={() => {
-            setCollapsed(false);
-          }}
-        >
-          <Folder {...ICON} className="text-ink-2" />
-        </IconButton>
+        <div className="flex h-[44px] items-center px-1">
+          <IconButton label={toggleLabel} onClick={() => setCollapsed(false)}>
+            <PanelLeft {...ICON} className="text-ink-2" />
+          </IconButton>
+        </div>
+        <div className="mt-2 flex flex-col items-center gap-1">
+          <IconButton label="New chat" onClick={() => newChat()}>
+            <SquarePen {...ICON} className="text-ink-2" />
+          </IconButton>
+          <IconButton
+            label="Projects"
+            onClick={() => {
+              setCollapsed(false);
+            }}
+          >
+            <Folder {...ICON} className="text-ink-2" />
+          </IconButton>
+        </div>
         <div className="mt-auto flex h-8 items-center">
           <Avatar />
         </div>
@@ -221,12 +225,12 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
         onPointerCancel={onHandlePointerEnd}
         onDoubleClick={() => setWidth(SIDEBAR_DEFAULT)}
         onKeyDown={onHandleKeyDown}
-        className="group absolute inset-y-0 right-0 z-10 w-[6px] cursor-col-resize touch-none outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+        className="group absolute inset-y-0 right-0 z-10 w-[8px] cursor-col-resize touch-none outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
       >
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-y-0 right-[2px] w-px transition-colors duration-150 ${
-            dragging ? "bg-accent" : "bg-transparent group-hover:bg-accent group-focus-visible:bg-accent"
+          className={`pointer-events-none absolute inset-y-0 right-[3px] w-px transition-colors duration-150 ${
+            dragging ? "bg-ink-3" : "bg-transparent group-hover:bg-line group-focus-visible:bg-accent"
           }`}
         />
       </div>
@@ -247,7 +251,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
 
       <nav aria-label="Chats" className="mt-4 min-h-0 flex-1 overflow-y-auto pb-4">
         {hasProjects ? (
-          <div className="group flex h-8 items-center justify-between pr-1 pl-2">
+          <div className="flex h-8 items-center justify-between pr-1 pl-2">
             <h2 className="text-[12px] text-ink-3">Projects</h2>
             {creating ? null : (
               <button
@@ -256,16 +260,16 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
                 onClick={() => setCreating(true)}
                 aria-label="New project"
                 title="New project"
-                className={`grid h-8 w-8 place-items-center rounded-lg text-ink-2 opacity-0 transition-[background-color,opacity] duration-150 hover:bg-hover group-hover:opacity-100 focus-visible:opacity-100 ${focusRing}`}
+                className={`grid h-8 w-8 place-items-center rounded-lg text-ink-3 transition-colors duration-150 hover:bg-hover hover:text-ink-2 ${focusRing}`}
               >
-                <Plus {...ICON} />
+                <Plus {...ICON} size={16} />
               </button>
             )}
           </div>
         ) : null}
 
         {creating ? (
-          <form className="px-1 pt-1" onSubmit={submitProject}>
+          <form className="px-2" onSubmit={submitProject}>
             <input
               autoFocus
               value={name}
@@ -281,7 +285,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
               }}
               placeholder="Project name"
               aria-label="New project name"
-              className="h-8 w-full rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none placeholder:text-ink-3 focus:ring-2 focus:ring-accent"
+              className="h-8 w-full rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none placeholder:text-ink-3 focus:border-accent"
             />
           </form>
         ) : null}
@@ -298,17 +302,17 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
         ) : null}
 
         {/* A plain list: the visible "1." "2." are the only numbers, so no list counter is applied. */}
-        <ul className="mt-1 flex list-none flex-col">
+        <ul className="flex list-none flex-col">
           {projects.map((project, index) => {
             const rows = openChats.filter((chat) => chat.projectId === project.id);
             return (
-              <li key={project.id} className="mt-2 list-none">
+              <li key={project.id} className="mt-2 list-none first:mt-0">
                 <div className="flex h-8 items-center gap-2 pr-2 pl-2 text-[14px] text-ink">
                   <span className="w-4 shrink-0 text-right tabular-nums text-ink-3">{index + 1}.</span>
                   <span className="truncate">{project.name}</span>
                 </div>
                 {rows.length === 0 ? (
-                  <p className="flex h-8 items-center pr-2 pl-6 text-[14px] text-ink-3">No chats yet</p>
+                  <p className="flex h-8 items-center pr-2 pl-8 text-[14px] text-ink-3">No chats yet</p>
                 ) : (
                   <ul className="flex flex-col">
                     {rows.map((chat) => (
@@ -330,7 +334,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
         </ul>
 
         {unassigned.length > 0 ? (
-          <div className={hasProjects ? "mt-2" : undefined}>
+          <div className="mt-4">
             <h2 className="flex h-8 items-center pl-2 text-[12px] text-ink-3">Chats</h2>
             <ul className="flex flex-col">
               {unassigned.map((chat) => (
@@ -353,15 +357,15 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
               type="button"
               aria-expanded={archivedOpen}
               onClick={() => setArchivedOpen((value) => !value)}
-              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-[12px] text-ink-3 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-left text-[12px] text-ink-3 transition-colors duration-150 hover:bg-hover ${focusRing}`}
             >
-              {archivedOpen ? (
-                <ChevronDown {...ICON} className="shrink-0 text-ink-2" />
-              ) : (
-                <ChevronRight {...ICON} className="shrink-0 text-ink-2" />
-              )}
               Archived
               <span className="ml-auto tabular-nums">{archived.length}</span>
+              {archivedOpen ? (
+                <ChevronDown size={16} strokeWidth={1.75} className="shrink-0 text-ink-2" />
+              ) : (
+                <ChevronRight size={16} strokeWidth={1.75} className="shrink-0 text-ink-2" />
+              )}
             </button>
             {archivedOpen ? (
               <ul className="flex flex-col">
@@ -370,6 +374,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
                     <ChatRow
                       chat={chat}
                       active={chat.id === activeChatId}
+                      nested
                       muted
                       onSelect={selectChat}
                     />
@@ -409,9 +414,14 @@ function ChatRow({
         type="button"
         onClick={() => onSelect(chat.id)}
         aria-current={active ? "true" : undefined}
-        className={`flex h-8 min-w-0 flex-1 items-center truncate rounded-lg pr-2 text-left text-[14px] transition-colors duration-150 hover:bg-hover ${focusRing} ${
-          nested ? "pl-6" : "pl-2"
-        } ${active ? "bg-hover text-ink" : muted ? "text-ink-3" : "text-ink-2"}`}
+        title={chat.title}
+        className={`flex h-8 min-w-0 flex-1 items-center truncate rounded-lg text-left text-[14px] transition-colors duration-150 ${focusRing} ${
+          nested ? "pl-8" : "pl-2"
+        } ${onArchive ? "pr-2 group-hover:pr-8 group-focus-within:pr-8" : "pr-2"} ${
+          active
+            ? "bg-hover text-ink"
+            : `hover:bg-hover/60 ${muted ? "text-ink-3" : "text-ink-2"}`
+        }`}
       >
         <span className="truncate">{chat.title}</span>
       </button>
@@ -421,9 +431,9 @@ function ChatRow({
           onClick={() => onArchive(chat.id)}
           aria-label={`Archive ${chat.title}`}
           title="Archive"
-          className={`absolute right-1 grid h-6 w-6 place-items-center rounded-md text-ink-2 opacity-0 transition-[background-color,opacity] duration-150 hover:bg-tray group-hover:opacity-100 focus-visible:opacity-100 ${focusRing}`}
+          className={`absolute top-1/2 right-1 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-ink-2 opacity-0 transition-[background-color,opacity] duration-150 hover:bg-tray group-hover:opacity-100 focus-visible:opacity-100 ${focusRing}`}
         >
-          <Archive {...ICON} />
+          <Archive size={16} strokeWidth={1.75} />
         </button>
       ) : null}
     </div>
@@ -456,7 +466,7 @@ function Avatar() {
   return (
     <span
       aria-label="Account"
-      className="grid h-8 w-8 place-items-center rounded-full bg-tray text-[12px] font-medium text-ink-2"
+      className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-[12px] font-medium text-ink-2"
     >
       {AVATAR_INITIALS}
     </span>
