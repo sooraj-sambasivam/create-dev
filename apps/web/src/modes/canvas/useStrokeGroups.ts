@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { Editor, TLShapeId } from "tldraw";
-import { POPOVER_IDLE_MS, builtGroupsFromShapes, groupReducer, initialGroupState, type GroupState } from "./groups";
+import { BUILT_OPACITY, POPOVER_IDLE_MS, builtGroupsFromShapes, groupReducer, initialGroupState, type GroupState } from "./groups";
 
 export type StrokeGroups = {
   state: GroupState;
@@ -79,7 +79,7 @@ export function useStrokeGroups(editor: Editor | null): StrokeGroups {
           editor.updateShapes(
             ids.flatMap((id) => {
               const s = editor.getShape(id as TLShapeId);
-              return s ? [{ id: s.id, type: s.type, opacity: 0.35, meta: { ...s.meta, builtGroup: groupId, builtLabel: label } }] : [];
+              return s ? [{ id: s.id, type: s.type, opacity: BUILT_OPACITY, meta: { ...s.meta, builtGroup: groupId, builtLabel: label } }] : [];
             }),
           );
         },

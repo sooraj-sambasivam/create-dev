@@ -46,8 +46,33 @@ export function sectionLines(pageH: number): number[] {
   return out;
 }
 
+/** Screen px kept clear above the page frame so the floating toolbar (8px offset + ~48px tall) never covers it. */
+export const TOP_INSET_PX = 72;
+/** Horizontal camera padding in screen px. */
+export const PAGE_PAD_X = 24;
+
+/** Camera zoom that fits the page width to a pane of the given width. */
+export function fitZoom(vpW: number): number {
+  return Math.max(0.05, ((Number.isFinite(vpW) ? vpW : 0) - PAGE_PAD_X * 2) / PAGE_W);
+}
+
+/** TOP_INSET_PX expressed in page units at the fit-x zoom for this pane width. */
+export function topInsetUnits(vpW: number): number {
+  return Math.ceil(TOP_INSET_PX / fitZoom(vpW));
+}
+
+/**
+ * Clamp a camera y (tldraw convention: screen = (page + cam) * z) so scrolling up stops exactly at the initial top
+ * position (page top `topInset` units below the viewport top) and scrolling down stops at the page bottom.
+ */
+export function clampCameraY(camY: number, topInset: number, pageH: number, viewH: number): number {
+  const max = topInset;
+  const min = Math.min(max, viewH - pageH);
+  return Math.min(max, Math.max(min, camY));
+}
+
 /** The tldraw camera options that make the canvas a vertical-scroll-only page. */
-export function pageCameraOptions(pageH: number) {
+export function pageCameraOptions(pageH: number, topInset = 0) {
   return {
     isLocked: false,
     panSpeed: 1,
@@ -55,8 +80,10 @@ export function pageCameraOptions(pageH: number) {
     zoomSteps: [1],
     wheelBehavior: "pan" as const,
     constraints: {
-      bounds: { x: 0, y: 0, w: PAGE_W, h: pageH },
-      padding: { x: 24, y: 24 },
+      // Bounds start `topInset` above the page so the first screen has room for the toolbar; no vertical padding, so
+      // the camera cannot be pulled past that start.
+      bounds: { x: 0, y: topInset ? -topInset : 0, w: PAGE_W, h: pageH + topInset },
+      padding: { x: PAGE_PAD_X, y: 0 },
       origin: { x: 0.5, y: 0 },
       initialZoom: "fit-x" as const,
       baseZoom: "fit-x" as const,
@@ -142,3 +169,11 @@ export function popoverPosition(screenBox: Box | null, containerW: number, conta
   top = Math.min(Math.max(8, top), Math.max(8, containerH - POP_H - 8));
   return { left, top };
 }
+
+/** Pen colour (tldraw style name) per theme: the accent family, brighter in dark so ink stays high-contrast. */
+export function penColorFor(scheme: "light" | "dark"): "blue" | "light-blue" {
+  return scheme === "dark" ? "light-blue" : "blue";
+}
+
+/** Opacity of strokes whose group is built: faded but still readable. */
+export const BUILT_OPACITY = 0.5;

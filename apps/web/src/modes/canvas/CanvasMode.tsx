@@ -17,7 +17,8 @@ import { classifyNarrateNotice } from "./notice";
 import { LibraryPanel } from "./library";
 import { PageBackground } from "./PageBackground";
 import { installPageCamera } from "./pageCamera";
-import { BuiltBadges, StrokePopover } from "./StrokeOverlay";
+import { penColorFor } from "./groups";
+import { BuiltBadges, GroupOutline, StrokePopover } from "./StrokeOverlay";
 import { useStrokeGroups } from "./useStrokeGroups";
 import { regionFromBounds } from "./groups";
 import { requestCanvasOps } from "./canvasOpsApi";
@@ -77,6 +78,8 @@ function shellScheme(): "light" | "dark" {
 function applyScheme(editor: Editor) {
   const colorScheme = shellScheme();
   if (editor.user.getUserPreferences().colorScheme !== colorScheme) editor.user.updateUserPreferences({ colorScheme });
+  // High-contrast pen per theme: the accent in light, a brighter tint in dark.
+  editor.setStyleForNextShapes(DefaultColorStyle, penColorFor(colorScheme));
 }
 
 /** Lays children out at a fixed design width and scales to the pane width: no horizontal scroll. */
@@ -205,7 +208,6 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
       // Page-shaped: no zoom, no horizontal pan; pen is the default tool, in the accent colour.
       cameraOffRef.current?.();
       cameraOffRef.current = installPageCamera(editor);
-      editor.setStyleForNextShapes(DefaultColorStyle, "blue");
       editor.setStyleForNextShapes(DefaultSizeStyle, "m");
       editor.setCurrentTool("draw");
       setHasSelection(editor.getSelectedShapeIds().length > 0);
@@ -394,6 +396,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
         {narrating && editorRef.current && (
           <CanvasNarrate editor={editorRef.current} onBuild={buildNarration} onError={narrateError} onClose={closeNarrate} />
         )}
+        {editorState && !narrating && groups.state.open.length > 0 && <GroupOutline editor={editorState} ids={groups.state.open} />}
         {editorState && <BuiltBadges editor={editorState} groups={groups.state.built} />}
         {editorState && !narrating && groups.popoverVisible && groups.state.open.length > 0 && (
           <StrokePopover
@@ -406,7 +409,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
           />
         )}
 
-        <div className="pointer-events-none absolute inset-x-0 top-2 z-[500] flex justify-center">
+        <div className="@container pointer-events-none absolute inset-x-0 top-2 z-[500] flex justify-center px-2">
           <CanvasToolbar
             busy={busy}
             narrating={narrating}

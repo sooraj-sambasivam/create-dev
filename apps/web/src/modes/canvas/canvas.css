@@ -124,3 +124,19 @@
 @media (prefers-reduced-motion: reduce) {
   .canvas-slide-in, .canvas-rise-in, .canvas-fade-in { animation: none; }
 }
+
+/* Dark mode: tldraw's dark palette renders pen ink as a dim navy. Lift the ink to read like the accent tint. */
+[data-canvas-host] .tl-theme__dark [data-shape-type="draw"] {
+  filter: brightness(1.55) saturate(1.1);
+}
+
+/* Stroke-group outlines: open group dashed in the accent, built group a solid faint accent. */
+[data-canvas-host] .canvas-group-outline {
+  border: 1.5px dashed var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+}
+[data-canvas-host] .canvas-group-outline[data-built] {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  background: transparent;
+}

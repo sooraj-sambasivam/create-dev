@@ -94,3 +94,30 @@ describe("popoverPosition", () => {
     expect(p.left + 296).toBeLessThanOrEqual(792);
   });
 });
+
+import { clampCameraY, topInsetUnits, TOP_INSET_PX, fitZoom, penColorFor } from "./groups";
+
+describe("page camera clamp", () => {
+  it("stops scrolling up exactly at the initial top position", () => {
+    expect(clampCameraY(124, 100, 1800, 700)).toBe(100);
+    expect(clampCameraY(100, 100, 1800, 700)).toBe(100);
+    expect(clampCameraY(-50, 100, 1800, 700)).toBe(-50);
+  });
+  it("stops scrolling down at the page bottom", () => {
+    expect(clampCameraY(-5000, 100, 1800, 700)).toBe(-1100);
+  });
+  it("camera options leave no vertical padding and start the bounds above the page", () => {
+    const c = pageCameraOptions(1800, 100).constraints;
+    expect(c.padding.y).toBe(0);
+    expect(c.bounds.y).toBe(-100);
+    expect(c.bounds.h).toBe(1900);
+  });
+  it("converts the toolbar inset to page units", () => {
+    expect(topInsetUnits(1200 + 48)).toBe(TOP_INSET_PX);
+    expect(topInsetUnits(648)).toBe(Math.ceil(TOP_INSET_PX / fitZoom(648)));
+  });
+  it("uses a brighter pen in dark", () => {
+    expect(penColorFor("light")).toBe("blue");
+    expect(penColorFor("dark")).toBe("light-blue");
+  });
+});

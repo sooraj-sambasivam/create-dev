@@ -32,13 +32,13 @@ export function CanvasToolbar({
     <div
       role="toolbar"
       aria-label="Canvas studio"
-      className="pointer-events-auto flex max-w-full items-center gap-1 rounded-xl border border-line bg-surface p-2 text-ink shadow-soft"
+      className="pointer-events-auto flex min-w-0 max-w-full items-center gap-1 rounded-xl border border-line bg-surface p-2 text-ink shadow-soft"
     >
       <button type="button" className={ghost} onClick={onBack} aria-label="Back" title="Back">
         <ArrowLeft size={16} strokeWidth={1.75} />
-        Back
+        <span className="@max-[760px]:sr-only">Back</span>
       </button>
-      <span className="hidden px-2 text-sm lg:inline font-medium text-ink-2">Canvas</span>
+      <span className="hidden px-2 text-sm font-medium text-ink-2 @[900px]:inline">Canvas</span>
       <span className="mx-1 h-5 w-px bg-line" aria-hidden />
       <button
         type="button"
@@ -53,7 +53,7 @@ export function CanvasToolbar({
         title="Narrate over this canvas"
       >
         <AudioWaveform size={16} strokeWidth={1.75} />
-        Narrate
+        <span className="@max-[760px]:sr-only">Narrate</span>
       </button>
       <button
         type="button"
@@ -64,20 +64,21 @@ export function CanvasToolbar({
         title="Generate only the selected shapes and add them to the page"
       >
         <Plus size={16} strokeWidth={1.75} />
-        Add selection
+        <span className="@max-[760px]:sr-only">Add selection</span>
       </button>
       <button
         type="button"
         onClick={onMakeIt}
         disabled={busy || narrating}
         aria-label="Make it"
+        title="Make it"
         aria-busy={busy || undefined}
         className={`inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
           busy ? "cursor-progress bg-accent text-white" : narrating ? "cursor-not-allowed bg-hover text-ink-3" : "bg-accent text-white hover:bg-accent/90"
         }`}
       >
         {busy ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <Sparkles size={16} strokeWidth={1.75} />}
-        Make it
+        <span className="@max-[760px]:sr-only">Make it</span>
       </button>
       <button
         type="button"
@@ -88,7 +89,7 @@ export function CanvasToolbar({
         title={previewOpen ? "Hide preview" : "Show preview"}
       >
         <PanelRight size={16} strokeWidth={1.75} />
-        Preview
+        <span className="@max-[760px]:sr-only">Preview</span>
       </button>
     </div>
   );

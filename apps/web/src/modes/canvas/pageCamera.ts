@@ -1,5 +1,5 @@
 import type { Editor } from "tldraw";
-import { PAGE_W, SECTION_H, pageCameraOptions, pageHeightFor } from "./groups";
+import { SECTION_H, fitZoom, pageCameraOptions, pageHeightFor, topInsetUnits } from "./groups";
 
 /** Lowest edge of any shape on the current page (0 when empty). */
 export function maxBottom(editor: Editor): number {
@@ -14,17 +14,20 @@ export function maxBottom(editor: Editor): number {
 /** Makes the canvas a page: fixed 1200-unit width fitted to the pane, vertical scroll only, no zoom. Returns a disposer. */
 export function installPageCamera(editor: Editor): () => void {
   let last = 0;
+  let lastInset = -1;
   const apply = () => {
     // Always leave at least one section of room below the viewport, so a tall pane never makes the page unscrollable.
     const vp = editor.getViewportScreenBounds();
-    const z = Math.max(0.05, (vp.w - 48) / PAGE_W);
+    const z = fitZoom(vp.w);
+    const inset = topInsetUnits(vp.w);
     const viewH = Number.isFinite(vp.h) && vp.h > 0 ? vp.h / z : 0;
     const h = Math.max(pageHeightFor(maxBottom(editor)), Math.ceil((viewH + SECTION_H) / SECTION_H) * SECTION_H);
-    if (h === last) return;
+    if (h === last && inset === lastInset) return;
     const first = last === 0;
     last = h;
-    editor.setCameraOptions(pageCameraOptions(h));
-    if (first) editor.setCamera({ x: 0, y: 0, z: 1 }, { immediate: true });
+    lastInset = inset;
+    editor.setCameraOptions(pageCameraOptions(h, inset));
+    if (first) editor.setCamera({ x: 0, y: inset, z: 1 }, { immediate: true });
   };
   apply();
   const off = editor.store.listen(apply, { scope: "document" });

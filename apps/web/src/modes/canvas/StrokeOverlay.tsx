@@ -108,6 +108,21 @@ export function StrokePopover({
   );
 }
 
+/** Visible outline around a stroke group (open: dashed accent; built: solid, softer). */
+export function GroupOutline({ editor, ids, built }: { editor: Editor; ids: readonly string[]; built?: boolean }) {
+  const box = useScreenBox(editor, ids);
+  if (!box) return null;
+  const pad = 6;
+  return (
+    <div
+      aria-hidden
+      data-built={built || undefined}
+      className="canvas-group-outline pointer-events-none absolute z-[300] rounded-lg"
+      style={{ left: box.x - pad, top: box.y - pad, width: box.w + pad * 2, height: box.h + pad * 2 }}
+    />
+  );
+}
+
 function Badge({ editor, group }: { editor: Editor; group: BuiltGroup }) {
   const box = useScreenBox(editor, group.ids);
   if (!box) return null;
@@ -128,7 +143,10 @@ export function BuiltBadges({ editor, groups }: { editor: Editor; groups: readon
   return (
     <>
       {groups.map((g) => (
-        <Badge key={g.id} editor={editor} group={g} />
+        <span key={g.id}>
+          <GroupOutline editor={editor} ids={g.ids} built />
+          <Badge editor={editor} group={g} />
+        </span>
       ))}
     </>
   );

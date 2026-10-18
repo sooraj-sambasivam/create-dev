@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Loader2, RotateCw, Search } from "lucide-react";
 import { MotionPreview } from "./MotionPreview";
-import { IconGlyph } from "../../../components/elements";
+import { IconThumb } from "./IconThumb";
+import { SEARCH_DEBOUNCE_MS, debounce, mostFailed, searchTerm } from "./search";
 import { useCanvasStore } from "../canvasStore";
 import { addLibraryItemToCanvas, iconUrl, setLibraryDrag, type LibraryDrag } from "./canvasDrop";
 import { iconNode, insertIntoPage, photoNode } from "./insert";
@@ -53,7 +54,12 @@ function IconsTab() {
   const [icons, setIcons] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const dq = useDebounced(q.trim(), 250);
+  const [round, setRound] = useState(0);
+  const [stats, setStats] = useState({ failed: 0, total: 0 });
+  const settle = useCallback((ok: boolean) => setStats((s) => ({ failed: s.failed + (ok ? 0 : 1), total: s.total + 1 })), []);
+  const broken = mostFailed(stats.failed, stats.total);
   useEffect(() => {
+    setStats({ failed: 0, total: 0 });
     if (!dq) {
       setIcons([]);
       return;
@@ -66,7 +72,7 @@ function IconsTab() {
       .catch(() => {})
       .finally(() => setBusy(false));
     return () => ctl.abort();
-  }, [dq, style]);
+  }, [dq, style, round]);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
       <SearchBox value={q} onChange={setQ} placeholder="Search icons" />
@@ -87,10 +93,18 @@ function IconsTab() {
             onDoubleClick={() => onCanvasAdd({ libraryKind: "icon", value: name, label: name })}
             className="flex aspect-square items-center justify-center rounded-[8px] text-ink-2 hover:bg-hover"
           >
-            <IconGlyph name={name} px={24} />
+            <IconThumb name={name} px={24} onSettled={settle} />
           </button>
         ))}
       </div>
+      {broken && (
+        <div role="alert" className="flex items-center justify-between gap-2 rounded-[8px] border border-line bg-tray px-2 py-1.5 text-[12px] text-ink-2">
+          <span>Couldn't load icons.</span>
+          <button type="button" onClick={() => setRound((r) => r + 1)} className="inline-flex h-6 items-center gap-1 rounded-[6px] px-2 text-ink hover:bg-hover">
+            <RotateCw size={14} strokeWidth={1.75} aria-hidden /> Retry
+          </button>
+        </div>
+      )}
       {!icons.length && <p className="text-[12px] text-ink-3">{busy ? "Searching…" : dq ? "No icons found." : "Type a word, like cart or heart."}</p>}
       <p className="text-[12px] text-ink-3">Click to add to the page. Drag onto the canvas.</p>
     </div>
@@ -101,35 +115,62 @@ function PhotosTab() {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ q: string; url: string }[]>([]);
   const [busy, setBusy] = useState(false);
-  const seq = useRef(0);
-  async function search(term: string) {
-    const t = term.trim();
-    if (!t) return;
-    const my = ++seq.current;
+  const [searched, setSearched] = useState<string | null>(null);
+  const ctl = useRef<AbortController | null>(null);
+
+  const search = useCallback(async (t: string) => {
+    ctl.current?.abort();
+    const c = new AbortController();
+    ctl.current = c;
     setBusy(true);
     try {
       const urls = await Promise.all(
         [t, `${t} 2`, `${t} 3`, `${t} 4`].map(async (v, i) => {
-          const r = await fetch(`/api/image/resolve?q=${encodeURIComponent(t)}&seed=${encodeURIComponent(`${v}-${i}`)}`);
+          const r = await fetch(`/api/image/resolve?q=${encodeURIComponent(t)}&seed=${encodeURIComponent(`${v}-${i}`)}`, { signal: c.signal });
           const d = (await r.json()) as { url?: string };
           return d.url ?? "";
         }),
       );
-      if (my === seq.current) setResults([...new Set(urls)].filter((u) => u.startsWith("https://")).map((url) => ({ q: t, url })));
+      if (c.signal.aborted) return;
+      setResults([...new Set(urls)].filter((u) => u.startsWith("https://")).map((url) => ({ q: t, url })));
+      setSearched(t);
     } catch {
-      if (my === seq.current) setResults([]);
+      if (c.signal.aborted) return;
+      setResults([]);
+      setSearched(t);
     } finally {
-      if (my === seq.current) setBusy(false);
+      if (ctl.current === c) setBusy(false);
     }
+  }, []);
+
+  const debounced = useMemo(() => debounce((t: string) => void search(t), SEARCH_DEBOUNCE_MS), [search]);
+  useEffect(() => () => { debounced.cancel(); ctl.current?.abort(); }, [debounced]);
+
+  function onChange(v: string) {
+    setQ(v);
+    if (searchTerm(v)) debounced(searchTerm(v)!);
+    else {
+      debounced.cancel();
+      ctl.current?.abort();
+      setBusy(false);
+      setResults([]);
+      setSearched(null);
+    }
+  }
+  function now(v: string) {
+    const t = searchTerm(v);
+    if (!t) return;
+    debounced.cancel();
+    void search(t);
   }
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
-      <form onSubmit={(e) => { e.preventDefault(); void search(q); }}>
-        <SearchBox value={q} onChange={setQ} placeholder="Search photos, press Enter" />
+      <form onSubmit={(e) => { e.preventDefault(); now(q); }}>
+        <SearchBox value={q} onChange={onChange} placeholder="Search photos" />
       </form>
       <div className="flex flex-wrap gap-1">
         {PHOTO_SUGGESTIONS.map((s) => (
-          <button key={s} type="button" className="h-6 rounded-[6px] border border-line px-2 text-[12px] text-ink-2 hover:bg-hover" onClick={() => { setQ(s); void search(s); }}>{s}</button>
+          <button key={s} type="button" className="h-6 rounded-[6px] border border-line px-2 text-[12px] text-ink-2 hover:bg-hover" onClick={() => { setQ(s); now(s); }}>{s}</button>
         ))}
       </div>
       <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-2 overflow-y-auto">
@@ -147,7 +188,13 @@ function PhotosTab() {
           </button>
         ))}
       </div>
-      {busy && <p className="text-[12px] text-ink-3">Searching…</p>}
+      {busy && (
+        <p role="status" className="flex items-center gap-1.5 text-[12px] text-ink-3">
+          <Loader2 size={14} strokeWidth={1.75} className="animate-spin motion-reduce:animate-none" aria-hidden /> Searching…
+        </p>
+      )}
+      {!busy && searched && results.length === 0 && <p className="text-[12px] text-ink-3">No photos found for "{searched}".</p>}
+      {!busy && !searched && <p className="text-[12px] text-ink-3">Type at least 2 letters to search.</p>}
     </div>
   );
 }
