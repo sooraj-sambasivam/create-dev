@@ -1,5 +1,13 @@
 # Morning report — Create (DubHacks '26)
 
+## ⏱ Hard timeline (set 08:40; Devpost due 10:00)
+- **Now → 09:15** — final wave runs in parallel: sync wired into Narrate/extension/notch, demo fixes (chart recolor, full-table lift, titles, edit repair), crafted minimal UI pass with 3 variants, video drivers + ElevenLabs George voice.
+- **09:15 freeze** — commit everything green; stop unfinished lanes.
+- **09:15–09:35** — final video render; all gates; publish clean `main` (attribution trailers stripped, authors kept — dry run verified: 0 trailers, identical tree).
+- **09:40** — you get: final MP4, Devpost text (`docs/devpost.md`), sponsor pages, checklist. You submit by 10:00.
+- **Fallback video (now):** `/private/tmp/claude-501/-Users-soorajsambasivam-Documents-projects-create-dev/781b2c7e-b0d6-487c-909d-9cb6fda3c63e/scratchpad/video/create-demo-draft.mp4` (80 s, placeholder voice).
+
+
 _Updated overnight. Submit to Devpost by 10:00._
 
 ## Done so far (as of 01:20)
