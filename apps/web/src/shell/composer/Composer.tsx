@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useReducer, useRef, useState, type CSSPrope
 import { ArrowUp, AtSign, AudioWaveform, Crosshair, Laptop, Loader2, Mic, PanelsTopLeft, Square } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useScreenStore } from "../../store/screenStore";
+import { useWorkMode } from "../../store/modeStore";
+import { useProfile } from "../../onboarding/profile";
 import { useRecorder } from "../../lib/useRecorder";
 import { transcribe } from "../../lib/api";
 import { GoFan } from "./GoFan";
@@ -20,7 +22,7 @@ import {
 } from "./voice";
 import { FilesMenu, ConnectorsMenu, ModelMenu, PermissionsMenu, PluginsMenu, ProjectMenu } from "./menus";
 import { menuItemClass } from "./Popover";
-import { MAX_FIELD_PX, applyMention, filterMentions, pickFanDir, type FanDir, mentionQuery, isStoreBusy, placeholderFor, routesToSelection } from "./logic";
+import { MAX_FIELD_PX, applyMention, filterMentions, pickFanDir, type FanDir, mentionQuery, isStoreBusy, placeholderFor, routeFor, defaultModeFor, routesToSelection, type WorkMode } from "./logic";
 import { selectedLabel } from "./selection";
 
 /** Composer-local aliases of the shell theme tokens (index.css), so both themes apply. */
@@ -39,6 +41,31 @@ const TOKENS = {
   "--c-on-fill": "var(--color-surface)",
   "--c-shadow": "0 4px 24px color-mix(in srgb, var(--color-ink) 8%, transparent)",
 } as CSSProperties;
+
+/** Chat answers and never edits; Code builds and edits. Styled like the Output tab's Edit/Preview toggle. */
+function WorkModeToggle({ mode, onChange }: { mode: WorkMode; onChange: (m: WorkMode) => void }) {
+  return (
+    <div role="group" aria-label="Work mode" data-testid="work-mode" className="mb-3 flex h-8 w-fit items-center rounded-full bg-[var(--c-tray)] p-0.5 text-[14px]">
+      {(["chat", "code"] as const).map((m) => {
+        const active = mode === m;
+        return (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={active}
+            data-testid={`work-mode-${m}`}
+            onClick={() => onChange(m)}
+            className={`h-7 rounded-full px-3 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-accent)] ${
+              active ? "bg-[var(--c-surface)] text-[var(--c-ink)] shadow-sm" : "text-[var(--c-ink-2)] hover:text-[var(--c-ink)]"
+            }`}
+          >
+            {m === "chat" ? "Chat" : "Code"}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Composer() {
   const [value, setValue] = useState("");
@@ -61,6 +88,9 @@ export function Composer() {
   const assets = useScreenStore((s) => s.assets);
   const mode = useScreenStore((s) => s.mode);
   const selLabel = useScreenStore(selectedLabel);
+  const asking = useScreenStore((s) => s.asking);
+  const workMode = useWorkMode((s) => s.mode);
+  const profileIntent = useProfile((s) => s.intent);
   const recorder = useRecorder();
   const [voice, dispatch] = useReducer(voiceReducer, undefined, () =>
     initialVoiceState(
@@ -80,9 +110,24 @@ export function Composer() {
   const recording = recorder.recording || browserListening;
   const loading = status === "loading";
   const transcribing = status === "transcribing";
-  const busy = loading || transcribing;
+  const busy = loading || transcribing || asking;
   const barOn = voiceActive(voice);
   const empty = !value.trim();
+
+  // The profile picks the starting mode; after that the user's own choice is remembered.
+  const firstIntent = useRef(true);
+  useEffect(() => {
+    const first = firstIntent.current;
+    firstIntent.current = false;
+    let saved = false;
+    try {
+      saved = localStorage.getItem("create.workMode") !== null;
+    } catch {
+      // Storage blocked: fall back to the profile default.
+    }
+    if (first && saved) return;
+    useWorkMode.getState().setMode(defaultModeFor(profileIntent));
+  }, [profileIntent]);
 
   useEffect(() => () => {
     window.clearTimeout(closeTimer.current);
@@ -161,6 +206,12 @@ export function Composer() {
     if (!t || isStoreBusy(useScreenStore.getState())) return;
     setValue("");
     const st = useScreenStore.getState();
+    const mode = useWorkMode.getState().mode;
+    // Chat never edits; a question typed in Code is answered too, with a note that nothing changed.
+    if (routeFor(t, mode) === "ask") {
+      void st.ask(t, { routed: mode === "code" });
+      return;
+    }
     // "make this bigger" with an element selected edits that element in place instead of regenerating the page.
     if (st.screen && routesToSelection(t, st.selectedId)) void st.editNodeWithAI(st.selectedId!, t);
     else void st.generate(t);
@@ -360,9 +411,10 @@ export function Composer() {
         }}
         className="relative z-10 overflow-visible rounded-3xl border border-[var(--c-line)] bg-[var(--c-surface)] px-4 pt-4 pb-3 shadow-[var(--c-shadow)]"
       >
+        <WorkModeToggle mode={workMode} onChange={(m) => useWorkMode.getState().setMode(m)} />
         {selLabel ? (
           <div className="mb-2 flex" data-testid="selection-chip">
-            <span className="inline-flex h-6 max-w-full items-center gap-1 rounded-md bg-[var(--c-tray)] px-2 text-[12px] text-[var(--c-ink-2)]" title="Typing this/that/it edits this element">
+            <span className="inline-flex h-6 max-w-full items-center gap-1 rounded-md bg-[var(--c-tray)] px-2 text-[12px] text-[var(--c-ink-2)]" title={workMode === "chat" ? "Questions are about this element" : "Typing this/that/it edits this element"}>
               <Crosshair size={12} strokeWidth={1.75} aria-hidden />
               <span className="truncate">{selLabel}</span>
             </span>
@@ -374,7 +426,7 @@ export function Composer() {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onFieldKeyDown}
-          placeholder={placeholderFor(hasScreen)}
+          placeholder={placeholderFor(hasScreen, workMode)}
           aria-label="Message"
           data-testid="message-input"
           className="block max-h-48 min-h-6 w-full resize-none bg-transparent text-[16px] leading-6 text-[var(--c-ink)] outline-none placeholder:text-[var(--c-ink-3)]"

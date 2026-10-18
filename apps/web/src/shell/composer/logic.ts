@@ -50,16 +50,37 @@ export function pickFanDir(goCenterX: number, rightEdge: number, leftEdge: numbe
   return right >= FAN_REACH || right >= left ? "right" : "left";
 }
 
-export function placeholderFor(hasScreen: boolean): string {
-  return hasScreen ? "Describe a change…" : "Work with Create";
+export type WorkMode = "chat" | "code";
+
+export function placeholderFor(hasScreen: boolean, mode: WorkMode = "code"): string {
+  if (mode === "chat") return "Ask anything — or point and ask";
+  return hasScreen ? "Describe a change…" : "Describe what to build";
+}
+
+const QUESTION_RE = /^\s*(what|why|how|explain|where|when|who|which|is|are|does|do|did|can|could|should|will|would|whats|what's|how's)\b/i;
+
+/** A question ("what does this mean?", "is it responsive") rather than a build or edit request. */
+export function isQuestion(text: string): boolean {
+  const t = text.trim();
+  return t.endsWith("?") || QUESTION_RE.test(t);
+}
+
+/** Where a submitted line goes: Chat always asks; Code asks only for questions, otherwise builds or edits. */
+export function routeFor(text: string, mode: WorkMode): "ask" | "code" {
+  return mode === "chat" || isQuestion(text) ? "ask" : "code";
+}
+
+/** The mode a first-run profile starts in. */
+export function defaultModeFor(intent: "build" | "ask" | "both"): WorkMode {
+  return intent === "ask" ? "chat" : "code";
 }
 
 /** Auto-grow cap: 16px text, 24px line, 8 lines. */
 export const MAX_FIELD_PX = 24 * 8;
 
 /** Mirrors workspaceStore.isBusy: an AI request or transcription may still write into the page. */
-export function isStoreBusy(s: { status: string; aiBusyId: string | null | undefined }): boolean {
-  return s.status === "loading" || s.status === "transcribing" || (s.aiBusyId ?? null) !== null;
+export function isStoreBusy(s: { status: string; aiBusyId: string | null | undefined; asking?: boolean }): boolean {
+  return s.asking === true || s.status === "loading" || s.status === "transcribing" || (s.aiBusyId ?? null) !== null;
 }
 
 const DEICTIC_RE = /\b(this|that|these|those|it|here)\b/i;

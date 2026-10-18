@@ -4,12 +4,16 @@ import {
   ScreenSchema,
   TranscribeResponseSchema,
   UploadResponseSchema,
+  type AskRequest,
+  type AskResponse,
   type Asset,
   type EditNodeRequest,
   type EditNodeResponse,
   type GenerateRequest,
+  type FormSubmission,
   type GenerateResponse,
   type Screen,
+  type StoredSubmission,
 } from "@create/shared";
 
 async function readError(res: Response, fallback: string): Promise<string> {
@@ -40,6 +44,32 @@ export function generate(prompt: string, screen: Screen | null, history: string[
 export function editNode(screen: Screen, nodeId: string, prompt: string, assets: Asset[]): Promise<EditNodeResponse> {
   const body: EditNodeRequest = { screen, nodeId, prompt, assets };
   return postJson("/api/edit-node", body, (d) => EditNodeResponseSchema.parse(d), "Edit failed");
+}
+
+/** Chat mode: answer a question about the page or the pointed-at element. Never edits. */
+export function ask(req: Pick<AskRequest, "question" | "screen" | "pointer" | "history">): Promise<AskResponse> {
+  return postJson("/api/ask", req, parseAskResponse, "Couldn't answer");
+}
+
+export function parseAskResponse(data: unknown): AskResponse {
+  const d = (data ?? {}) as Partial<AskResponse>;
+  if (typeof d.answer !== "string" || !d.answer.trim()) throw new Error("The answer came back empty.");
+  const provider = d.provider === "claude" || d.provider === "perceptron+claude" ? d.provider : "mock";
+  return { answer: d.answer, provider, ...(d.suggestCode ? { suggestCode: true } : {}) };
+}
+
+/** Store a submission from a form on a user's page. */
+export function submitForm(appId: string, submission: FormSubmission): Promise<StoredSubmission> {
+  return postJson(`/api/forms/${encodeURIComponent(appId)}`, submission, (d) => d as StoredSubmission, "Couldn't submit the form");
+}
+
+/** Submissions a user's page has collected (the Backend tab's data view). */
+export async function listSubmissions(appId: string): Promise<StoredSubmission[]> {
+  const res = await fetch(`/api/forms/${encodeURIComponent(appId)}`);
+  if (!res.ok) throw new Error(await readError(res, `Couldn't load submissions (${res.status})`));
+  const data = (await res.json()) as unknown;
+  const rows = Array.isArray(data) ? data : (data as { submissions?: unknown })?.submissions;
+  return Array.isArray(rows) ? (rows as StoredSubmission[]) : [];
 }
 
 export async function uploadImage(file: File): Promise<Asset> {

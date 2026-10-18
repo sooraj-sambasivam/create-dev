@@ -46,6 +46,8 @@ const FILLER = new Set([
 
 /** Verb cues, checked in this order (first match wins). */
 const VERB_RULES: Array<{ action: Action; pattern: RegExp }> = [
+  // Questions come first so "what does this color mean" is not read as a restyle.
+  { action: "ask", pattern: /^(what|whats|why|how|who|when|where|which|explain|describe|tell me|is|are|does|do)\b|\b(mean|means|meaning)\b/ },
   { action: "delete", pattern: /\b(delete|remove|erase|get rid of|drop|trash)\b/ },
   { action: "resize", pattern: /\b(bigger|smaller|larger|wider|taller|shorter|narrower|shrink|enlarge|resize|grow)\b/ },
   { action: "replace_media", pattern: /\b(photo|image|picture|pic|swap|replace\b.*\bwith)\b/ },
@@ -112,6 +114,17 @@ export function applyPointer(req: IntentRequest, result: IntentResult): IntentRe
   return { ...result, targetId: pid };
 }
 
+/** Polite requests ("can you make this bigger?") end in "?" but ask for an edit. */
+const POLITE_REQUEST = /^(please\s+)?(can|could|would|will) you\b/;
+
+/** True when the line reads as a question: a question opener or cue word, or a trailing "?". */
+export function isQuestion(text: string): boolean {
+  const norm = normalize(text);
+  if (POLITE_REQUEST.test(norm)) return false;
+  if (text.trim().endsWith("?")) return true;
+  return VERB_RULES[0]!.pattern.test(norm);
+}
+
 /** Keyword router. Pure and synchronous, so it always works in mock mode. */
 export function routeIntentFallback(req: IntentRequest): IntentResult {
   const tokens = words(req.transcript);
@@ -120,7 +133,9 @@ export function routeIntentFallback(req: IntentRequest): IntentResult {
   if (tokens.length === 0 || tokens.every((t) => FILLER.has(t))) return none(0.95);
 
   const text = normalize(req.transcript);
-  const rule = VERB_RULES.find((r) => r.pattern.test(text));
+  const rule = isQuestion(req.transcript)
+    ? VERB_RULES[0]
+    : VERB_RULES.slice(1).find((r) => r.pattern.test(text));
   if (!rule) return none(0.4);
 
   const targetId = pickTarget(text, req.candidates);

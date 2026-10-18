@@ -32,6 +32,23 @@ describe("deriveItems", () => {
     expect(items[items.length - 1]).toEqual({ kind: "error", key: "error", message: "boom", retryPrompt: "x" });
     expect(deriveItems({ history: [], status: "error", error: null })[0]).toMatchObject({ message: "Something went wrong.", retryPrompt: null });
   });
+  it("derives answer items with element label, switch-to-code and routed note", () => {
+    const items = deriveItems({
+      history: [
+        { prompt: "what is 4.9?", summary: "A **rating**.", kind: "answer", label: "Text · 4.9", suggestCode: true, routed: true },
+        { prompt: "plain", summary: "ok", kind: "answer" },
+      ],
+      status: "idle",
+      error: null,
+    });
+    expect(items.map((i) => i.kind)).toEqual(["user", "answer", "user", "answer"]);
+    expect(items[1]).toMatchObject({ label: "Text · 4.9", suggestCode: true, routed: true });
+    expect(items[3]).toMatchObject({ label: null, suggestCode: false, routed: false });
+  });
+  it("shows Thinking while asking, and Retry never re-runs a question", () => {
+    expect(deriveItems({ history: [], status: "idle", error: null, asking: true })).toEqual([{ kind: "building", key: "building", label: "Thinking…" }]);
+    expect(lastPrompt([{ prompt: "build", summary: "" }, { prompt: "why?", summary: "x", kind: "answer" }])).toBe("build");
+  });
   it("lastPrompt ignores placeholders", () => {
     expect(lastPrompt([{ prompt: "a", summary: "" }, { prompt: "(edited)", summary: "" }])).toBe("a");
   });

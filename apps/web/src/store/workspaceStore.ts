@@ -169,6 +169,7 @@ function loadScreen(chat: Chat | null) {
       selectedId: null,
       editingId: null,
       aiBusyId: null,
+      asking: false,
       status: "idle",
       lastSummary: null,
       error: null,
@@ -200,8 +201,10 @@ function parseHistory(raw: unknown): HistoryEntry[] {
     if (!h || typeof h !== "object") return [];
     const e = h as Record<string, unknown>;
     if (typeof e.prompt !== "string" || typeof e.summary !== "string") return [];
-    const kind = e.kind === "page" || e.kind === "element" ? e.kind : undefined;
+    const kind = e.kind === "page" || e.kind === "element" || e.kind === "answer" ? e.kind : undefined;
     return [{ prompt: e.prompt, summary: e.summary, ...(kind ? { kind } : {}),
+        ...(e.suggestCode === true ? { suggestCode: true } : {}),
+        ...(e.routed === true ? { routed: true } : {}),
         ...(typeof e.nodeId === "string" ? { nodeId: e.nodeId } : {}),
         ...(typeof e.label === "string" ? { label: e.label } : {}),
       }];

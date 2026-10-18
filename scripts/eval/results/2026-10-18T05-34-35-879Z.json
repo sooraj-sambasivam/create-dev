@@ -1,0 +1,240 @@
+{
+  "timestamp": "2026-10-18T05:34:35.880Z",
+  "base": "http://localhost:3001",
+  "mode": "mock",
+  "health": {
+    "mock": true,
+    "model": "claude-sonnet-5-5",
+    "hasAnthropic": false,
+    "hasTypesafe": true
+  },
+  "strict": false,
+  "summary": {
+    "total": 12,
+    "pass": 7,
+    "warn": 5,
+    "fail": 0,
+    "pending": 0
+  },
+  "results": [
+    {
+      "id": "bakery-site",
+      "group": "non-technical",
+      "endpoint": "/api/generate",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 604,
+      "reasons": [],
+      "info": {
+        "nodes": 23,
+        "types": [
+          "badge",
+          "button",
+          "container",
+          "heading",
+          "icon",
+          "link",
+          "rating",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "wedding-rsvp-form",
+      "group": "non-technical",
+      "endpoint": "/api/generate",
+      "status": "WARN",
+      "httpStatus": 200,
+      "ms": 602,
+      "reasons": [
+        "(mock) missing node type textbox",
+        "(mock) none of [checkbox,select]"
+      ],
+      "info": {
+        "nodes": 23,
+        "types": [
+          "badge",
+          "button",
+          "container",
+          "heading",
+          "icon",
+          "link",
+          "rating",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "portfolio",
+      "group": "non-technical",
+      "endpoint": "/api/generate",
+      "status": "WARN",
+      "httpStatus": 200,
+      "ms": 602,
+      "reasons": [
+        "(mock) missing node type image"
+      ],
+      "info": {
+        "nodes": 23,
+        "types": [
+          "badge",
+          "button",
+          "container",
+          "heading",
+          "icon",
+          "link",
+          "rating",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "saas-pricing-data",
+      "group": "technical",
+      "endpoint": "/api/generate",
+      "status": "WARN",
+      "httpStatus": 200,
+      "ms": 602,
+      "reasons": [
+        "(mock) missing node type data"
+      ],
+      "info": {
+        "nodes": 23,
+        "types": [
+          "badge",
+          "button",
+          "container",
+          "heading",
+          "icon",
+          "link",
+          "rating",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "ops-dashboard",
+      "group": "technical",
+      "endpoint": "/api/generate",
+      "status": "WARN",
+      "httpStatus": 200,
+      "ms": 603,
+      "reasons": [
+        "(mock) missing node type data",
+        "(mock) missing node type table"
+      ],
+      "info": {
+        "nodes": 23,
+        "types": [
+          "badge",
+          "button",
+          "container",
+          "heading",
+          "icon",
+          "link",
+          "rating",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "edit-bigger-heading",
+      "group": "edit",
+      "endpoint": "/api/edit-node",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 403,
+      "reasons": [],
+      "info": {
+        "nodes": 1,
+        "types": [
+          "heading"
+        ]
+      }
+    },
+    {
+      "id": "edit-button-green",
+      "group": "edit",
+      "endpoint": "/api/edit-node",
+      "status": "WARN",
+      "httpStatus": 200,
+      "ms": 403,
+      "reasons": [
+        "(mock) text lacks /order now/"
+      ],
+      "info": {
+        "nodes": 1,
+        "types": [
+          "button"
+        ]
+      }
+    },
+    {
+      "id": "edit-delete-text",
+      "group": "edit",
+      "endpoint": "/api/edit-node",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 402,
+      "reasons": [],
+      "info": {
+        "nodes": 0,
+        "types": []
+      }
+    },
+    {
+      "id": "intent-pointer-resize",
+      "group": "pointer",
+      "endpoint": "/api/route-intent",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 98,
+      "reasons": [],
+      "info": {
+        "engine": "jev",
+        "action": "resize",
+        "targetId": "hero-title"
+      }
+    },
+    {
+      "id": "intent-chatter-not-command",
+      "group": "pointer",
+      "endpoint": "/api/route-intent",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 60,
+      "reasons": [],
+      "info": {
+        "engine": "jev",
+        "action": "none",
+        "targetId": null
+      }
+    },
+    {
+      "id": "ask-what-does-this-mean",
+      "group": "chat",
+      "endpoint": "/api/ask",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 1,
+      "reasons": [],
+      "info": {
+        "answer": "That data reads \"MRR (mrr)\", next to \"Churn 2.4%\". On \"what does this number mean?\": I can only explain here and I have ",
+        "provider": "mock"
+      }
+    },
+    {
+      "id": "ask-explain-figure-no-pointer",
+      "group": "chat",
+      "endpoint": "/api/ask",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 1,
+      "reasons": [],
+      "info": {
+        "answer": "This page is \"Pulse Analytics\" with 2 top-level sections. On \"Is a churn of 2.4% good for a SaaS company?\": I can only e",
+        "provider": "mock"
+      }
+    }
+  ]
+}

@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Crosshair } from "lucide-react";
+import { Code2, Crosshair, MessageSquare } from "lucide-react";
 import { humanLabel, type HoverHit } from "./targets";
+import { pinnedChip } from "./pointerLogic";
 import { useScreenStore } from "../../../store/screenStore";
+import { useWorkMode } from "../../../store/modeStore";
+import { usePin } from "../../../narrate/pinStore";
+import { hasAnswerSink, sendAnswerToChat } from "../../../narrate/answerSink";
 import type { PagePointer } from "./usePagePointer";
 
 /** What the pointer is doing with the last thing said. */
@@ -12,7 +16,8 @@ export type PointerPhase =
   | { kind: "editing"; targetId: string | null; label: string | null }
   | { kind: "done"; targetId: string | null; label: string | null; message?: string }
   | { kind: "failed"; targetId: string | null; label: string | null; message: string }
-  | { kind: "ask"; message: string };
+  | { kind: "ask"; message: string }
+  | { kind: "answer"; targetId: string | null; label: string | null; question: string; answer: string; suggestCode?: boolean };
 
 const STATUS: Record<Exclude<PointerPhase["kind"], "idle">, string> = {
   listening: "Listening…",
@@ -21,6 +26,7 @@ const STATUS: Record<Exclude<PointerPhase["kind"], "idle">, string> = {
   done: "Done",
   failed: "Couldn't do that",
   ask: "",
+  answer: "",
 };
 
 /** The text after the label: a status word, or the result message when there is one. */
@@ -72,11 +78,18 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
   const cursorAt = useRef({ x: 0, y: 0 });
   const [hover, setHover] = useState<{ id: string; label: string } | null>(null);
   const screen = useScreenStore((st) => st.screen);
+  const pinned = usePin((st) => st.pinned);
+  const pinRef = useRef(pinned);
+  pinRef.current = pinned;
+  const setMode = useWorkMode((st) => st.setMode);
 
   const place = () => {
     const p = phaseRef.current;
     const bound = p.kind !== "idle" && p.kind !== "ask" && p.targetId ? document.querySelector<HTMLElement>(`[data-right-panel] [data-screen-root] [data-node-id="${CSS.escape(p.targetId)}"]`) : null;
-    const el = bound ?? hoverEl.current;
+    const pin = pinRef.current;
+    // The pinned node is looked up by id, so an edit that re-rendered it does not lose the outline.
+    const pinEl = pin ? document.querySelector<HTMLElement>(`[data-right-panel] [data-screen-root] [data-node-id="${CSS.escape(pin.id)}"]`) ?? (pin.el as HTMLElement | undefined) ?? null : null;
+    const el = bound ?? (pinEl?.isConnected ? pinEl : null) ?? hoverEl.current;
     const box = outline.current;
     if (!box) return;
     const r = el?.getBoundingClientRect();
@@ -104,7 +117,7 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
     return pointer.subscribe(move);
   }, [pointer]);
 
-  useEffect(place, [phase, hover, screen]);
+  useEffect(place, [phase, hover, screen, pinned]);
 
   // Scrolling moves the page under a still pointer: re-measure the outline (rAF-throttled, capture reaches nested scrollers).
   useEffect(() => {
@@ -123,9 +136,12 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
   const bound = phase.kind !== "idle" && phase.kind !== "ask" && phase.label ? phase : null;
   const label = bound
     ? humanLabel(bound.targetId ?? "", screen, bound.label ?? "")
+    : pinned ? pinnedChip(humanLabel(pinned.id, screen, pinned.label))
     : hover ? humanLabel(hover.id, screen, hover.label) : null;
   const status = phaseText(phase);
-  const show = Boolean(label) || phase.kind === "ask";
+  const show = Boolean(label) || phase.kind === "ask" || phase.kind === "answer";
+  const answer = phase.kind === "answer" ? phase : null;
+  const action = "pointer-events-auto flex h-6 items-center gap-1 rounded-md px-2 text-[12px] text-ink-2 transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
   const tone = phase.kind === "failed" ? "text-bad" : phase.kind === "done" ? "text-ok" : "text-ink-2";
 
   return (
@@ -137,12 +153,33 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
       />
       <div
         ref={chip}
-        className="absolute left-0 top-0 flex max-w-[320px] items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 text-[12px] leading-6 text-ink shadow-soft"
+        className="absolute left-0 top-0 flex max-w-[320px] flex-col items-start gap-1.5"
         style={{ opacity: show ? 1 : 0, transition: reduce ? "none" : "opacity 120ms" }}
       >
-        <Crosshair size={12} strokeWidth={1.75} className={active ? "shrink-0 text-accent" : "shrink-0 text-ink-2"} />
-        {phase.kind !== "ask" && label && <span className="min-w-0 truncate">{label}</span>}
-        {status && <span className={`shrink-0 ${tone}`}>{phase.kind === "ask" || !label ? status : `· ${status}`}</span>}
+        <div className="flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 text-[12px] leading-6 text-ink shadow-soft">
+          <Crosshair size={12} strokeWidth={1.75} className={active ? "shrink-0 text-accent" : "shrink-0 text-ink-2"} />
+          {phase.kind !== "ask" && label && <span className="min-w-0 truncate">{label}</span>}
+          {status && <span className={`shrink-0 ${tone}`}>{phase.kind === "ask" || !label ? status : `· ${status}`}</span>}
+        </div>
+        {answer && (
+          <div className="w-full rounded-xl border border-line bg-surface p-2.5 text-[12px] leading-5 text-ink shadow-soft">
+            <p className="line-clamp-3 whitespace-pre-wrap" title={answer.answer}>{answer.answer}</p>
+            {(answer.suggestCode || hasAnswerSink()) && (
+              <div className="-mx-1 mt-1.5 flex gap-1">
+                {answer.suggestCode && (
+                  <button type="button" className={action} onClick={() => setMode("code")}>
+                    <Code2 size={12} strokeWidth={1.75} />Switch to Code
+                  </button>
+                )}
+                {hasAnswerSink() && (
+                  <button type="button" className={action} onClick={() => sendAnswerToChat(answer.question, answer.answer)}>
+                    <MessageSquare size={12} strokeWidth={1.75} />More in chat
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -9,20 +9,20 @@ import { PointerBubble, type PointerPhase } from "./PointerBubble";
 import { usePagePointer } from "./usePagePointer";
 import type { MicState } from "./MicPill";
 import { NarrateBarView } from "./NarrateBarView";
+import { useWorkMode } from "../../../store/modeStore";
+import { usePin, pinFromClick } from "../../../narrate/pinStore";
+import { answerOffered, runAsk, runPointerCommand, type CommandCtx, type Offered } from "./pointerCommand";
 import {
-  askText,
   buildIntentRequest,
-  isDeictic,
   LASSO_SPEECH_AFTER_MS,
   LASSO_SPEECH_BEFORE_MS,
-  MIN_INTENT_CONFIDENCE,
-  preResolve,
+  resolveHoverAt,
   resolvePageTargets,
   type HoverHit,
   type LassoRect,
   type LassoTarget,
 } from "./targets";
-import type { IntentRequest, IntentResult } from "@create/shared";
+import type { IntentRequest } from "@create/shared";
 
 export type NarrateOverlayProps = {
   onFinish(session: NarrationSession): void;
@@ -45,7 +45,7 @@ const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-
 const MAX_EVENTS = 2000;
 /** A pointer sample older than this is not "where the user is pointing" any more. */
 const HOVER_FALLBACK_MS = 1500;
-const PHASE_CLEAR_MS = { done: 2500, failed: 4000, ask: 5000 } as const;
+const PHASE_CLEAR_MS = { done: 2500, failed: 4000, ask: 5000, answer: 12000 } as const;
 
 type LassoMemo = { t: number; targets: LassoTarget[]; areas: Record<string, number> };
 
@@ -74,6 +74,8 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
   /** The latest final line that had nothing to act on yet; a lasso within 4s after it still claims it. */
   const pendingSpeech = useRef<{ t: number; text: string } | null>(null);
   const runCommand = useRef<(text: string, req: IntentRequest, areas: Record<string, number>) => void>(() => {});
+  const offered = useRef<Offered | null>(null);
+  const cmdCtx = useRef<CommandCtx | null>(null);
   const done = useRef(false);
   const micRef = useRef<MicState>("idle");
   const finalWaiter = useRef<(() => void) | null>(null);
@@ -88,6 +90,9 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
 
   /** The element under the pointer when speech started, else the freshest one the pointer just left. */
   const hoverFor = useCallback((startT: number): HoverHit | null => {
+    // A pinned element beats wherever the pointer happens to be.
+    const pinned = usePin.getState().pinned;
+    if (pinned) return pinned;
     const at = pointer.resolveAt(startT)?.hit;
     if (at) return at;
     const l = pointer.latest();
@@ -95,7 +100,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
   }, [pointer]);
 
   useEffect(() => {
-    if (phase.kind !== "done" && phase.kind !== "failed" && phase.kind !== "ask") return;
+    if (phase.kind !== "done" && phase.kind !== "failed" && phase.kind !== "ask" && phase.kind !== "answer") return;
     const t = setTimeout(() => setPhase({ kind: "idle" }), PHASE_CLEAR_MS[phase.kind]);
     return () => clearTimeout(t);
   }, [phase]);
@@ -104,64 +109,21 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
     const rec = createRecorder("page");
     recorder.current = rec;
     const add = rec.add as unknown as Add;
-    runCommand.current = (text, req, areas) => {
-      const labelOf = (id: string | null) => (id ? req.candidates.find((c) => c.id === id)?.label ?? null : null);
-      const fail = (message: string, id: string | null) => setPhase({ kind: "failed", targetId: id, label: labelOf(id), message });
-      const pre = preResolve(req, areas);
-      const bound = req.pointer?.targetId ?? (pre.kind === "target" ? pre.id : null);
-      const tFinal = performance.now();
-      setPhase({ kind: "understanding", targetId: bound, label: labelOf(bound) });
-      if (bound) add({ kind: "note", text: `Pointing at ${labelOf(bound) ?? bound}; says: ${text}`.slice(0, 4000) });
-      void (async () => {
-        let intent: IntentResult;
-        try {
-          const res = await fetch("/api/route-intent", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(req),
-          });
-          if (!res.ok) throw new Error(String(res.status));
-          intent = (await res.json()) as IntentResult;
-        } catch {
-          if (!done.current) fail("Couldn't check that line", bound);
-          return;
-        }
-        if (done.current) return;
-        const tIntent = performance.now();
-        if (!intent.isCommand) { setPhase({ kind: "idle" }); return; }
-        if (intent.confidence < MIN_INTENT_CONFIDENCE) { fail("Not sure what to change", bound); return; }
-        // The router's pick wins when it is one of the candidates; "this/that" falls back to the pointer.
-        let id = intent.targetId && req.candidates.some((c) => c.id === intent.targetId) ? intent.targetId : null;
-        if (!id && isDeictic(text) && pre.kind === "target") id = pre.id;
-        if (!id) {
-          if (pre.kind === "ask") setPhase({ kind: "ask", message: askText(pre.labels) });
-          else if (req.candidates.length > 1) setPhase({ kind: "ask", message: askText(req.candidates.slice(0, 4).map((c) => c.label)) });
-          else fail("Point at something first", null);
-          return;
-        }
-        add({ kind: "note", text: `Live command (${intent.action ?? "edit"}) on ${id}: ${text}`.slice(0, 4000) });
-        setPhase({ kind: "editing", targetId: id, label: labelOf(id) });
-        let result: { error?: string; summary?: string };
-        try {
-          result = await useScreenStore.getState().editNodeWithAI(id, text);
-        } catch (e) {
-          result = { error: e instanceof Error ? e.message : "Edit failed" };
-        }
-        const tApplied = performance.now();
-        console.info(
-          `[pointer] final→intent ${Math.round(tIntent - tFinal)}ms, intent→applied ${Math.round(tApplied - tIntent)}ms, total ${Math.round(tApplied - tFinal)}ms (${intent.action})`,
-        );
-        if (done.current) return;
-        if (result.error) fail(result.error, id);
-        else setPhase({ kind: "done", targetId: id, label: labelOf(id), message: result.summary });
-      })();
+    const ctx: CommandCtx = {
+      mode: () => useWorkMode.getState().mode,
+      setPhase,
+      add,
+      isDone: () => done.current,
+      offer: (o) => { offered.current = o; },
     };
+    cmdCtx.current = ctx;
+    runCommand.current = (text, req, areas) => runPointerCommand(ctx, text, req, areas);
     const onTranscript = (text: string, final: boolean) => {
       setTranscript(text);
       if (!final) {
         if (utterStart.current === null) utterStart.current = Date.now();
         const k = phaseRef.current.kind;
-        if (k === "idle" || k === "done" || k === "failed" || k === "ask") {
+        if (k === "idle" || k === "done" || k === "failed" || k === "ask" || k === "answer") {
           const hit = hoverFor(utterStart.current);
           setPhase({ kind: "listening", targetId: hit?.id ?? null, label: hit?.label ?? null });
         }
@@ -173,9 +135,22 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
       const startT = utterStart.current ?? tFinal;
       utterStart.current = null;
       if (done.current) return;
+      // "Which one?" answered out loud: apply the original line to the one named.
+      const picked = answerOffered(offered.current, text, tFinal);
+      if (picked) {
+        offered.current = null;
+        runCommand.current(picked.transcript, picked, {});
+        return;
+      }
       const lasso = lastLasso.current;
       const hover = hoverFor(startT);
       const req = buildIntentRequest(text, lasso, tFinal, hover);
+      if (!req && useWorkMode.getState().mode === "chat" && cmdCtx.current) {
+        // Chat still answers with nothing pointed at ("what is this page for?").
+        pendingSpeech.current = null;
+        void runAsk(cmdCtx.current, text, { id: null, label: null });
+        return;
+      }
       if (!req) {
         // Nothing pointed at yet: a Shift+drag in the next few seconds can still claim this line.
         pendingSpeech.current = { t: tFinal, text };
@@ -248,12 +223,34 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
 
   useEffect(() => {
     const kd = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); cancel(); }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        // Esc lets go of a pinned element first, then leaves Narrate.
+        if (usePin.getState().pinned) usePin.getState().unpin();
+        else cancel();
+      }
       else if (e.key === "Enter" && recording && !(e.target instanceof HTMLButtonElement)) { e.preventDefault(); void finish(); }
     };
     window.addEventListener("keydown", kd);
     return () => window.removeEventListener("keydown", kd);
   }, [recording, cancel, finish]);
+
+  // A plain click on a page element pins it as the target; a click on empty space (or the pinned one) unpins.
+  useEffect(() => {
+    if (!recording) return;
+    const click = (e: MouseEvent) => {
+      if (e.button !== 0 || e.shiftKey || (e.target instanceof Element && e.target.closest("[data-narrate-ignore]"))) return;
+      const pin = usePin.getState();
+      const next = pinFromClick(resolveHoverAt(e.clientX, e.clientY), pin.pinned);
+      if (next) pin.pin(next);
+      else pin.unpin();
+    };
+    window.addEventListener("click", click, true);
+    return () => {
+      window.removeEventListener("click", click, true);
+      usePin.getState().unpin();
+    };
+  }, [recording]);
 
   const resolve = useCallback((rect: LassoRect) => resolvePageTargets(rect), []);
 

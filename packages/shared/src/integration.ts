@@ -77,7 +77,7 @@ export const IntentRequestSchema = z.object({
   pointer: z.object({ targetId: z.string().nullable(), label: z.string().max(200).optional() }).optional(),
 });
 export type IntentRequest = z.infer<typeof IntentRequestSchema>;
-export const INTENT_ACTIONS = ["restyle", "resize", "move", "delete", "add", "replace_text", "replace_media", "regenerate", "none"] as const;
+export const INTENT_ACTIONS = ["restyle", "resize", "move", "delete", "add", "replace_text", "replace_media", "regenerate", "ask", "none"] as const;
 export const IntentResultSchema = z.object({
   isCommand: z.boolean(),
   targetId: z.string().nullable(),
@@ -128,3 +128,28 @@ export const LiveSourceSchema = z.object({
 export type LiveSource = z.infer<typeof LiveSourceSchema>;
 
 export type LiveCatalog = { id: LiveSource["id"]; label: string; params: { name: string; example: string }[] }[];
+
+/** POST /api/ask: Chat mode. Answers a question, optionally about the page or the pointed-at element; never edits. */
+export const AskRequestSchema = z.object({
+  question: z.string().min(1).max(4000),
+  screen: ScreenSchema.nullish(),
+  pointer: z
+    .object({
+      targetId: z.string().nullable(),
+      label: z.string().max(200).optional(),
+      /** PNG/JPEG data URL of the region around the pointer, at most 1.5MB, for visual questions. */
+      image: z.string().max(1_500_000).optional(),
+    })
+    .optional(),
+  history: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(4000) })).max(20).default([]),
+});
+export type AskRequest = z.infer<typeof AskRequestSchema>;
+export type AskResponse = { answer: string; provider: "claude" | "perceptron+claude" | "mock"; suggestCode?: boolean };
+
+/** POST /api/forms/:appId stores a submission from a form on a user's page; GET lists them. */
+export const FormSubmissionSchema = z.object({
+  formId: z.string().max(200),
+  fields: z.record(z.string().max(100), z.string().max(4000)),
+});
+export type FormSubmission = z.infer<typeof FormSubmissionSchema>;
+export type StoredSubmission = FormSubmission & { id: string; appId: string; createdAt: string };

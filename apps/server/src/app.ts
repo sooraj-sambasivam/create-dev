@@ -13,6 +13,8 @@ import { shareRouter } from "./routes/share";
 import { canvasOpsRouter } from "./routes/canvasOps";
 import { liveRouter } from "./routes/live";
 import { importElementRouter } from "./importElement/route";
+import { askRouter } from "./ask/route";
+import { formsRouter } from "./forms/route";
 import { DEFAULT_MODEL } from "./ai/claude";
 
 const LOCAL_ORIGINS = [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
@@ -46,6 +48,7 @@ export function createApp(): express.Express {
   app.use("/api", shareRouter);
   app.use("/api", canvasOpsRouter); // own 10mb JSON parser
   app.use("/api", importElementRouter);
+  app.use("/api", formsRouter); // own 64kb JSON parser
   app.use(express.json({ limit: "3mb" }));
 
   app.get("/api/health", (_req, res) => {
@@ -68,6 +71,7 @@ export function createApp(): express.Express {
   app.use("/api", voiceRouter);
   app.use("/api", intentRouter);
   app.use("/api", liveRouter);
+  app.use("/api", askRouter);
 
   app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const message = err instanceof Error ? err.message : "Unknown error";

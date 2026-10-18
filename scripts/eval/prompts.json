@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "screens": {
+    "bakery": {
+      "title": "Rye & Rise Bakery", "theme": "light", "font": "serif",
+      "children": [
+        { "id": "hero", "type": "container", "children": [
+          { "id": "hero-title", "type": "heading", "text": "Fresh bread, daily", "level": 1 },
+          { "id": "hero-sub", "type": "text", "text": "Sourdough and pastries from our corner oven." },
+          { "id": "hero-cta", "type": "button", "label": "See the menu" }
+        ] }
+      ]
+    },
+    "saas": {
+      "title": "Pulse Analytics", "theme": "dark", "font": "sans",
+      "children": [
+        { "id": "stats", "type": "container", "direction": "row", "children": [
+          { "id": "mrr", "type": "data", "source": { "route": "/stats" }, "field": "mrr", "format": "currency", "label": "MRR" },
+          { "id": "churn", "type": "text", "text": "Churn 2.4%" }
+        ] },
+        { "id": "price-title", "type": "heading", "text": "Pricing", "level": 2 }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "bakery-site", "group": "non-technical", "endpoint": "/api/generate",
+      "body": { "prompt": "make me a website for my bakery with a menu and opening hours" },
+      "expect": { "minNodes": 5, "maxNodes": 200, "requireTypes": ["heading", "text"], "anyOfTypes": [["list", "table", "container"]], "textMatches": ["bak|bread|pastr|cake"], "maxLatencyMs": 60000 }
+    },
+    {
+      "id": "wedding-rsvp-form", "group": "non-technical", "endpoint": "/api/generate",
+      "body": { "prompt": "a wedding website for Maya and Dev with an RSVP form where guests enter their name, email and whether they are coming" },
+      "expect": { "minNodes": 6, "requireTypes": ["heading", "textbox", "button"], "anyOfTypes": [["checkbox", "select"]], "textMatches": ["maya|dev|wedding|rsvp"], "maxLatencyMs": 60000 }
+    },
+    {
+      "id": "portfolio", "group": "non-technical", "endpoint": "/api/generate",
+      "body": { "prompt": "a portfolio for a freelance photographer named Ana, with an about section, a gallery and a contact link" },
+      "expect": { "minNodes": 6, "requireTypes": ["heading", "image"], "anyOfTypes": [["link", "button"]], "textMatches": ["ana|photo|gallery|portfolio"], "maxLatencyMs": 60000 }
+    },
+    {
+      "id": "saas-pricing-data", "group": "technical", "endpoint": "/api/generate",
+      "body": { "prompt": "a SaaS pricing page with three tiers (Free, Pro, Team) and a live customer count pulled from /stats field customers", "routes": ["/stats"] },
+      "expect": { "minNodes": 8, "requireTypes": ["heading", "button", "data"], "textMatches": ["free", "pro", "team"], "maxLatencyMs": 60000 }
+    },
+    {
+      "id": "ops-dashboard", "group": "technical", "endpoint": "/api/generate",
+      "body": { "prompt": "an ops dashboard with orders today and revenue as big numbers from the backend, plus a table of recent orders", "routes": ["/orders/today", "/revenue"] },
+      "expect": { "minNodes": 6, "requireTypes": ["data", "table"], "maxLatencyMs": 60000 }
+    },
+    {
+      "id": "edit-bigger-heading", "group": "edit", "endpoint": "/api/edit-node",
+      "body": { "prompt": "make this bigger", "screen": "$bakery", "nodeId": "hero-title" },
+      "expect": { "minNodes": 1, "maxNodes": 3, "requireTypes": ["heading"], "maxLatencyMs": 30000 }
+    },
+    {
+      "id": "edit-button-green", "group": "edit", "endpoint": "/api/edit-node",
+      "body": { "prompt": "change this button to say Order now and make it green", "screen": "$bakery", "nodeId": "hero-cta" },
+      "expect": { "minNodes": 1, "maxNodes": 3, "requireTypes": ["button"], "textMatches": ["order now"], "maxLatencyMs": 30000 }
+    },
+    {
+      "id": "edit-delete-text", "group": "edit", "endpoint": "/api/edit-node",
+      "body": { "prompt": "remove this", "screen": "$bakery", "nodeId": "hero-sub" },
+      "expect": { "minNodes": 0, "maxNodes": 0, "maxLatencyMs": 30000 }
+    },
+    {
+      "id": "intent-pointer-resize", "group": "pointer", "endpoint": "/api/route-intent",
+      "body": { "transcript": "make this bigger", "candidates": [ { "id": "hero-title", "label": "Heading: Fresh bread, daily", "kind": "node" }, { "id": "hero-cta", "label": "Button: See the menu", "kind": "node" } ], "pointer": { "targetId": "hero-title", "label": "Heading: Fresh bread, daily" } },
+      "expect": { "isCommand": true, "targetId": "hero-title", "action": ["resize", "restyle"], "maxLatencyMs": 2000 }
+    },
+    {
+      "id": "intent-chatter-not-command", "group": "pointer", "endpoint": "/api/route-intent",
+      "body": { "transcript": "so um I was thinking about lunch today", "candidates": [ { "id": "hero-title", "label": "Heading: Fresh bread, daily", "kind": "node" } ] },
+      "expect": { "isCommand": false, "maxLatencyMs": 2000 }
+    },
+    {
+      "id": "ask-what-does-this-mean", "group": "chat", "endpoint": "/api/ask",
+      "body": { "question": "what does this number mean?", "screen": "$saas", "pointer": { "targetId": "mrr", "label": "Data: MRR" } },
+      "expect": { "answerMinChars": 10, "noEdit": true, "answerMatches": ["mrr|recurring|revenue|month"], "maxLatencyMs": 30000 }
+    },
+    {
+      "id": "ask-explain-figure-no-pointer", "group": "chat", "endpoint": "/api/ask",
+      "body": { "question": "Is a churn of 2.4% good for a SaaS company?", "screen": "$saas", "history": [] },
+      "expect": { "answerMinChars": 10, "noEdit": true, "answerMatches": ["churn"], "maxLatencyMs": 30000 }
+    }
+  ]
+}

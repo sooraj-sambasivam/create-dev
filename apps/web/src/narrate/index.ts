@@ -13,3 +13,5 @@ export {
   type VoiceState,
 } from "./voice";
 export { exitDestination, exitNarrate, type ExitDeps, type NarrateDestination, type NarrateExitKind, type NarrateOrigin } from "./exit";
+export { usePin, pinFromClick } from "./pinStore";
+export { registerAnswerSink, sendAnswerToChat, hasAnswerSink, type AnswerSink } from "./answerSink";

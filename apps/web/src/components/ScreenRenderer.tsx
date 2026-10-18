@@ -41,6 +41,7 @@ import {
 import { CopyIcon, GripIcon, TrashIcon } from "../editor/icons";
 import { NodeAIBox } from "../editor/NodeAIBox";
 import { ErrorBoundary } from "../ErrorBoundary";
+import { clearFormFields, formOf, readFormFields, resolveAppId, submitForm } from "./forms";
 
 // ---------------------------------------------------------------- editor chrome
 
@@ -170,6 +171,7 @@ function NodeViewInner({ node, parentId, index, parentDirection, parentAlign, co
   const editingThis = useScreenStore((s) => s.editingId === node.id);
   const aiBusy = useScreenStore((s) => s.aiBusyId === node.id);
   const ref = useRef<HTMLElement | null>(null);
+  const [formNote, setFormNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   const isContainer = node.type === "container";
   const drag = useDraggable({ id: node.id, disabled: !ed.editable || editingThis, data: { type: node.type } });
@@ -264,13 +266,32 @@ function NodeViewInner({ node, parentId, index, parentDirection, parentAlign, co
           ? "flex flex-row flex-wrap md:flex-nowrap"
           : "flex flex-col";
     const empty = node.children.length === 0;
+    const form = formOf(node);
+    // Forms are real in Preview and on shared pages: the form's own button posts to /api/forms/<appId>. Edit mode only selects.
+    const onFormClick = (e: React.MouseEvent<HTMLElement>) => {
+      if (!form || ed.editable) return;
+      const btn = (e.target as HTMLElement).closest("button");
+      if (!btn || btn.closest("[data-form]") !== e.currentTarget) return;
+      const fields = readFormFields(form, e.currentTarget);
+      const root = e.currentTarget;
+      setFormNote(null);
+      submitForm(resolveAppId(), { formId: form.id, fields }).then(
+        () => {
+          clearFormFields(form, root);
+          setFormNote({ ok: true, text: "Thanks, we got it." });
+        },
+        () => setFormNote({ ok: false, text: "Couldn't send that. Try again." }),
+      );
+    };
     return (
       <motion.div
         ref={setRef}
         {...motionProps}
         {...interactive}
+        {...(form && !ed.editable ? { onClick: onFormClick } : {})}
         className={`relative rounded-xl ${flow} ${gapClass[node.gap]} ${alignClass[node.align]} ${justifyClass[node.justify]} ${padClass[node.padding]} ${widthCls} ${editCls} ${empty && ed.editable ? "min-h-16" : ""}`}
         data-node-id={node.id}
+        data-form={form ? "" : undefined}
         style={{ ...containerStyle(node), ...overrides(node.style), ...widthStyle }}
       >
         {empty && ed.editable && (
@@ -287,6 +308,11 @@ function NodeViewInner({ node, parentId, index, parentDirection, parentAlign, co
             counter={counter}
           />
         ))}
+        {formNote && (
+          <p role="status" className="text-sm" style={{ color: formNote.ok ? "var(--accent)" : "#dc2626" }}>
+            {formNote.text}
+          </p>
+        )}
         {chrome}
       </motion.div>
     );

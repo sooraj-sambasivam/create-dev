@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Archive, ChevronDown, ChevronRight, Folder, PanelLeft, Plus, SquarePen } from "lucide-react";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import { AvatarMenu } from "../onboarding";
 
 /** Title given to a chat that has not been named yet. Blank chats are not listed as rows. */
 const NEW_CHAT_TITLE = "New chat";
@@ -463,12 +464,5 @@ function IconButton({
 }
 
 function Avatar() {
-  return (
-    <span
-      aria-label="Account"
-      className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-[12px] font-medium text-ink-2"
-    >
-      {AVATAR_INITIALS}
-    </span>
-  );
+  return <AvatarMenu initials={AVATAR_INITIALS} />;
 }

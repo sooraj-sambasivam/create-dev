@@ -11,6 +11,11 @@ import { sharedIdFromLocation } from "./share/route";
 import { useWorkspaceStore } from "./store/workspaceStore";
 import { selectOutputOpen, useRightPanel } from "./shell/rightPanel/rightPanelStore";
 import { MotionStyles } from "./motion";
+import { OnboardingGate } from "./onboarding";
+import { useProfile } from "./onboarding/profile";
+import { shouldShowOnboarding } from "./onboarding/steps";
+import { HoldToTalk } from "./modes/narrate/overlay/HoldToTalk";
+import { registerAnswerSink } from "./narrate/answerSink";
 import { setDemoWorkspaceBridge } from "./modes/narrate/demo/workspaceBridge";
 
 const CanvasHost = lazy(() => import("./modes/canvas/CanvasMode").then((m) => ({ default: m.CanvasHost })));
@@ -32,6 +37,15 @@ function Builder() {
   useEffect(() => {
     if (mode === "voice") setMode("text");
   }, [mode, setMode]);
+
+  // "More in chat" on a pointer answer appends it to the thread.
+  useEffect(
+    () =>
+      registerAnswerSink((question, answer) =>
+        useScreenStore.setState((s) => ({ history: [...s.history, { prompt: question, summary: answer, kind: "answer" }] })),
+      ),
+    [],
+  );
 
   useEffect(() => {
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
@@ -71,12 +85,15 @@ function Builder() {
         </Suspense>
       )}
       {mode === "narrate" && <NarrateMode />}
+      <HoldToTalk />
     </AppShell>
   );
 }
 
 export default function App() {
   const sharedId = sharedIdFromLocation();
+  const onboarded = useProfile((s) => s.onboarded);
+  const showOnboarding = shouldShowOnboarding(onboarded, window.location.search, sharedId);
   return (
     <ErrorBoundary>
       {sharedId ? (
@@ -84,7 +101,10 @@ export default function App() {
           <SharedView id={sharedId} />
         </Suspense>
       ) : (
-        <Builder />
+        <>
+          <Builder />
+          <OnboardingGate show={showOnboarding} />
+        </>
       )}
     </ErrorBoundary>
   );

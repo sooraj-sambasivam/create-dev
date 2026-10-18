@@ -74,6 +74,7 @@ const shot = async (name) => { const f = join(SHOTS, name + ".png"); const r = a
 const mouse = (x, y, type = "mouseMoved") => send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left", clickCount: type === "mouseMoved" ? 0 : 1 });
 const clickAt = async (x, y) => { await mouse(x, y); await mouse(x, y, "mousePressed"); await mouse(x, y, "mouseReleased"); };
 const center = (sel) => ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e)return null;const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height}})()`);
+const modUrl = (name) => `(()=>{const e=performance.getEntriesByType('resource').map(r=>r.name).find(n=>n.includes('/src/store/${name}.ts'));return e||'/src/store/${name}.ts'})()`;
 const maxFs = (id) => `(()=>{const e=document.querySelector('[data-right-panel] [data-screen-root] [data-node-id="${id}"]');if(!e)return 0;return Math.max(...[e,...e.querySelectorAll('*')].map(x=>parseFloat(getComputedStyle(x).fontSize)||0))})()`;
 let skipped = false;
 const step = async (name, fn) => { skipped = false; try { const r = await fn(); if (r !== undefined && r !== true) rec(name, false, String(r)); else if (skipped) rec(name, true, "SKIP: hook not present"); else rec(name, true); } catch (e) { rec(name, false, e.message.split("\n")[0]); } };
@@ -83,6 +84,36 @@ try {
   if (!apiUp) console.log("  WARN: " + BASE + "/api/* unreachable (api server down?)");
   await send("Page.enable"); await send("Runtime.enable"); await send("Network.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+
+  // (0) onboarding on a fresh profile (the browser profile is new, so localStorage is empty)
+  const profileOf = `(()=>{try{return JSON.parse(localStorage.getItem('create.profile')||'null')?.state||null}catch{return null}})()`;
+  const dialog = `!!document.querySelector('[role="dialog"][aria-labelledby="onb-title"]')`;
+  const clickText = (txt, sel = "button") => ev(`(()=>{const b=[...document.querySelectorAll(${JSON.stringify(sel)})].find(e=>e.textContent.trim()===${JSON.stringify(txt)});if(!b)return false;b.click();return true})()`);
+  await step("0a. onboarding appears on a fresh profile and Skip completes it", async () => {
+    await send("Page.navigate", { url: BASE });
+    if (!(await waitFor(dialog, 15000))) { await shot("00a-no-onboarding"); return "onboarding dialog not shown on a fresh profile"; }
+    await sleep(500); await shot("00a-onboarding-step1");
+    if (!(await clickText("Skip"))) return "no Skip button";
+    if (!(await waitFor(`!(${dialog})`, 5000))) return "dialog still open after Skip";
+    const p = await ev(profileOf);
+    if (!p?.onboarded) return "profile.onboarded not set after Skip: " + JSON.stringify(p);
+  });
+  await step("0b. onboarding can be completed (Ask + I'm a developer -> Chat default)", async () => {
+    await ev(`(()=>{localStorage.setItem('create.profile',JSON.stringify({state:{intent:'both',level:'some',onboarded:false},version:0}));localStorage.removeItem('create.workmode')})()`);
+    await send("Page.navigate", { url: BASE });
+    if (!(await waitFor(dialog, 15000))) return "onboarding dialog not shown";
+    const radios = async (label) => ev(`(()=>{const r=[...document.querySelectorAll('[role="radio"]')].find(e=>e.textContent.includes(${JSON.stringify(label)}));if(!r)return false;r.click();return true})()`);
+    if (!(await radios("Ask"))) return "no Ask choice";
+    await clickText("Next"); await sleep(400);
+    if (!(await radios("developer"))) { await shot("00b-no-dev"); return "no developer choice"; }
+    await clickText("Next"); await sleep(500); await shot("00b-onboarding-step3");
+    if (!(await clickText("Start creating"))) return "no Start creating on the last step";
+    if (!(await waitFor(`!(${dialog})`, 5000))) return "dialog still open after finishing";
+    const p = await ev(profileOf);
+    if (!p?.onboarded || p.intent !== "ask" || p.level !== "dev") return "profile not saved: " + JSON.stringify(p);
+  });
+  // Later steps run as an experienced "build" user.
+  await ev(`localStorage.setItem('create.profile',JSON.stringify({state:{intent:'build',level:'dev',onboarded:true},version:0}))`);
 
   // (1) load + themes
   for (const scheme of ["light", "dark"]) {
@@ -162,6 +193,84 @@ try {
     const fs2 = await ev(maxFs(target.id));
     console.log(`  font-size ${target.fs} -> ${fs2}, doneText=${done}`);
     if (!grew && !done) return `font-size unchanged (${target.fs}) and no Done state`;
+  });
+
+  // (6) Chat mode answers and never edits; the right panel is untouched
+  const panelState = `(()=>{const a=document.querySelector('[data-right-panel]');return a?Math.round(a.getBoundingClientRect().width)+':'+!!document.querySelector('[data-right-panel] [data-screen-root]'):'none'})()`;
+  const typeSend = async (text) => {
+    const c = await center('[data-testid="message-input"]');
+    await clickAt(c.x, c.y);
+    await send("Input.insertText", { text });
+    await sleep(150);
+    await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, text: "\r" });
+    await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  };
+  await step("6. Chat mode: ask about the 4.9 -> answer item, page and right panel unchanged", async () => {
+    // Back to the Edit-less thread state: leave narrate if the fan opened it.
+    await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+    await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+    await sleep(500);
+    if (!(await center('[data-testid="work-mode-chat"]'))) return "no Chat toggle in the composer";
+    await ev(`document.querySelector('[data-testid="work-mode-chat"]').click()`);
+    await sleep(300);
+    const pressed = await ev(`document.querySelector('[data-testid="work-mode-chat"]').getAttribute('aria-pressed')`);
+    if (pressed !== "true") return "Chat toggle not pressed";
+    const before = { panel: await ev(panelState), json: await ev(`import(${modUrl('screenStore')}).then(m=>JSON.stringify(m.useScreenStore.getState().screen).length)`), answers: await ev(`document.querySelectorAll('[data-testid="answer"]').length`) };
+    await typeSend("what does the 4.9 mean?");
+    const ok = await waitFor(`document.querySelectorAll('[data-testid="answer"]').length>${before.answers}`, 15000);
+    await sleep(500); await shot("06-chat-answer");
+    if (!ok) return "no answer item after asking in Chat mode";
+    const text = await ev(`[...document.querySelectorAll('[data-testid="answer"]')].pop().textContent`);
+    console.log("  answer: " + JSON.stringify(text.slice(0, 140)));
+    const after = { panel: await ev(panelState), json: await ev(`import(${modUrl('screenStore')}).then(m=>JSON.stringify(m.useScreenStore.getState().screen).length)`) };
+    if (after.panel !== before.panel) return `right panel changed ${before.panel} -> ${after.panel}`;
+    if (after.json !== before.json) return "page content changed in Chat mode";
+  });
+
+  // (7) Backend tab shows the user's app, derived from the Screen
+  await step("7. Backend tab shows app-derived sections", async () => {
+    await ev(`document.querySelector('[data-testid="work-mode-code"]')?.click()`);
+    await ev(`[...document.querySelectorAll('[role="tab"]')].find(e=>e.textContent.trim()==='Backend')?.click()`);
+    const ok = await waitFor(`/Pages/.test(document.querySelector('#rp-body')?.textContent||'')&&/Hosting/.test(document.querySelector('#rp-body')?.textContent||'')`, 8000);
+    await sleep(400); await shot("07-backend");
+    if (!ok) return "Backend tab has no Pages/Hosting sections: " + (await ev(`(document.querySelector('#rp-body')?.textContent||'').slice(0,120)`));
+    const t = await ev(`document.querySelector('#rp-body').textContent`);
+    if (/Narrate|Mongo|ElevenLabs|Perceptron/i.test(t)) return "Backend tab still shows Create's own services";
+  });
+
+  // (8) a form on the page, submitted in Preview, shows up in Backend
+  await step("8. form submitted in Preview -> response count in Backend", async () => {
+    const appId = await ev(`(async()=>{const m=await import(${modUrl('workspaceStore')});return m.useWorkspaceStore.getState().activeChatId||'draft'})()`).catch(() => "draft");
+    await ev(`[...document.querySelectorAll('[role="tab"]')].find(e=>e.textContent.trim()==='Output')?.click()`);
+    await ev(`(async()=>{const m=await import(${modUrl('screenStore')});const s=m.useScreenStore.getState();
+      const base=s.screen;
+      const form={id:'e2e-form',type:'container',direction:'column',gap:'md',align:'stretch',justify:'start',padding:'md',background:'none',width:'full',wrap:false,overlay:'dark',children:[
+        {id:'e2e-h',type:'heading',text:'Join the list',level:2},
+        {id:'e2e-e',type:'textbox',label:'Email',placeholder:'you@example.com',multiline:false},
+        {id:'e2e-b',type:'button',label:'Sign up',variant:'primary'}]};
+      s.setScreen({...base,children:[...base.children,form]});})()`);
+    // Long pages mount lazily: scroll every scroller in the panel to the bottom while waiting.
+    const scrollDown = `(()=>{document.querySelectorAll('[data-right-panel] *').forEach(e=>{if(e.scrollHeight>e.clientHeight+20)e.scrollTop=e.scrollHeight});return !!document.querySelector('[data-right-panel] [data-node-id="e2e-b"]')})()`;
+    if (!(await waitFor(scrollDown, 8000))) { await shot("08-form-missing"); return "form not rendered: " + (await ev(`(async()=>{const m=await import(${modUrl('screenStore')});const sc=m.useScreenStore.getState().screen;return (sc?.children||[]).map(c=>c.id).join(',')+' ids='+[...document.querySelectorAll('[data-node-id]')].map(e=>e.dataset.nodeId).slice(-6).join(',')+' tab='+document.querySelector('[role=tab][aria-selected=true]')?.textContent})()`)); }
+    await ev(`[...document.querySelectorAll('[data-right-panel] button')].find(e=>e.textContent.trim()==='Preview')?.click()`);
+    await sleep(400);
+    await ev(`document.querySelector('[data-right-panel] [data-node-id="e2e-b"]').scrollIntoView({block:'center'})`);
+    await sleep(300);
+    const input = await center('[data-right-panel] [data-node-id="e2e-e"] input, [data-right-panel] input[type="text"], [data-right-panel] input:not([type])');
+    if (!input) return "no input found in the form";
+    await clickAt(input.x, input.y);
+    await send("Input.insertText", { text: "e2e@example.com" });
+    await sleep(200);
+    const btn = await center('[data-right-panel] [data-node-id="e2e-b"]');
+    await clickAt(btn.x, btn.y);
+    await sleep(1000); await shot("08-form-submitted");
+    const stored = await fetch(`http://localhost:3001/api/forms/${encodeURIComponent(appId)}`).then((r) => r.json()).catch(() => []);
+    console.log(`  appId=${appId} stored=${Array.isArray(stored) ? stored.length : "?"}`);
+    if (!Array.isArray(stored) || !stored.some((r) => JSON.stringify(r.fields).includes("e2e@example.com"))) return "submission not stored on the server";
+    await ev(`[...document.querySelectorAll('[role="tab"]')].find(e=>e.textContent.trim()==='Backend')?.click()`);
+    const ok = await waitFor(`/[1-9]\\d* responses?/.test(document.querySelector('#rp-body')?.textContent||'')`, 8000);
+    await sleep(400); await shot("08-backend-responses");
+    if (!ok) return "Backend shows no response count: " + (await ev(`(document.querySelector('#rp-body')?.textContent||'').slice(0,200)`));
   });
   await sleep(500);
 } catch (e) {

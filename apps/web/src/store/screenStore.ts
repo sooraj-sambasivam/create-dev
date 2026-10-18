@@ -20,6 +20,7 @@ import {
   type Style,
 } from "@create/shared";
 import * as api from "../lib/api";
+import { askHistory } from "./askHistory";
 
 export type Mode = "text" | "voice" | "canvas" | "narrate";
 export type Status = "idle" | "loading" | "transcribing" | "error";
@@ -28,7 +29,11 @@ export interface HistoryEntry {
   prompt: string;
   summary: string;
   /** "element" for ✦ requests about one element, "page" for whole-page requests. */
-  kind?: "page" | "element";
+  kind?: "page" | "element" | "answer";
+  /** Answers (Chat mode): the answer was offered a "Switch to Code" chip. */
+  suggestCode?: boolean;
+  /** Answers: a question typed in Code mode, answered without editing ("Answered — no changes made"). */
+  routed?: boolean;
   /** Element edits: the edited node and its label ("Heading · Ember"), kept even if the node is later removed. */
   nodeId?: string;
   label?: string;
@@ -134,6 +139,8 @@ interface ScreenState {
   status: Status;
   error: string | null;
   history: HistoryEntry[];
+  /** A Chat-mode question is waiting for its answer. */
+  asking: boolean;
 
   /** Editor state. Any mode can read `selectedId` (e.g. Narrate: "put a button here"). */
   editMode: boolean;
@@ -151,6 +158,8 @@ interface ScreenState {
   setMode: (mode: Mode) => void;
   /** Any mode (canvas, narrate) can push a whole screen directly. Recorded for undo. */
   setScreen: (screen: Screen, summary?: string) => void;
+  /** Chat mode: answer a question about the page (and the selected element) without editing. */
+  ask: (question: string, opts?: { routed?: boolean }) => Promise<void>;
   setStatus: (status: Status, error?: string | null) => void;
   /** Send a prompt to the model; refines the current screen when one exists. */
   generate: (prompt: string) => Promise<void>;
@@ -303,6 +312,7 @@ export const useScreenStore = create<ScreenState>()(
     status: "idle",
     error: null,
     history: [],
+    asking: false,
 
     editMode: true,
     selectedId: null,
@@ -337,7 +347,7 @@ export const useScreenStore = create<ScreenState>()(
       const before = get().screen;
       try {
         const { screen, history, assets } = get();
-        const request = { prompt: trimmed, screen, history: history.map((h) => h.prompt).slice(-10), assets };
+        const request = { prompt: trimmed, screen, history: history.filter((h) => h.kind !== "answer").map((h) => h.prompt).slice(-10), assets };
         // Sections appear as they finish. These updates are not undo steps.
         const result = await api.generateStream(
           request,
@@ -378,6 +388,7 @@ export const useScreenStore = create<ScreenState>()(
         status: "idle",
         error: null,
         history: [],
+        asking: false,
         selectedId: null,
         editingId: null,
         aiBusyId: null,
@@ -385,6 +396,32 @@ export const useScreenStore = create<ScreenState>()(
         past: [],
         future: [],
       });
+    },
+
+    ask: async (question, opts = {}) => {
+      const q = question.trim();
+      if (!q || get().asking) return;
+      const { screen, history, selectedId } = get();
+      const target = selectedId && screen ? findNode(screen, selectedId) : null;
+      const label = target ? elementLabel(target) : undefined;
+      const turns = askHistory(history);
+      const mine = epoch;
+      set({ asking: true });
+      let entry: HistoryEntry;
+      try {
+        const res = await api.ask({
+          question: q,
+          screen,
+          ...(target ? { pointer: { targetId: target.id, label } } : {}),
+          history: turns,
+        });
+        entry = { prompt: q, summary: res.answer, kind: "answer", ...(res.suggestCode ? { suggestCode: true } : {}), ...(opts.routed ? { routed: true } : {}), ...(label ? { label } : {}) };
+      } catch (err) {
+        entry = { prompt: q, summary: `I couldn't answer that. ${err instanceof Error ? err.message : "Try again."}`, kind: "answer", ...(label ? { label } : {}) };
+      }
+      // A chat switch or reset while waiting: the answer belongs to another thread.
+      if (epoch !== mine) return;
+      set((s) => ({ asking: false, history: [...s.history, entry] }));
     },
 
     setEditMode: (on) => set({ editMode: on, selectedId: on ? get().selectedId : null, editingId: null }),

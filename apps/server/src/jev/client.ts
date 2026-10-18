@@ -20,6 +20,7 @@ const ACTION_CRITERIA: Record<Action, string> = {
   replace_text: "Change the words inside an element.",
   replace_media: "Swap the photo, image, picture or icon of an element for a different one.",
   regenerate: "Rebuild or redo the whole page or an element from scratch.",
+  ask: "A question about the page or an element: what it means, why, how, where. Nothing should change.",
   none: "No edit action is requested.",
 };
 

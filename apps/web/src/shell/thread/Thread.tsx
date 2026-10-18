@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Crosshair, RotateCw, Sparkles } from "lucide-react";
+import { AlertCircle, Code2, Crosshair, RotateCw, Sparkles } from "lucide-react";
 import { useScreenStore } from "../../store/screenStore";
+import { useWorkMode } from "../../store/modeStore";
 import { useRightPanel } from "../rightPanel";
 import { deriveItems, type ThreadItem } from "./items";
+import { parseBlocks, type Inline } from "./markdown";
 
 function useElapsed(active: boolean): number {
   const [s, setS] = useState(0);
@@ -39,9 +41,50 @@ function Building({ label }: { label: string }) {
   );
 }
 
+function Inlines({ inlines }: { inlines: Inline[] }) {
+  return (
+    <>
+      {inlines.map((n, i) =>
+        n.t === "bold" ? (
+          <strong key={i} className="font-semibold">{n.v}</strong>
+        ) : n.t === "code" ? (
+          <code key={i} className="rounded bg-tray px-1 py-0.5 font-mono text-[14px]">{n.v}</code>
+        ) : (
+          <span key={i}>{n.v}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+/** Answer text as React nodes (no HTML is ever injected). */
+function Markdown({ text }: { text: string }) {
+  return (
+    <div className="flex flex-col gap-2 break-words text-[16px] leading-6 text-ink">
+      {parseBlocks(text).map((b, i) =>
+        b.t === "p" ? (
+          <p key={i}><Inlines inlines={b.inlines} /></p>
+        ) : (
+          (() => {
+            const List = b.t;
+            return (
+              <List key={i} className={`flex flex-col gap-1 pl-5 ${b.t === "ul" ? "list-disc" : "list-decimal"}`}>
+                {b.items.map((it, j) => (
+                  <li key={j}><Inlines inlines={it} /></li>
+                ))}
+              </List>
+            );
+          })()
+        ),
+      )}
+    </div>
+  );
+}
+
 function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
   const generate = useScreenStore((s) => s.generate);
   const openTab = useRightPanel((s) => s.openTab);
+  const setMode = useWorkMode((s) => s.setMode);
   if (item.kind === "user") {
     return (
       <div className="flex justify-end">
@@ -74,6 +117,33 @@ function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
       </div>
     );
   }
+  if (item.kind === "answer") {
+    return (
+      <div className="flex items-start gap-3" data-testid="answer">
+        <Avatar />
+        <div className="min-w-0 flex-1">
+          {item.label && (
+            <span className="mb-1 mr-2 inline-flex h-5 max-w-full items-center gap-1 rounded-md bg-tray px-1.5 text-[12px] text-ink-2">
+              <Crosshair size={12} strokeWidth={1.75} aria-hidden />
+              <span className="truncate">{item.label}</span>
+            </span>
+          )}
+          <Markdown text={item.text} />
+          {item.routed && <p className="mt-1 text-[12px] text-ink-3">Answered — no changes made</p>}
+          {item.suggestCode && (
+            <button
+              type="button"
+              onClick={() => setMode("code")}
+              className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-lg bg-tray px-2.5 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              <Code2 size={16} strokeWidth={1.75} aria-hidden />
+              Switch to Code
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
   if (item.kind === "building") return <Building label={item.label} />;
   return (
     <div role="alert" className="flex items-start gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
@@ -98,8 +168,9 @@ export function Thread() {
   const history = useScreenStore((s) => s.history);
   const status = useScreenStore((s) => s.status);
   const error = useScreenStore((s) => s.error);
+  const asking = useScreenStore((s) => s.asking);
   const hasPage = useScreenStore((s) => s.screen !== null);
-  const items = deriveItems({ history, status, error });
+  const items = deriveItems({ history, status, error, asking });
   const endRef = useRef<HTMLDivElement>(null);
   const lastKey = items.length ? items[items.length - 1].key : "";
 
