@@ -14,10 +14,12 @@ import {
   type GenerateRequest,
   type GenerateResponse,
   type Node,
+  type Screen,
 } from "@create/shared";
 import { resolveIconNames } from "../icons";
 import { resolvePhoto } from "../images";
 import { EDIT_NODE_INSTRUCTIONS, SYSTEM_PROMPT } from "./prompt";
+import { createPartialScreenBuilder } from "./streamScreen";
 
 export const DEFAULT_MODEL = "claude-sonnet-5-5";
 type Effort = "low" | "medium" | "high";
@@ -81,6 +83,9 @@ async function runTool<T>(opts: {
   effort: Effort;
   allowWebFetch: boolean;
   validate: (input: unknown, notes: string[]) => z.ZodSafeParseResult<T>;
+  /** Streaming hooks: raw tool-input JSON of the first call as it grows, and cancellation. */
+  onToolJson?: (accumulated: string) => void;
+  signal?: AbortSignal;
 }): Promise<{ data: T; notes: string[] }> {
   const model = process.env.CLAUDE_MODEL || DEFAULT_MODEL;
   const anthropic = getClient();
@@ -92,8 +97,8 @@ async function runTool<T>(opts: {
   for (let call = 1; call <= MAX_ATTEMPTS + 2; call++) {
     let response: Anthropic.Message;
     try {
-      response = await anthropic.messages
-        .stream({
+      const stream = anthropic.messages.stream(
+        {
           model,
           max_tokens: 32000,
           system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
@@ -101,9 +106,26 @@ async function runTool<T>(opts: {
           tool_choice: { type: "auto" },
           messages,
           output_config: { effort: opts.effort },
-        })
-        .finalMessage();
+        },
+        { signal: opts.signal },
+      );
+      // Only the first attempt streams partials; repair rounds just finish and send `done`.
+      if (opts.onToolJson && call === 1) {
+        const toolBlocks = new Set<number>();
+        let json = "";
+        stream.on("streamEvent", (e) => {
+          if (e.type === "content_block_start") {
+            if (e.content_block.type === "tool_use" && e.content_block.name === opts.tool.name) toolBlocks.add(e.index);
+          } else if (e.type === "content_block_delta" && e.delta.type === "input_json_delta" && toolBlocks.has(e.index)) {
+            json += e.delta.partial_json;
+            // Parsing is only worth it when a bracket may have closed.
+            if (e.delta.partial_json.includes("}")) opts.onToolJson?.(json);
+          }
+        });
+      }
+      response = await stream.finalMessage();
     } catch (err) {
+      if (err instanceof Anthropic.APIUserAbortError) throw new GenerationError("Request cancelled.", 499);
       if (err instanceof Anthropic.AuthenticationError) {
         throw new GenerationError("Anthropic rejected the API key. Check ANTHROPIC_API_KEY.", 502);
       }
@@ -281,13 +303,23 @@ export function buildUserMessage(req: GenerateRequest): string {
   return parts.join("\n\n");
 }
 
-export async function generateWithClaude(req: GenerateRequest): Promise<GenerateResponse> {
+export interface GenerateStreamOptions {
+  /** Called with a valid screen each time another top-level section completes (new pages only). */
+  onPartial?: (screen: Screen) => void;
+  signal?: AbortSignal;
+}
+
+export async function generateWithClaude(req: GenerateRequest, opts: GenerateStreamOptions = {}): Promise<GenerateResponse> {
   // A new page benefits from more thought; page-wide edits stay quick.
   const effort = req.screen
     ? effortFrom(process.env.CLAUDE_EDIT_EFFORT, "low")
     : effortFrom(process.env.CLAUDE_BUILD_EFFORT, "medium");
+  // Edits keep the rest of the page, so a partial (first sections only) would hide content.
+  const builder = opts.onPartial && !req.screen ? createPartialScreenBuilder(opts.onPartial) : null;
   const { data, notes } = await runTool({
     label: "generate",
+    signal: opts.signal,
+    onToolJson: builder ? (json) => builder.push(json) : undefined,
     tool: RENDER_TOOL,
     userMessage: buildUserMessage(req),
     effort,

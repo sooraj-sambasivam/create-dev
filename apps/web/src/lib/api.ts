@@ -1,6 +1,7 @@
 import {
   EditNodeResponseSchema,
   GenerateResponseSchema,
+  ScreenSchema,
   TranscribeResponseSchema,
   UploadResponseSchema,
   type Asset,
@@ -56,4 +57,81 @@ export async function transcribe(audio: Blob): Promise<string> {
   const res = await fetch("/api/transcribe", { method: "POST", body: form });
   if (!res.ok) throw new Error(await readError(res, `Transcription failed (${res.status})`));
   return TranscribeResponseSchema.parse(await res.json()).text;
+}
+
+// ---- streaming generation (NDJSON) ----
+
+/**
+ * Read a byte stream as newline-delimited text and call `onLine` for each non-empty line.
+ * Handles lines (and multi-byte characters) split across chunks, CRLF, and a last line
+ * without a trailing newline.
+ */
+export async function readNdjsonLines(body: ReadableStream<Uint8Array>, onLine: (line: string) => void): Promise<void> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const flush = (final: boolean) => {
+    let nl: number;
+    while ((nl = buffer.indexOf("\n")) >= 0) {
+      const line = buffer.slice(0, nl).trim();
+      buffer = buffer.slice(nl + 1);
+      if (line) onLine(line);
+    }
+    if (final) {
+      const rest = buffer.trim();
+      buffer = "";
+      if (rest) onLine(rest);
+    }
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    flush(false);
+  }
+  buffer += decoder.decode();
+  flush(true);
+}
+
+/**
+ * Generate a page while streaming. `onPartial` receives the page as each section finishes;
+ * resolves with the final response (the `done` frame). Rejects on an `error` frame, a dropped
+ * connection, or abort. If the server (or a replayed recording) answers with plain JSON
+ * instead of NDJSON, that is treated as an immediate `done`.
+ */
+export async function generateStream(
+  req: GenerateRequest,
+  onPartial: (screen: Screen) => void,
+  signal?: AbortSignal,
+): Promise<GenerateResponse> {
+  const res = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...req, stream: true }),
+    signal,
+  });
+  if (!res.ok) throw new Error(await readError(res, `Generation failed (${res.status})`));
+  if (!/ndjson/i.test(res.headers.get("content-type") ?? "") || !res.body) {
+    return GenerateResponseSchema.parse(await res.json());
+  }
+
+  let result: GenerateResponse | null = null;
+  await readNdjsonLines(res.body, (line) => {
+    let frame: { type?: string; screen?: unknown; summary?: unknown; message?: unknown };
+    try {
+      frame = JSON.parse(line);
+    } catch {
+      return; // ignore a garbled line rather than failing the whole page
+    }
+    if (frame.type === "partial") {
+      const screen = ScreenSchema.safeParse(frame.screen);
+      if (screen.success && !result) onPartial(screen.data);
+    } else if (frame.type === "done") {
+      result = GenerateResponseSchema.parse({ summary: frame.summary, screen: frame.screen });
+    } else if (frame.type === "error") {
+      throw new Error(typeof frame.message === "string" && frame.message ? frame.message : "Generation failed.");
+    }
+  });
+  if (!result) throw new Error("The connection closed before the page finished. Try again.");
+  return result;
 }

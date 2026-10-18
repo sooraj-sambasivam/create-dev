@@ -277,6 +277,8 @@ export const GenerateRequestSchema = z.object({
   history: z.array(z.string().max(4000)).max(20).optional(),
   /** Files the user uploaded; the model may place them by url. */
   assets: z.array(AssetSchema).max(50).optional(),
+  /** Respond with NDJSON frames ({type:"partial"|"done"|"error"}) instead of one JSON body. */
+  stream: z.boolean().optional(),
 });
 
 /** Edit one element (and its children) instead of regenerating the whole page. */
