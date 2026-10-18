@@ -60,7 +60,7 @@ export function AddMenu() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 rounded-md bg-indigo-500/90 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-400"
+        className="flex h-8 items-center gap-1.5 rounded-lg bg-hover px-3 text-sm font-medium text-ink transition-colors duration-150 hover:bg-line"
       >
         <PlusIcon /> Add
       </button>
@@ -70,9 +70,9 @@ export function AddMenu() {
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className="absolute right-0 top-8 z-50 max-h-[70vh] w-64 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl"
+            className="absolute right-0 top-10 z-50 max-h-[70vh] w-72 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-soft"
           >
-            <p className="px-2 pb-1 pt-0.5 text-[11px] text-neutral-500">Adds {where}</p>
+            <p className="px-2 pb-1.5 pt-1 text-xs text-ink-3">Adds {where}</p>
             {ITEMS.map((item) => (
               <button
                 key={item.type}
@@ -81,10 +81,10 @@ export function AddMenu() {
                   addNode(item.type);
                   setOpen(false);
                 }}
-                className="flex w-full items-baseline justify-between rounded-lg px-2 py-1.5 text-left text-sm text-neutral-200 hover:bg-white/5"
+                className="flex min-h-8 w-full items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm text-ink transition-colors duration-150 hover:bg-hover"
               >
                 <span>{TYPE_LABELS[item.type]}</span>
-                <span className="text-[11px] text-neutral-500">{item.hint}</span>
+                <span className="text-right text-xs text-ink-3">{item.hint}</span>
               </button>
             ))}
           </motion.div>

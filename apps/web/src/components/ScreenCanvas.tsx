@@ -12,22 +12,32 @@ function EditorToolbar() {
   const canRedo = useScreenStore((s) => s.future.length > 0);
   const undo = useScreenStore((s) => s.undo);
   const redo = useScreenStore((s) => s.redo);
-  const iconBtn = "rounded-md p-1.5 text-neutral-300 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent";
+  const iconBtn =
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent";
+  // Restyle the Add / Publish triggers from here: Add = ghost secondary, Publish = the one accent primary.
+  const addSlot =
+    "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!gap-1.5 [&>div>button]:!rounded-lg [&>div>button]:!bg-transparent [&>div>button]:!px-2.5 [&>div>button]:!text-sm [&>div>button]:!font-medium [&>div>button]:!text-ink-2 [&>div>button:hover]:!bg-hover [&_.absolute]:!max-h-[min(70vh,22rem)] [&_.absolute]:!w-64";
+  const publishSlot =
+    "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!rounded-lg [&>div>button]:!bg-accent [&>div>button]:!px-3 [&>div>button]:!text-sm [&>div>button]:!font-medium [&>div>button]:!text-white dark:[&>div>button]:!text-shell [&>div>button:hover]:!opacity-90 [&>div>button]:!transition-opacity";
   return (
-    <div className="ml-auto flex items-center gap-1.5">
+    <div className="ml-auto flex items-center gap-1">
       {editMode && (
         <>
-          <button type="button" title="Undo (⌘Z)" className={iconBtn} disabled={!canUndo} onClick={undo}>
+          <button type="button" title="Undo (⌘Z)" aria-label="Undo" className={iconBtn} disabled={!canUndo} onClick={undo}>
             <UndoIcon />
           </button>
-          <button type="button" title="Redo (⌘⇧Z)" className={iconBtn} disabled={!canRedo} onClick={redo}>
+          <button type="button" title="Redo (⌘⇧Z)" aria-label="Redo" className={iconBtn} disabled={!canRedo} onClick={redo}>
             <RedoIcon />
           </button>
-          <AddMenu />
+          <div className={addSlot}>
+            <AddMenu />
+          </div>
         </>
       )}
-      <PublishMenu />
-      <div className="ml-1 flex rounded-md border border-white/10 p-0.5 text-xs">
+      <div className={publishSlot}>
+        <PublishMenu />
+      </div>
+      <div className="ml-1 flex h-8 items-center rounded-full bg-tray p-0.5 text-sm">
         {(["edit", "preview"] as const).map((m) => {
           const active = (m === "edit") === editMode;
           return (
@@ -35,9 +45,9 @@ function EditorToolbar() {
               key={m}
               type="button"
               onClick={() => setEditMode(m === "edit")}
-              className={`rounded px-2 py-0.5 capitalize transition ${active ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"}`}
+              className={`h-7 rounded-full px-3 transition-colors duration-150 ${active ? "bg-surface text-ink shadow-soft" : "text-ink-2 hover:text-ink"}`}
             >
-              {m}
+              {m === "edit" ? "Edit" : "Preview"}
             </button>
           );
         })}
@@ -81,38 +91,39 @@ export function ScreenCanvas() {
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="relative flex min-h-[420px] flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/60 shadow-2xl shadow-black/40 backdrop-blur"
+      className="relative flex min-h-[420px] flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface"
     >
-      <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2.5">
-        <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-        <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
-        <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-        <span className="ml-3 truncate text-xs text-neutral-400">{screen?.title ?? "Generating…"}</span>
-        <AnimatePresence>
-          {loading && screen && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="ml-3 flex items-center gap-2 text-xs text-indigo-300"
-            >
-              <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
-              Updating
-            </motion.span>
-          )}
-        </AnimatePresence>
+      <div className="flex h-11 shrink-0 items-center gap-2 bg-surface px-3">
+        <span className="truncate text-sm text-ink-2">{screen?.title ?? "Generating…"}</span>
+        <span className="flex w-24 shrink-0 items-center gap-2 text-xs text-ink-3" aria-live="polite">
+          <AnimatePresence>
+            {loading && screen && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2"
+              >
+                <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+                Updating
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
         {screen && <EditorToolbar />}
       </div>
 
-      <div className="relative flex flex-1 flex-col overflow-auto" onClick={() => select(null)}>
-        {screen ? <ScreenRenderer screen={screen} editable={editMode && !loading} /> : <Skeleton />}
+      <div className="relative flex flex-1 flex-col overflow-auto border-t border-line bg-shell p-2" onClick={() => select(null)}>
+        <div className="relative flex flex-1 flex-col overflow-hidden rounded-lg ring-1 ring-line">
+          {screen ? <ScreenRenderer screen={screen} editable={editMode && !loading} /> : <Skeleton />}
+        </div>
         <AnimatePresence>
           {loading && screen && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="pointer-events-none absolute inset-0 bg-neutral-950/30"
+              className="pointer-events-none absolute inset-0 bg-shell/40"
             />
           )}
         </AnimatePresence>
@@ -125,7 +136,7 @@ export function ScreenCanvas() {
             animate={{ scaleX: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.3 } }}
             transition={{ duration: 6, ease: "easeOut" }}
-            className="absolute left-0 top-0 h-0.5 w-full origin-left bg-gradient-to-r from-indigo-400 to-pink-400"
+            className="absolute left-0 top-0 h-0.5 w-full origin-left bg-gradient-to-r from-accent to-accent"
           />
         )}
       </AnimatePresence>

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { Container, Leaf as LeafNode, Node, Style } from "@create/shared";
 import { EditableText } from "../editor/EditableText";
 
@@ -118,7 +118,7 @@ export function leafWidth(node: Node, parent: Direction, align: Container["align
   }
   switch (node.type) {
     case "image":
-      return (node as { size?: string }).size === "full" ? "flex-1 min-w-0" : "shrink-0";
+      return (node as { size?: string }).size === "full" ? "flex-1 min-w-0" : "min-w-0 max-w-full shrink";
     case "textbox":
     case "video":
     case "map":
@@ -145,13 +145,47 @@ export function photoUrl(query: string, seed: string): string {
 const COLORFUL_SET = /^(fluent-emoji|flat-color-icons|noto|twemoji|logos|emojione|openmoji|fxemoji|streamline-emojis|vscode-icons|skill-icons|devicon)/;
 const ICON_PX: Record<string, number> = { sm: 16, md: 24, lg: 36, xl: 56, "2xl": 80 };
 
-/** Iconify icon. Single-color sets follow the current text color; colorful sets keep theirs. */
+/** Iconify icon. Single-color sets follow the current text color; colorful sets keep theirs.
+ *  If the icon cannot load (offline, rate-limited), an outlined box of the same size keeps rows from collapsing. */
 export function IconGlyph({ name, px, style }: { name: string; px: number; style?: CSSProperties }) {
   const [prefix, icon] = name.split(":");
-  if (!prefix || !icon) return null;
-  const url = `https://api.iconify.design/${prefix}/${icon}.svg`;
-  if (COLORFUL_SET.test(prefix)) {
-    return <img src={url} width={px} height={px} alt="" draggable={false} className="inline-block shrink-0" style={style} />;
+  const url = prefix && icon ? `https://api.iconify.design/${prefix}/${icon}.svg` : "";
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const colorful = COLORFUL_SET.test(prefix ?? "");
+  useEffect(() => {
+    if (!url || colorful) return;
+    // Mask images give no error signal, so probe once (the browser caches the result).
+    const probe = new Image();
+    probe.onerror = () => setFailedUrl(url);
+    probe.src = url;
+    return () => {
+      probe.onerror = null;
+    };
+  }, [url, colorful]);
+  if (!url) return null;
+  if (failedUrl === url) {
+    return (
+      <span
+        aria-hidden
+        data-icon-missing
+        className="inline-block shrink-0 rounded-[4px] border border-dashed"
+        style={{ width: px, height: px, borderColor: "currentColor", opacity: 0.35, ...style }}
+      />
+    );
+  }
+  if (colorful) {
+    return (
+      <img
+        src={url}
+        width={px}
+        height={px}
+        alt=""
+        draggable={false}
+        onError={() => setFailedUrl(url)}
+        className="inline-block shrink-0"
+        style={style}
+      />
+    );
   }
   const mask = `url("${url}") center / contain no-repeat`;
   return (
@@ -293,10 +327,10 @@ export function Leaf({ node, fill, interactive }: { node: LeafNode; fill: boolea
     case "heading": {
       const cls =
         node.level === 1
-          ? "text-4xl font-bold leading-[1.05] tracking-tight text-balance md:text-6xl"
+          ? "text-3xl font-semibold leading-tight tracking-tight text-balance md:text-4xl"
           : node.level === 2
-            ? "text-3xl font-semibold leading-tight tracking-tight text-balance"
-            : "text-lg font-semibold leading-snug";
+            ? "text-2xl font-semibold leading-tight tracking-tight text-balance"
+            : "text-base font-semibold leading-snug";
       const Tag = `h${node.level}` as const;
       return (
         <Tag className={`${cls} ${boxed}`} style={o}>
@@ -342,8 +376,8 @@ export function Leaf({ node, fill, interactive }: { node: LeafNode; fill: boolea
         <a
           {...linkAttrs(node.href)}
           onClick={(e) => follow(node.href, interactive, e)}
-          className={`inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline ${fill ? "flex" : ""} ${boxed}`}
-          style={{ color: "var(--accent)", ...o }}
+          className={`inline-flex items-center gap-1.5 text-sm font-medium underline decoration-current/30 underline-offset-4 transition-colors hover:decoration-current ${fill ? "flex" : ""} ${boxed}`}
+          style={{ color: "var(--fg)", ...o }}
         >
           {node.icon && <IconGlyph name={node.icon} px={node.text ? 16 : 22} />}
           {(node.text || !node.icon) && <EditableText nodeId={node.id} field="text" value={node.text} />}
@@ -365,7 +399,7 @@ export function Leaf({ node, fill, interactive }: { node: LeafNode; fill: boolea
       if (node.size !== "full") {
         // Logos and small pictures: fixed height, natural width, never cropped.
         const h = node.size === "logo" ? 40 : node.size === "small" ? 96 : 200;
-        return <img src={src} alt={node.alt} draggable={false} className="block w-auto max-w-full object-contain" style={{ height: h, ...o }} />;
+        return <img src={src} alt={node.alt} draggable={false} className={`block h-auto w-auto min-w-0 max-w-full object-contain ${node.size === "logo" ? "" : "rounded-lg"}`} style={{ maxHeight: h, height: h, ...o }} />;
       }
       return <Photo src={src} alt={node.alt} className={`w-full rounded-xl ${aspectClass}`} style={o} />;
     }

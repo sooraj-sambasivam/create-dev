@@ -47,7 +47,7 @@ function SelectionToolbar({ node }: { node: Node }) {
   const stop = (e: React.PointerEvent) => e.stopPropagation();
   return (
     <div
-      className="absolute -top-7 left-0 z-30 flex items-center gap-0.5 rounded-md bg-indigo-500 px-1 py-0.5 text-[11px] font-medium text-white shadow-lg"
+      className="absolute -top-7 left-0 z-30 flex items-center gap-0.5 rounded-md border border-line bg-surface px-1 py-0.5 text-xs font-medium text-ink-2 shadow-soft"
       onClick={(e) => e.stopPropagation()}
     >
       <span className="flex cursor-grab items-center gap-1 px-1" title="Drag to move">
@@ -59,7 +59,7 @@ function SelectionToolbar({ node }: { node: Node }) {
         title="Duplicate (⌘D)"
         onPointerDown={stop}
         onClick={() => useScreenStore.getState().duplicate(node.id)}
-        className="rounded p-1 hover:bg-white/20"
+        className="rounded p-1 text-ink-2 hover:bg-hover hover:text-ink"
       >
         <CopyIcon width={12} height={12} />
       </button>
@@ -68,7 +68,7 @@ function SelectionToolbar({ node }: { node: Node }) {
         title="Delete (Backspace)"
         onPointerDown={stop}
         onClick={() => useScreenStore.getState().remove(node.id)}
-        className="rounded p-1 hover:bg-white/20"
+        className="rounded p-1 text-ink-2 hover:bg-hover hover:text-ink"
       >
         <TrashIcon width={12} height={12} />
       </button>
@@ -123,7 +123,7 @@ function ResizeHandle({ nodeId, targetRef }: { nodeId: string; targetRef: React.
         e.stopPropagation();
         useScreenStore.getState().patchNode(nodeId, { widthPct: null });
       }}
-      className="absolute -right-[7px] top-1/2 z-30 h-8 w-2.5 -translate-y-1/2 cursor-ew-resize rounded-full border-2 border-white bg-indigo-500 shadow"
+      className="absolute -right-[7px] top-1/2 z-30 h-6 w-1.5 -translate-y-1/2 cursor-ew-resize rounded-full border border-surface bg-accent"
     />
   );
 }
@@ -131,14 +131,14 @@ function ResizeHandle({ nodeId, targetRef }: { nodeId: string; targetRef: React.
 function DropIndicator({ position, axis }: { position: "before" | "after" | "inside"; axis: "x" | "y" }) {
   if (position === "inside") {
     return (
-      <div className="pointer-events-none absolute inset-0 z-20 rounded-xl border-2 border-dashed border-indigo-400 bg-indigo-400/10" />
+      <div className="pointer-events-none absolute inset-0 z-20 rounded-xl border border-dashed border-accent bg-accent/10" />
     );
   }
   const cls =
     axis === "y"
-      ? `left-0 right-0 h-[3px] ${position === "before" ? "-top-[5px]" : "-bottom-[5px]"}`
-      : `top-0 bottom-0 w-[3px] ${position === "before" ? "-left-[5px]" : "-right-[5px]"}`;
-  return <div className={`pointer-events-none absolute z-20 rounded-full bg-indigo-500 ${cls}`} />;
+      ? `left-0 right-0 h-0.5 ${position === "before" ? "-top-[5px]" : "-bottom-[5px]"}`
+      : `top-0 bottom-0 w-0.5 ${position === "before" ? "-left-[5px]" : "-right-[5px]"}`;
+  return <div className={`pointer-events-none absolute z-20 rounded-full bg-accent ${cls}`} />;
 }
 
 // ---------------------------------------------------------------- node view
@@ -197,9 +197,9 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
   const editCls = !ed.editable
     ? ""
     : selected
-      ? "outline-2 outline-indigo-500 outline-offset-2"
+      ? "outline-1 outline-accent outline-offset-2"
       : hovered
-        ? "outline-1 outline-dashed outline-indigo-400/80 outline-offset-2"
+        ? "outline-1 outline-line outline-offset-2"
         : "";
   const dragging = ed.draggingId === node.id;
   const indicator = ed.dropTarget?.indicator.nodeId === node.id ? ed.dropTarget.indicator : null;
@@ -236,7 +236,7 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
       {selected && !ed.draggingId && !ed.resizing && editingThis === false && <NodeAIBox node={node} targetRef={ref} />}
       {aiBusy && <div className="shimmer-light pointer-events-none absolute inset-0 z-20 rounded-xl" />}
       {resizingThis && (
-        <div className="absolute -bottom-7 right-0 z-30 rounded bg-neutral-900 px-1.5 py-0.5 text-[11px] font-medium text-white">
+        <div className="absolute -bottom-7 right-0 z-30 rounded border border-line bg-surface px-1.5 py-0.5 text-xs font-medium text-ink-2 shadow-soft">
           {ed.resizing!.pct}%
         </div>
       )}
@@ -344,7 +344,7 @@ function RootView({ screen, counter }: { screen: Screen; counter: Counter }) {
         <NodeView key={node.id} node={node} parentId={null} index={i} parentDirection="column" parentAlign="stretch" counter={counter} />
       ))}
       {rootIndicator && (
-        <div className="pointer-events-none absolute inset-2 rounded-xl border-2 border-dashed border-indigo-400/70" />
+        <div className="pointer-events-none absolute inset-2 rounded-xl border border-dashed border-accent/70" />
       )}
     </div>
   );
@@ -459,7 +459,7 @@ export function ScreenRenderer({ screen, editable = false }: { screen: Screen; e
         <RootView screen={screen} counter={counter} />
         <DragOverlay dropAnimation={null}>
           {draggedNode && (
-            <div className="pointer-events-none inline-flex items-center gap-1.5 rounded-lg bg-indigo-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-2xl">
+            <div className="pointer-events-none inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink shadow-soft">
               <GripIcon width={12} height={12} />
               Moving {TYPE_LABELS[draggedNode.type].toLowerCase()}
             </div>

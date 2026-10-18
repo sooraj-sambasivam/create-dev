@@ -84,7 +84,7 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
       onDoubleClick={stop}
       onKeyDown={stop}
     >
-      <div className="rounded-xl border border-indigo-400/40 bg-neutral-900 p-1.5 text-left shadow-2xl shadow-black/40">
+      <div className="rounded-xl border border-line bg-surface p-1.5 text-left shadow-soft">
         <form
           className="flex items-center gap-1.5"
           onSubmit={(e) => {
@@ -92,7 +92,7 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
             void send(value);
           }}
         >
-          <span className="pl-1.5 text-indigo-300" aria-hidden>
+          <span className="pl-1.5 text-ink-2" aria-hidden>
             ✦
           </span>
           <input
@@ -105,24 +105,24 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
             disabled={busy}
             placeholder={busy ? `Updating this ${label}…` : `Ask AI to change this ${label}…`}
             aria-label={`Ask AI to change this ${label}`}
-            className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-500"
+            className="min-w-0 flex-1 bg-transparent h-8 text-sm text-ink outline-none placeholder:text-ink-3"
           />
           <button
             type="submit"
             disabled={busy || otherBusy || !value.trim()}
-            className="rounded-lg bg-indigo-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-400 disabled:opacity-40"
+            className="h-8 rounded-lg bg-accent px-3 text-sm font-medium text-white dark:text-shell transition-opacity duration-150 hover:opacity-90 disabled:opacity-40"
           >
             {busy ? (
-              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white align-[-2px]" />
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current/40 border-t-current align-[-2px]" />
             ) : (
               "Go"
             )}
           </button>
         </form>
         {error ? (
-          <p className="px-2 pb-1 pt-1.5 text-xs text-rose-300">{error}</p>
+          <p className="px-2 pb-1 pt-1.5 text-xs text-bad">{error}</p>
         ) : reply ? (
-          <p className="px-2 pb-1 pt-1.5 text-xs text-emerald-300">{reply}</p>
+          <p className="px-2 pb-1 pt-1.5 text-xs text-ok">{reply}</p>
         ) : (
           !busy && (
             <div className="flex flex-wrap gap-1 px-1 pb-0.5 pt-1.5">
@@ -132,12 +132,12 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
                   type="button"
                   disabled={otherBusy}
                   onClick={() => void send(s)}
-                  className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-400 hover:border-indigo-400/50 hover:text-neutral-100 disabled:opacity-40"
+                  className="rounded-full border border-line px-2.5 py-0.5 text-xs text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:opacity-40"
                 >
                   {s}
                 </button>
               ))}
-              <span className="ml-auto self-center pr-1 text-[10px] text-neutral-600">/ to focus</span>
+              <span className="ml-auto self-center pr-1 text-xs text-ink-3">/ to focus</span>
             </div>
           )
         )}
