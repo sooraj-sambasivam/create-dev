@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AppKit
 
 struct TrayItem: Identifiable, Equatable {
     let id: String
@@ -31,6 +32,13 @@ private struct FlexString: Decodable {
     }
 }
 
+/// Shared motion: one spring everywhere, matched to the web app (response 0.35, damping 0.8).
+enum Motion {
+    static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+    static var spring: Animation { reduced ? .easeOut(duration: 0.12) : .spring(response: 0.35, dampingFraction: 0.8) }
+    static var hover: Animation { reduced ? .linear(duration: 0.01) : .easeOut(duration: 0.14) }
+}
+
 enum Endpoints {
     static let api = URL(string: "http://localhost:3001")!
     static let web = URL(string: "http://localhost:5175")!
@@ -45,6 +53,8 @@ final class TrayStore: ObservableObject {
     var onNewItems: ((Int) -> Void)?
 
     private var seen = Set<String>()
+    /// Ids dismissed locally; hidden from polls until the server stops returning them.
+    private var dismissed = Set<String>()
     private var primed = false
     private var timer: Timer?
     private var inFlight = false
@@ -65,8 +75,23 @@ final class TrayStore: ObservableObject {
     func addLocal(_ item: TrayItem) {
         guard !seen.contains(item.id) else { return }
         seen.insert(item.id)
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) { items.insert(item, at: 0) }
+        withAnimation(Motion.spring) { items.insert(item, at: 0) }
         onNewItems?(1)
+    }
+
+    /// Optimistic remove, then DELETE /api/tray/:id. A failed DELETE leaves it hidden until the next
+    /// poll that still lists it after the request settled (we then un-hide it).
+    func dismiss(_ item: TrayItem) {
+        dismissed.insert(item.id)
+        withAnimation(Motion.spring) { items.removeAll { $0.id == item.id } }
+        guard !item.id.hasPrefix("local-") else { return }
+        let id = item.id
+        Task { @MainActor in
+            var req = URLRequest(url: Endpoints.api.appendingPathComponent("api/tray").appendingPathComponent(id))
+            req.httpMethod = "DELETE"
+            let ok = (try? await session.data(for: req)).map { ($0.1 as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) || $0.statusCode == 404 } ?? false } ?? false
+            if !ok { dismissed.remove(id) }   // next poll restores it
+        }
     }
 
     private func poll() {
@@ -105,12 +130,14 @@ final class TrayStore: ObservableObject {
     }
 
     private func apply(_ incoming: [TrayItem]) {
+        dismissed.formIntersection(Set(incoming.map(\.id)))   // forget ids the server has dropped
+        let incoming = incoming.filter { !dismissed.contains($0.id) }
         let local = items.filter { l in l.id.hasPrefix("local-") && !incoming.contains { $0.url == l.url } }
         // Newest first; server order is oldest-first by contract, so reverse.
         let ordered = incoming.reversed() + local
         let fresh = ordered.filter { !seen.contains($0.id) }
         guard ordered != items else { primed = true; return }
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) { items = Array(ordered) }
+        withAnimation(Motion.spring) { items = Array(ordered) }
         fresh.forEach { seen.insert($0.id) }
         if primed && !fresh.isEmpty { onNewItems?(fresh.count) }
         primed = true

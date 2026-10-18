@@ -28,6 +28,16 @@
 
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
 
+  /* Motion tokens (mirrors ui/motion.ts) for CSS-only transitions and keyframes. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --default-transition-duration: 120ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+
   --font-sans:
     "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter Variable", system-ui,
     sans-serif;
@@ -142,20 +152,47 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
-.shimmer {
-  background: linear-gradient(100deg, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 80%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+/*
+ * Loading shimmer: a highlight band slides across with transform only (no background-position
+ * repaint). The base is a flat tint; ::after carries the moving band.
+ */
+.shimmer,
+.shimmer-light {
+  overflow: hidden;
+  isolation: isolate;
 }
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+.shimmer:not(.absolute),
+.shimmer-light:not(.absolute) {
+  position: relative;
+}
+.shimmer {
+  background: rgba(255, 255, 255, 0.04);
+}
+.shimmer-light {
+  background: rgba(127, 127, 127, 0.10);
+}
+.shimmer::after,
+.shimmer-light::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.10) 50%, transparent 80%);
+  animation: shimmer-slide 1.4s var(--ease-standard) infinite;
+}
+.shimmer-light::after {
+  background: linear-gradient(100deg, transparent 20%, rgba(127, 127, 127, 0.18) 50%, transparent 80%);
+}
+@keyframes shimmer-slide {
+  to { transform: translateX(100%); }
 }
 
-.shimmer-light {
-  background: linear-gradient(100deg, rgba(127,127,127,0.10) 20%, rgba(127,127,127,0.22) 50%, rgba(127,127,127,0.10) 80%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+/* Streaming caret: opacity blink only. */
+.caret {
+  animation: caret-blink 1.1s steps(1, end) infinite;
+}
+@keyframes caret-blink {
+  50% { opacity: 0; }
 }
 
 [data-screen-root] h1,
@@ -176,8 +213,19 @@ html[data-theme="dark"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .shimmer,
-  .shimmer-light {
+  .shimmer::after,
+  .shimmer-light::after {
     animation: none;
+    transform: none;
+    opacity: 0.5;
+  }
+  .caret {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

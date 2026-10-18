@@ -5,7 +5,9 @@ import { ScreenCanvas } from "../../components/ScreenCanvas";
 import { useScreenStore } from "../../store/screenStore";
 import { shareAndCopy } from "./shareApi";
 import { ShowQrButton } from "../../share/QrCard";
-import { button } from "../../ui/styles";
+import { AnimatePresence, motion } from "motion/react";
+import { ICON, STROKE, button } from "../../ui/styles";
+import { duration, spring, useReducedMotionSafe } from "../../ui/motion";
 
 export interface OutputTabProps {
   /** Defaults to the current screen in useScreenStore. */
@@ -52,6 +54,7 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
     }
   };
 
+  const { reduce } = useReducedMotionSafe();
   const iconBtn = button.iconSm;
   const action = button.secondary;
 
@@ -77,7 +80,20 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
             <>
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={share} disabled={busy !== null} className={action}>
-                  {copied ? <Check size={16} strokeWidth={1.75} className="text-ok" /> : <Link2 size={16} strokeWidth={1.75} />}
+                  <span className="relative grid size-4 place-items-center">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.span
+                        key={copied ? "ok" : "link"}
+                        initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
+                        transition={reduce ? { duration: duration.fast } : { ...spring.snappy, opacity: { duration: duration.fast } }}
+                        className="grid place-items-center"
+                      >
+                        {copied ? <Check size={ICON.md} strokeWidth={STROKE} className="text-ok" /> : <Link2 size={ICON.md} strokeWidth={STROKE} />}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
                   {busy === "share" ? "Saving…" : copied ? "Copied" : "Copy link"}
                 </button>
                 {shareUrl && <ShowQrButton url={shareUrl} className={button.secondary} />}
@@ -87,14 +103,14 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
                       {shareUrl}
                     </a>
                     <button aria-label="Copy link" title="Copy link" className={iconBtn} onClick={() => navigator.clipboard?.writeText(shareUrl).then(flashCopied, () => {})}>
-                      <Copy size={16} strokeWidth={1.75} />
+                      <Copy size={ICON.md} strokeWidth={STROKE} />
                     </button>
                   </div>
                 )}
               </div>
               {error && (
                 <p role="alert" className="flex items-center gap-1.5 text-[14px] text-bad">
-                  <CircleAlert size={16} strokeWidth={1.75} aria-hidden className="shrink-0" />
+                  <CircleAlert size={ICON.md} strokeWidth={STROKE} aria-hidden className="shrink-0" />
                   {error}
                 </p>
               )}
@@ -103,7 +119,7 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
 
           <details className="group" aria-label="History">
             <summary className="flex h-8 cursor-pointer list-none items-center gap-1 text-[14px] text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
-              <ChevronRight size={16} strokeWidth={1.75} className="transition-transform duration-150 group-open:rotate-90" aria-hidden />
+              <ChevronRight size={ICON.md} strokeWidth={STROKE} className="transition-transform duration-120 group-open:rotate-90" aria-hidden />
               History{history.length > 0 ? ` (${history.length})` : ""}
             </summary>
             {history.length === 0 ? (

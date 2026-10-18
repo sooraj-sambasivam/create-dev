@@ -6,6 +6,7 @@ Swift Package, macOS 14+, SwiftUI, [DynamicNotchKit](https://github.com/MrKai77/
 ## What it does
 - Compact pill in the notch (tray icon + count). Hover it and it expands into chips such as `Table · Route 44 schedule`.
 - Polls `GET http://localhost:3001/api/tray` every 1.5 s. Expected `{items:[{id,title,kind,url,createdAt}]}` (oldest first). A 404 means an empty tray; a dead server keeps the last chips and shows "Waiting for Create".
+- Chip x button sends DELETE /api/tray/:id (optimistic). Motion: spring response 0.35 damping 0.8, honors Reduce Motion.
 - New chips drop in with a spring and the tray peeks open for a moment.
 - Click a chip to open its `url` in the default browser. "Send to Create" opens `http://localhost:5175`.
 - Menu-bar icon: Open Create, Show Tray, Quit.

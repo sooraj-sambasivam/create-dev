@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, type KeyboardEvent } from "react";
+import { Suspense, lazy, useEffect, useId, useRef, type KeyboardEvent } from "react";
 import { X } from "lucide-react";
 const Inspector = lazy(() => import("../../editor/Inspector").then((m) => ({ default: m.Inspector })));
 import { MotionControls } from "../../motion";
@@ -6,6 +6,7 @@ import { useScreenStore } from "../../store/screenStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { BackendTab } from "../output/BackendTab";
 import { OutputTab } from "../output/OutputTab";
+import { ActivePill } from "../../ui/ActivePill";
 import { ICON, STROKE, button, segmented } from "../../ui/styles";
 import { ResizeHandle } from "./ResizeHandle";
 import { RIGHT_PANEL_TABS, useRightPanel, type RightPanelTab } from "./rightPanelStore";
@@ -70,6 +71,7 @@ export function RightPanel() {
   const active: RightPanelTab = tab === "inspect" && !canInspect ? "output" : tab;
   const enabled = RIGHT_PANEL_TABS.filter((t) => t !== "inspect" || canInspect);
 
+  const pillId = useId();
   const asideRef = useRef<HTMLElement>(null);
   const tabRefs = useRef<Partial<Record<RightPanelTab, HTMLButtonElement | null>>>({});
 
@@ -139,6 +141,7 @@ export function RightPanel() {
                   onKeyDown={onTabKeyDown}
                   className={`${segmented.item} ${selected ? segmented.active : ""}`}
                 >
+                  {selected && <ActivePill layoutId={pillId} />}
                   {LABELS[t]}
                   {t === "inspect" && canInspect && hasSelection && !selected && <span aria-label="Element selected" className="ml-1.5 inline-block size-1.5 rounded-full bg-accent align-middle" />}
                 </button>

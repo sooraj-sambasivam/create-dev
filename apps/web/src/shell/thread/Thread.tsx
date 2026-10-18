@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
 import { AlertCircle, Code2, Crosshair, RotateCw, Sparkles } from "lucide-react";
 import { findNode } from "@create/shared";
 import { revealNode, useScreenStore } from "../../store/screenStore";
@@ -7,6 +8,7 @@ import { useRightPanel } from "../rightPanel";
 import { deriveItems, type ThreadItem } from "./items";
 import { parseBlocks, type Inline } from "./markdown";
 import { ICON, STROKE, button, chip, focusRing } from "../../ui/styles";
+import { fadeUp, listStagger, useReducedMotionSafe } from "../../ui/motion";
 
 function useElapsed(active: boolean): number {
   const [s, setS] = useState(0);
@@ -36,6 +38,7 @@ function Building({ label }: { label: string }) {
       <div className="min-w-0 flex-1 pt-0.5">
         <div className="text-[16px] text-ink-2">
           {label} <span className="tabular-nums text-ink-2">{elapsed}s</span>
+          <span aria-hidden className="caret ml-1 inline-block h-4 w-0.5 translate-y-0.5 rounded-full bg-ink-3" />
         </div>
         <div className="shimmer-light mt-2 h-2 w-48 max-w-full rounded-full" />
       </div>
@@ -97,7 +100,7 @@ function ElementChip({ label, onClick }: { label: string; onClick: (() => void) 
       type="button"
       onClick={onClick}
       aria-label={`Show ${label} on the page`}
-      className={`${cls} transition-colors duration-150 hover:bg-hover hover:text-ink ${focusRing}`}
+      className={`${cls} transition-colors duration-120 hover:bg-hover hover:text-ink ${focusRing}`}
     >
       {body}
     </button>
@@ -196,6 +199,7 @@ export function Thread() {
   const items = deriveItems({ history, status, error, asking, lastAttempt });
   const endRef = useRef<HTMLDivElement>(null);
   const lastKey = items.length ? items[items.length - 1].key : "";
+  const { v } = useReducedMotionSafe();
 
   useEffect(() => {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -204,12 +208,21 @@ export function Thread() {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto" data-testid="thread">
-      <div role="log" aria-label="Conversation" className="mx-auto flex w-full max-w-[740px] flex-col gap-6 px-4 py-6">
+      <motion.div
+        role="log"
+        aria-label="Conversation"
+        variants={v(listStagger)}
+        initial="hidden"
+        animate="show"
+        className="mx-auto flex w-full max-w-[740px] flex-col gap-6 px-4 py-6"
+      >
         {items.map((item) => (
-          <Item key={item.key} item={item} hasPage={hasPage} />
+          <motion.div key={item.key} variants={v(fadeUp)}>
+            <Item item={item} hasPage={hasPage} />
+          </motion.div>
         ))}
         <div ref={endRef} aria-hidden />
-      </div>
+      </motion.div>
     </div>
   );
 }

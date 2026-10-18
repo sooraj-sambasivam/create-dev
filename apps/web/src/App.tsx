@@ -1,4 +1,6 @@
 import { Suspense, lazy, useEffect } from "react";
+import { motion } from "motion/react";
+import { fadeUp, spring, useReducedMotionSafe } from "./ui/motion";
 import { useScreenStore } from "./store/screenStore";
 import { NarrateMode } from "./modes/narrate/NarrateMode";
 import { useEditorShortcuts } from "./editor/useShortcuts";
@@ -32,6 +34,7 @@ function Builder() {
   const mode = useScreenStore((s) => s.mode);
   const setMode = useScreenStore((s) => s.setMode);
   useEditorShortcuts();
+  const { reduce, v, t } = useReducedMotionSafe();
 
   // Voice is recorded inside the composer (the fan's Mic); never leave the app in a standalone "voice" mode.
   useEffect(() => {
@@ -63,16 +66,28 @@ function Builder() {
         <>
           <Thread />
           <div className="mx-auto mb-6 w-full shrink-0 px-4">
-            <Composer />
+            {/* Same layoutId in the empty state: the composer glides to the bottom instead of jumping. */}
+            <motion.div layoutId="composer" layout={reduce ? false : "position"} transition={t(spring.gentle)}>
+              <Composer />
+            </motion.div>
           </div>
         </>
       ) : (
         <>
           <div className="flex flex-1 flex-col items-center justify-center px-4 pb-24 text-center">
-            <h2 className="text-[28px] leading-9 font-normal tracking-[-0.01em] text-ink">What should we work on?</h2>
+            <motion.h2
+              variants={v(fadeUp)}
+              initial="hidden"
+              animate="show"
+              className="text-[28px] leading-9 font-normal tracking-[-0.01em] text-ink"
+            >
+              What should we work on?
+            </motion.h2>
           </div>
           <div className="absolute inset-x-0 top-1/2 mt-2 px-4">
-            <Composer />
+            <motion.div layoutId="composer" layout={reduce ? false : "position"} transition={t(spring.gentle)}>
+              <Composer />
+            </motion.div>
             <EmptyState />
           </div>
         </>

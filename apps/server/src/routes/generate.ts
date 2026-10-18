@@ -39,6 +39,10 @@ async function mockStream(
 }
 
 /** Answer a stream:true request with NDJSON frames. Errors before the first frame stay JSON. */
+const setFallback = (res: Response, choice: string) => {
+  if (!res.headersSent) res.setHeader("x-model-fallback", choice);
+};
+
 async function streamGenerate(req: GenerateRequest, res: Response): Promise<void> {
   const abort = new AbortController();
   // `res` closing before we finished means the client went away: stop the model call.
@@ -63,7 +67,7 @@ async function streamGenerate(req: GenerateRequest, res: Response): Promise<void
     const result =
       process.env.MOCK_AI === "1"
         ? await mockStream(req, onPartial, () => abort.signal.aborted)
-        : await generateWithClaude(req, { onPartial, signal: abort.signal });
+        : await generateWithClaude(req, { onPartial, signal: abort.signal, onFallback: (c) => setFallback(res, c) });
     send({ type: "done", summary: result.summary, screen: result.screen });
   } catch (err) {
     if (abort.signal.aborted) return void res.end();
@@ -108,7 +112,7 @@ generateRouter.post("/generate", async (req, res) => {
   }
 
   try {
-    res.json(await generateWithClaude(parsed.data));
+    res.json(await generateWithClaude(parsed.data, { onFallback: (c) => setFallback(res, c) }));
   } catch (err) {
     sendError(res, err, "generate");
   }
@@ -123,7 +127,7 @@ generateRouter.post("/edit-node", async (req, res) => {
 
   try {
     if (process.env.MOCK_AI === "1") await sleep(400);
-    res.json(await editNodeWithFallback(parsed.data));
+    res.json(await editNodeWithFallback(parsed.data, { onFallback: (c) => setFallback(res, c) }));
   } catch (err) {
     sendError(res, err, "edit-node");
   }

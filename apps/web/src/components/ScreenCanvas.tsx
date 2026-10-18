@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useScreenStore } from "../store/screenStore";
 import { ScreenRenderer } from "./ScreenRenderer";
@@ -5,6 +6,8 @@ import { AddMenu } from "../editor/AddMenu";
 import { PublishMenu } from "../editor/PublishMenu";
 import { RedoIcon, UndoIcon } from "../editor/icons";
 import { button, segmented } from "../ui/styles";
+import { ActivePill } from "../ui/ActivePill";
+import { duration, ease, fade, scaleIn, useReducedMotionSafe } from "../ui/motion";
 
 function EditorToolbar() {
   const editMode = useScreenStore((s) => s.editMode);
@@ -13,6 +16,7 @@ function EditorToolbar() {
   const canRedo = useScreenStore((s) => s.future.length > 0);
   const undo = useScreenStore((s) => s.undo);
   const redo = useScreenStore((s) => s.redo);
+  const pillId = useId();
   const iconBtn = button.icon;
   // Restyle the Add trigger from here (ghost). Export HTML styles itself with button.secondary.
   const addSlot =
@@ -43,6 +47,7 @@ function EditorToolbar() {
               onClick={() => setEditMode(m === "edit")}
               className={`${segmented.item} ${active ? segmented.active : ""}`}
             >
+              {active && <ActivePill layoutId={pillId} />}
               {m === "edit" ? "Edit" : "Preview"}
             </button>
           );
@@ -80,13 +85,13 @@ export function ScreenCanvas() {
   const loading = status === "loading";
   const editMode = useScreenStore((s) => s.editMode);
   const select = useScreenStore((s) => s.select);
+  const { reduce, v } = useReducedMotionSafe();
 
   return (
     <motion.section
-      layout
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      variants={v(scaleIn)}
+      initial="hidden"
+      animate="show"
       className="relative flex min-h-[420px] flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface"
     >
       <div className="flex h-11 shrink-0 items-center gap-2 bg-surface px-3">
@@ -95,9 +100,10 @@ export function ScreenCanvas() {
           <AnimatePresence>
             {loading && screen && (
               <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                variants={fade}
+                initial="hidden"
+                animate="show"
+                exit="exit"
                 className="flex items-center gap-2"
               >
                 <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
@@ -116,9 +122,10 @@ export function ScreenCanvas() {
         <AnimatePresence>
           {loading && screen && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              variants={fade}
+              initial="hidden"
+              animate="show"
+              exit="exit"
               className="pointer-events-none absolute inset-0 bg-shell/40"
             />
           )}
@@ -129,10 +136,10 @@ export function ScreenCanvas() {
         {loading && (
           <motion.div
             initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.3 } }}
-            transition={{ duration: 6, ease: "easeOut" }}
-            className="absolute left-0 top-0 h-0.5 w-full origin-left bg-gradient-to-r from-accent to-accent"
+            animate={{ scaleX: reduce ? 1 : 0.92 }}
+            exit={{ opacity: 0, transition: { duration: duration.slow } }}
+            transition={reduce ? { duration: 0 } : { duration: 8, ease: ease.standard }}
+            className="absolute left-0 top-0 h-0.5 w-full origin-left bg-accent"
           />
         )}
       </AnimatePresence>

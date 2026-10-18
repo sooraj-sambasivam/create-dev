@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import { listModels } from "./providers/models";
 import { generateRouter } from "./routes/generate";
 import { transcribeRouter } from "./routes/transcribe";
 import { imageRouter } from "./routes/image";
@@ -17,6 +18,7 @@ import { askRouter } from "./ask/route";
 import { formsRouter } from "./forms/route";
 import { liftRouter } from "./lift/route";
 import { extractRouter } from "./extract/route";
+import { trayRouter } from "./tray/route";
 import { DEFAULT_MODEL } from "./ai/claude";
 import { allowedOrigins, isAllowedOrigin } from "./middleware/origins";
 import { createRateLimiter } from "./middleware/rateLimit";
@@ -44,7 +46,7 @@ export function createApp(): express.Express {
     cors((req, cb) => {
       const origin = req.headers.origin;
       // No Origin header (same-origin, curl): cors adds nothing either way.
-      cb(null, { origin: origin ? isAllowedOrigin(origin, req.originalUrl ?? req.url ?? "") : false });
+      cb(null, { origin: origin ? isAllowedOrigin(origin, req.originalUrl ?? req.url ?? "") : false, exposedHeaders: ["x-model-fallback"] });
     }),
   );
   // Cost routes: limit before any body parsing so refused requests stay cheap.
@@ -60,6 +62,7 @@ export function createApp(): express.Express {
   app.use("/api", formsRouter); // own 64kb JSON parser
 app.use("/api", liftRouter); // own 1mb JSON parser
 app.use("/api", extractRouter); // own big JSON parser
+  app.use("/api", trayRouter); // own 8kb JSON parser
   app.use(express.json({ limit: "3mb" }));
 
   app.get("/api/health", (_req, res) => {
@@ -71,9 +74,14 @@ app.use("/api", extractRouter); // own big JSON parser
       hasElevenLabs: Boolean(process.env.ELEVENLABS_API_KEY),
       hasTypesafe: Boolean(process.env.TYPESAFE_API_KEY?.trim()),
       hasMongo: Boolean(process.env.MONGODB_URI?.trim()),
+      hasOpenRouter: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
+      hasGemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
       hasPerceptron: Boolean(process.env.PERCEPTRON_API_KEY?.trim()),
       hasYoutube: Boolean(process.env.YOUTUBE_API_KEY?.trim()),
     });
+  });
+  app.get("/api/models", (_req, res) => {
+    res.json(listModels());
   });
   app.use("/api", generateRouter);
   app.use("/api", transcribeRouter);

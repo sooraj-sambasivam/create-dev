@@ -117,6 +117,8 @@ export async function runGhost(steps: GhostStep[], opts: RunOptions = {}): Promi
         const { selector, text, cps = DEFAULT_CPS } = step.type;
         const el = resolveElement(selector, doc);
         if (!isTextField(el)) throw new Error("ghost: type target is not a text field");
+        // Bring it into view first, or the cursor would glide to a spot off screen.
+        el.scrollIntoView?.({ block: "center", inline: "nearest" });
         const p = targetPoint(el, doc);
         await cursor.moveTo(p, { instant });
         cursor.ripple();
@@ -145,7 +147,7 @@ export async function runGhost(steps: GhostStep[], opts: RunOptions = {}): Promi
 
 const norm = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
-function fieldKeys(el: HTMLInputElement | HTMLTextAreaElement, root: Element): string[] {
+export function fieldKeys(el: HTMLInputElement | HTMLTextAreaElement, root: Element): string[] {
   const keys = [el.getAttribute("aria-label"), el.placeholder, el.name, el.id];
   const labelled = el.getAttribute("aria-labelledby");
   if (labelled) for (const id of labelled.split(/\s+/)) keys.push(root.ownerDocument.getElementById(id)?.textContent ?? null);

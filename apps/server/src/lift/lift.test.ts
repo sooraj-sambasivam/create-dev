@@ -82,3 +82,23 @@ describe("POST /api/lift", () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe("lift tray and dedupe", () => {
+  it("dedupes identical rows and pushes the result to the tray", async () => {
+    const { dedupeRows } = await import("./route");
+    const { createTrayStore } = await import("../tray/store");
+    expect(dedupeRows([{ a: "1" }, { a: " 1 " }, { a: "2" }])).toEqual([{ a: "1" }, { a: "2" }]);
+    const saved: any[] = [];
+    const store = { save: async (x: any) => { saved.push(x); return { id: "p1" }; } } as unknown as PrototypeStore;
+    const tray = createTrayStore();
+    process.env.MOCK_AI = "1";
+    const app = express().use("/api", createLiftRouter(store, tray));
+    const r = await postJson(app, "/api/lift", { entity: { ...entity, rows: [...entity.rows, entity.rows[0]!, ...Array.from({ length: 3 }, () => entity.rows[1]!)] } });
+    delete process.env.MOCK_AI;
+    expect(r.status).toBe(200);
+    expect(tray.list()).toHaveLength(1);
+    expect(tray.list()[0]).toMatchObject({ kind: "table", url: r.body.url });
+    const t = JSON.stringify(saved[0].screen);
+    expect(t.split('"W1"').length).toBeLessThan(5);
+  });
+});

@@ -1,7 +1,9 @@
-import { useMemo, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, type CSSProperties } from "react";
+import { motion } from "motion/react";
 import type { Leaf } from "@create/shared";
 import { useLiveRows } from "./useLiveRows";
 import { mapRows, mergeChart, parseNumber, type ChartData } from "./liveRows";
+import { duration, ease, spring, staggerDelay, useReducedMotionSafe } from "../ui/motion";
 
 type TableNode = Extract<Leaf, { type: "table" }>;
 type ChartNode = Extract<Leaf, { type: "chart" }>;
@@ -12,6 +14,12 @@ export function TableBlock({ node, style }: { node: TableNode; style: CSSPropert
   const { subs, fresh } = useLiveRows(null, node.liveFormId);
   const live = useMemo(() => mapRows(node.columns, subs), [node.columns, subs]);
   const rows = [...node.rows.map((cells, i) => ({ id: `s${i}`, cells })), ...live];
+  const { reduce } = useReducedMotionSafe();
+  // Rows present at first paint stagger in (24ms apart); rows that arrive later spring in on their own.
+  const first = useRef(true);
+  useEffect(() => {
+    first.current = false;
+  }, []);
   return (
     <div className="w-full overflow-x-auto rounded-xl" style={{ boxShadow: "0 0 0 1px var(--border)", ...style }}>
       <table className="w-full border-collapse text-left text-sm">
@@ -26,12 +34,20 @@ export function TableBlock({ node, style }: { node: TableNode; style: CSSPropert
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr
+            <motion.tr
               key={row.id}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                reduce
+                  ? { duration: duration.fast }
+                  : { ...spring.gentle, opacity: { duration: duration.base, ease: ease.standard }, delay: first.current ? staggerDelay(rows.indexOf(row)) : 0 }
+              }
               data-new={fresh.has(row.id) ? "true" : undefined}
               style={{
                 borderTop: "1px solid var(--border)",
                 background: fresh.has(row.id) ? "color-mix(in srgb, var(--accent) 14%, transparent)" : "transparent",
+                // Paint-only tint that fades out; the row's own entrance is transform and opacity.
                 transition: reduceMotion() ? "none" : "background-color 1.5s ease-out",
               }}
             >
@@ -40,7 +56,7 @@ export function TableBlock({ node, style }: { node: TableNode; style: CSSPropert
                   {cell}
                 </td>
               ))}
-            </tr>
+            </motion.tr>
           ))}
         </tbody>
       </table>
@@ -69,6 +85,7 @@ export function ChartBlock({ node, style }: { node: ChartNode; style: CSSPropert
     [node.labels, node.series, subs],
   );
   const { labels, series } = data;
+  const { reduce } = useReducedMotionSafe();
   const all = series.flatMap((s) => s.values);
   const min = Math.min(0, ...all);
   const top = niceMax(Math.max(0, ...all));
@@ -107,15 +124,27 @@ export function ChartBlock({ node, style }: { node: ChartNode; style: CSSPropert
         {node.kind === "line"
           ? series.map((s, si) => (
               <g key={si} stroke={SERIES_COLORS[si]} fill={SERIES_COLORS[si]}>
-                <polyline
+                <motion.polyline
                   fill="none"
                   strokeWidth={2}
                   strokeLinejoin="round"
                   strokeLinecap="round"
                   points={s.values.map((v, i) => `${x(i)},${y(v)}`).join(" ")}
+                  initial={reduce ? { opacity: 0 } : { pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={reduce ? { duration: duration.fast } : { pathLength: { duration: 0.9, ease: ease.standard, delay: si * 0.12 }, opacity: { duration: duration.fast } }}
                 />
                 {s.values.map((v, i) => (
-                  <circle key={i} cx={x(i)} cy={y(v)} r={3} stroke="none" />
+                  <motion.circle
+                    key={i}
+                    cx={x(i)}
+                    cy={y(v)}
+                    r={3}
+                    stroke="none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={reduce ? { duration: duration.fast } : { duration: duration.base, delay: 0.5 + si * 0.12 + staggerDelay(i, 0.03) }}
+                  />
                 ))}
               </g>
             ))
@@ -123,8 +152,21 @@ export function ChartBlock({ node, style }: { node: ChartNode; style: CSSPropert
               s.values.map((v, i) => {
                 const bx = x(i) - (barW * series.length) / 2 + barW * si;
                 const y0 = y(Math.max(v, 0));
+                const h = Math.max(Math.abs(y(v) - y(0)), 1);
                 return (
-                  <rect key={`${si}-${i}`} x={bx} y={y0} width={barW - 2} height={Math.max(Math.abs(y(v) - y(0)), 1)} rx={3} fill={SERIES_COLORS[si]} opacity={si === 0 ? 1 : 0.7} />
+                  // Bars grow from the baseline on a spring (scaleY from the bar's own base); later data changes glide.
+                  <motion.rect
+                    key={`${si}-${i}`}
+                    x={bx}
+                    width={barW - 2}
+                    rx={3}
+                    fill={SERIES_COLORS[si]}
+                    opacity={si === 0 ? 1 : 0.7}
+                    style={{ originY: v >= 0 ? 1 : 0 }}
+                    initial={reduce ? { y: y0, height: h, opacity: 0 } : { y: y0, height: h, scaleY: 0 }}
+                    animate={{ y: y0, height: h, scaleY: 1, opacity: si === 0 ? 1 : 0.7 }}
+                    transition={reduce ? { duration: duration.fast } : { ...spring.bouncy, delay: staggerDelay(i) + si * 0.04 }}
+                  />
                 );
               }),
             )}

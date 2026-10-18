@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { originFor, popover, useReducedMotionSafe } from "../ui/motion";
 import { downloadFile, exportSite } from "../lib/exportSite";
 import { button, surface } from "../ui/styles";
 
 /** "Export HTML": download the site as one file, with plain steps to put it online for free. */
 export function PublishMenu() {
+  const { v } = useReducedMotionSafe();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
@@ -57,9 +59,11 @@ export function PublishMenu() {
           <motion.div
             role="dialog"
             aria-label="Export HTML"
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
+            variants={v(popover)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            style={{ transformOrigin: originFor("down", "right") }}
             className={`${surface.card} absolute right-0 top-10 z-50 w-80 p-4 text-[14px] text-ink-2`}
           >
             <p className="font-medium text-ink">Export your page as HTML</p>

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, type CSSProperties } from "react";
 import { motion } from "motion/react";
+import { duration, ease, spring, STAGGER, useReducedMotionSafe } from "../ui/motion";
 import {
   DndContext,
   DragOverlay,
@@ -191,7 +192,8 @@ function NodeViewInner({ node, parentId, index, parentDirection, parentAlign, co
     drop.setNodeRef(el);
   };
 
-  const delay = Math.min(counter.i++ * 0.035, 0.7);
+  const { reduce } = useReducedMotionSafe();
+  const delay = reduce ? 0 : Math.min(counter.i++ * STAGGER, 0.5);
   const pct = node.widthPct ?? null;
   const widthCls = pct !== null ? "min-w-0" : isContainer ? containerWidth[node.width] : leafWidth(node, parentDirection, parentAlign);
   const widthStyle: CSSProperties = pct !== null ? { width: `${pct}%`, maxWidth: "100%", flex: "0 0 auto" } : {};
@@ -247,10 +249,13 @@ function NodeViewInner({ node, parentId, index, parentDirection, parentAlign, co
   ) : null;
 
   const motionProps = {
-    layout: !ed.resizing && !ed.draggingId,
-    initial: { opacity: 0, y: 8 },
+    // "position" moves siblings aside without stretching their content (no scale distortion).
+    layout: !ed.resizing && !ed.draggingId && !reduce ? ("position" as const) : false,
+    initial: reduce ? { opacity: 0 } : { opacity: 0, y: 8 },
     animate: { opacity: dragging ? 0.35 : 1, y: 0 },
-    transition: { duration: 0.3, delay, ease: "easeOut" as const, layout: { duration: 0.2 } },
+    transition: reduce
+      ? { duration: duration.fast }
+      : { duration: duration.slow, delay, ease: ease.emphasized, layout: spring.gentle },
   };
 
   if (node.type === "container") {

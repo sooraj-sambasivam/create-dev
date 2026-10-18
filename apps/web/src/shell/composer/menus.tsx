@@ -106,11 +106,14 @@ export function FilesMenu({
   inputRef,
   uploading,
   error,
+  onInsert,
 }: {
   assets: Asset[];
   inputRef: RefObject<HTMLInputElement | null>;
   uploading: boolean;
   error: string | null;
+  /** Put "@name" in the message field. */
+  onInsert: (name: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -127,9 +130,21 @@ export function FilesMenu({
           ) : (
             <ul className="mb-1">
               {assets.map((a) => (
-                <li key={a.url} className="flex h-8 items-center gap-2 rounded-lg px-2">
-                  <Paperclip {...ROW_ICON} className={LEAD} />
-                  <span className="min-w-0 flex-1 truncate text-[14px] text-ink">{a.name}</span>
+                <li key={a.url}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    title={`Mention @${a.name} in your message`}
+                    className={menuItem}
+                    onClick={() => {
+                      onInsert(a.name);
+                      setOpen(false);
+                    }}
+                  >
+                    <Paperclip {...ROW_ICON} className={LEAD} />
+                    <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                    <span className="text-[12px] text-ink-3">@</span>
+                  </button>
                 </li>
               ))}
             </ul>

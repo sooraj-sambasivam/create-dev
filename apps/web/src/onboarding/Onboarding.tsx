@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { duration, ease, fade, sharedAxis, spring, useReducedMotionSafe } from "../ui/motion";
 import { Check, Crosshair, Keyboard, Mic } from "lucide-react";
 import { useProfile, type ProfileIntent, type ProfileLevel } from "./profile";
 import { usePermissions } from "./permissions";
@@ -29,7 +30,6 @@ import {
   type StepIndex,
 } from "./steps";
 
-const ease = [0.22, 1, 0.36, 1] as const;
 const TITLES = [
   "Point at anything. Say what you want. Get software you own.",
   "Tell us how you’ll use it",
@@ -65,12 +65,15 @@ function WelcomePreview({ reduce }: { reduce: boolean | null }) {
     return () => clearInterval(t);
   }, [reduce]);
   const big = phase >= 3;
-  const tr = reduce ? "none" : "opacity 200ms ease-out, transform 200ms ease-out, font-size 200ms";
+  const tr = reduce ? "none" : "opacity var(--duration-base) var(--ease-standard), transform var(--duration-slow) var(--ease-emphasized)";
   return (
     <>
       <p className="sr-only">Preview: a pointer chip appears over a rating, you say &ldquo;make it bigger&rdquo;, and the heading grows.</p>
       <div aria-hidden="true" className={`${card} relative mx-auto mt-8 w-full max-w-sm text-left`}>
-        <div style={{ fontSize: big ? 24 : 16, transition: tr }} className="font-medium leading-tight text-ink">Corner Coffee</div>
+        {/* The heading grows with transform only; its row keeps the final height so nothing below reflows. */}
+        <div className="flex h-8 items-center">
+          <div style={{ fontSize: 16, transform: `scale(${big ? 1.5 : 1})`, transformOrigin: "left center", transition: tr }} className="font-medium leading-tight text-ink">Corner Coffee</div>
+        </div>
         <div className="relative mt-1 w-fit text-[14px] text-ink-2">
           <PointerChipView
             label="Rating · 4.9"
@@ -232,7 +235,7 @@ function StepTry({ intent, done, onDone }: { intent: ProfileIntent; done: boolea
   };
   const dictation = useDictation((t) => { setTyped(t); run(t); });
   const onPath = (p: WorkMode) => { setPath(p); setSizeIdx(0); setAnswer(null); setMiss(false); setTyped(""); };
-  const hoverCls = "relative w-fit rounded-md px-1 transition-colors duration-150 hover:bg-hover focus-visible:bg-hover";
+  const hoverCls = "relative w-fit rounded-md px-1 transition-colors duration-120 hover:bg-hover focus-visible:bg-hover";
   const enter = (h: "heading" | "rating") => () => setHover(h);
   const leave = () => setHover(null);
 
@@ -245,7 +248,17 @@ function StepTry({ intent, done, onDone }: { intent: ProfileIntent; done: boolea
       <div data-screen-root className={`${card} pt-8`}>
         <div tabIndex={0} className={`${hoverCls} ${focusRing}`} onPointerEnter={enter("heading")} onPointerLeave={leave} onFocus={enter("heading")} onBlur={leave}>
           {hover === "heading" && <PointerChipView label="Heading · Corner Coffee" className="absolute -top-8 left-0 z-10" />}
-          <h3 data-node-id="onb-heading" style={{ fontSize: HEADING_SIZES[sizeIdx], transition: reduce ? "none" : "font-size 150ms" }} className="font-medium leading-tight text-ink">Corner Coffee</h3>
+          <div className="flex h-8 items-center">
+            <motion.h3
+              data-node-id="onb-heading"
+              style={{ fontSize: HEADING_SIZES[0], transformOrigin: "left center" }}
+              animate={{ scale: HEADING_SIZES[sizeIdx] / HEADING_SIZES[0] }}
+              transition={reduce ? { duration: 0 } : spring.snappy}
+              className="font-medium leading-tight text-ink"
+            >
+              Corner Coffee
+            </motion.h3>
+          </div>
         </div>
         <p data-node-id="onb-rating" tabIndex={0} className={`${hoverCls} mt-1 text-[14px] text-ink-2 ${focusRing}`} onPointerEnter={enter("rating")} onPointerLeave={leave} onFocus={enter("rating")} onBlur={leave}>
           {hover === "rating" && <PointerChipView label="Rating · 4.9" className="absolute -top-8 left-0 z-10" />}
@@ -330,7 +343,12 @@ export function Onboarding() {
   const setMode = useWorkMode((s) => s.setMode);
   const close = useOnboarding((s) => s.close);
   const reduce = useReducedMotion();
+  const { t, v } = useReducedMotionSafe();
   const [step, setStep] = useState<StepIndex>(0);
+  // Direction of travel for the shared-axis slide: forward steps enter from the right, Back from the left.
+  const travel = useRef({ step: 0 as StepIndex, dir: 1 });
+  if (travel.current.step !== step) travel.current = { step, dir: step > travel.current.step ? 1 : -1 };
+  const dir = travel.current.dir;
   const [intent, setIntent] = useState<ProfileIntent>(profile.intent);
   const [level, setLevel] = useState<ProfileLevel>(profile.level);
   const [tried, setTried] = useState(false);
@@ -414,24 +432,25 @@ export function Onboarding() {
       tabIndex={-1}
       onKeyDown={onKeyDown}
       className="fixed inset-0 z-[100] flex flex-col overflow-y-auto bg-shell outline-none"
-      initial={reduce ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={reduce ? undefined : { opacity: 0 }}
-      transition={{ duration: reduce ? 0 : 0.2, ease }}
+      variants={fade}
+      initial="hidden"
+      animate="show"
+      exit="exit"
     >
       <header className="flex h-14 shrink-0 items-center justify-between px-4 sm:px-6">
         <span className="text-[14px] text-ink-2">Create</span>
         <button type="button" onClick={() => finish(true)} aria-label="Skip setup" className={button.ghost}>Skip</button>
       </header>
       <main className="mx-auto flex w-full max-w-[560px] flex-1 flex-col justify-center px-4 pb-8">
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="wait" initial={false} custom={dir}>
           <motion.div
             key={step}
+            custom={dir}
+            variants={v(sharedAxis)}
             className={welcome ? "text-center" : ""}
-            initial={reduce ? false : { opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduce ? undefined : { opacity: 0 }}
-            transition={{ duration: reduce ? 0 : 0.15, ease }}
+            initial="enter"
+            animate="center"
+            exit="exit"
           >
             <h2 id="onb-title" ref={titleRef} tabIndex={-1} className="text-[28px] font-normal leading-9 tracking-[-0.01em] text-ink outline-none">{TITLES[step]}</h2>
             {step === STEP.you && <p className="mt-3 text-[16px] leading-6 text-ink-2">You can change this any time in Settings.</p>}
@@ -459,7 +478,16 @@ export function Onboarding() {
         </div>
         <div className="flex gap-1.5" role="img" aria-label={`Step ${step + 1} of ${STEP_COUNT}`}>
           {Array.from({ length: STEP_COUNT }, (_, i) => (
-            <span key={i} className={`size-1.5 rounded-full ${i === step ? "bg-ink" : "bg-line"}`} />
+            <span key={i} className="relative size-1.5 rounded-full bg-line">
+              {i === step && (
+                <motion.span
+                  layoutId="onb-dot"
+                  className="absolute inset-0 rounded-full bg-ink"
+                  style={{ borderRadius: 9999 }}
+                  transition={t(spring.snappy)}
+                />
+              )}
+            </span>
           ))}
         </div>
         <span className="sr-only" role="status" aria-live="polite">Step {step + 1} of {STEP_COUNT}</span>

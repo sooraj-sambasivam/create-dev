@@ -93,7 +93,7 @@ export function ResizeHandle() {
     >
       <span
         aria-hidden
-        className={`absolute inset-y-2 left-0 w-0.5 rounded-full transition-colors duration-150 group-hover:bg-accent group-focus-visible:bg-accent ${active ? "bg-accent" : "bg-transparent"}`}
+        className={`absolute inset-y-2 left-0 w-0.5 rounded-full transition-colors duration-120 group-hover:bg-accent group-focus-visible:bg-accent ${active ? "bg-accent" : "bg-transparent"}`}
       />
     </div>
   );

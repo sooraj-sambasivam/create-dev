@@ -326,8 +326,17 @@ export const AssetSchema = z.object({
   name: z.string().max(200),
 });
 
+/** The composer's model picker. Server maps each to a provider model id; unknown or unconfigured falls back to Sonnet. */
+export const MODEL_CHOICES = ["sonnet", "haiku", "inkling", "gemini"] as const;
+export const ModelChoiceSchema = z.enum(MODEL_CHOICES);
+export type ModelChoice = z.infer<typeof ModelChoiceSchema>;
+export const EffortSchema = z.enum(["low", "medium", "high"]);
+export type EffortChoice = z.infer<typeof EffortSchema>;
+
 export const GenerateRequestSchema = z.object({
   prompt: z.string().min(1).max(4000),
+  model: ModelChoiceSchema.optional(),
+  effort: EffortSchema.optional(),
   screen: ScreenSchema.nullable().optional(),
   history: z.array(z.string().max(4000)).max(20).optional(),
   /** Files the user uploaded; the model may place them by url. */
@@ -341,6 +350,8 @@ export const GenerateRequestSchema = z.object({
 /** Edit one element (and its children) instead of regenerating the whole page. */
 export const EditNodeRequestSchema = z.object({
   prompt: z.string().min(1).max(4000),
+  model: ModelChoiceSchema.optional(),
+  effort: EffortSchema.optional(),
   screen: ScreenSchema,
   nodeId: z.string().min(1).max(200),
   assets: z.array(AssetSchema).max(50).optional(),

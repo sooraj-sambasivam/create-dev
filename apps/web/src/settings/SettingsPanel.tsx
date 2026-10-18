@@ -1,5 +1,7 @@
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { motion } from "motion/react";
+import { fade, scaleIn, useReducedMotionSafe } from "../ui/motion";
 import { RotateCcw, X } from "lucide-react";
 import { useThemeStore, THEME_LABEL, THEME_ORDER } from "../shell/theme";
 import { useProfile, type ProfileDefaultMode, type ProfileLevel } from "../onboarding/profile";
@@ -46,6 +48,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const replay = useOnboarding((s) => s.open);
   const mic = useMic();
   const ref = useRef<HTMLDivElement>(null);
+  const { v } = useReducedMotionSafe();
   const mac = typeof navigator === "undefined" ? true : isMacPlatform(navigator.platform);
 
   useEffect(() => { ref.current?.focus(); }, []);
@@ -63,14 +66,23 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  // The wrapper centres the window so the window itself is free to animate transform.
   return createPortal(
-    <div
+    <motion.div
+      variants={v(fade)}
+      initial="hidden"
+      animate="show"
+      exit="exit"
+      className="pointer-events-none fixed inset-0 z-[90] grid place-items-center p-4"
+    >
+    <motion.div
       ref={ref}
       role="dialog"
       aria-label="Settings"
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className={`${surface.card} fixed left-1/2 top-1/2 z-[90] flex max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden outline-none`}
+      variants={v(scaleIn)}
+      className={`${surface.card} pointer-events-auto flex max-h-full w-full max-w-[480px] flex-col overflow-hidden outline-none`}
     >
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-line pl-5 pr-2">
         <h2 className={text.ui}>Settings</h2>
@@ -117,7 +129,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           </div>
         </Section>
       </div>
-    </div>,
+    </motion.div>
+    </motion.div>,
     document.body,
   );
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ScreenSchema } from "./schema";
+import { EffortSchema, ModelChoiceSchema, ScreenSchema } from "./schema";
 import { ScreenOpSchema } from "./ops";
 
 /**
@@ -142,6 +142,8 @@ export const AskRequestSchema = z.object({
     })
     .optional(),
   history: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(4000) })).max(20).default([]),
+  model: ModelChoiceSchema.optional(),
+  effort: EffortSchema.optional(),
 });
 export type AskRequest = z.infer<typeof AskRequestSchema>;
 export type AskResponse = { answer: string; provider: "claude" | "perceptron+claude" | "mock"; suggestCode?: boolean };

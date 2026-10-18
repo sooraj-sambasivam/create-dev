@@ -16,12 +16,35 @@ enum Tok {
 func symbol(for kind: String) -> String {
     switch kind.lowercased() {
     case "table": return "tablecells"
+    case "chart": return "chart.bar.xaxis"
+    case "list": return "list.bullet"
+    case "schedule": return "calendar"
+    case "cards", "card": return "rectangle.grid.2x2"
+    case "capture", "image", "screenshot": return "viewfinder"
     case "design", "component": return "paintpalette"
-    case "chart": return "chart.bar"
-    case "image", "screenshot": return "photo"
     case "form": return "list.bullet.rectangle"
     case "text", "note": return "text.alignleft"
     default: return "square.on.square"
+    }
+}
+
+/// Drop-in: slight scale + blur + fade, from above.
+struct DropIn: ViewModifier {
+    let active: Bool
+    func body(content: Content) -> some View {
+        content
+            .opacity(active ? 0 : 1)
+            .scaleEffect(active ? 0.94 : 1, anchor: .top)
+            .blur(radius: active ? 6 : 0)
+            .offset(y: active ? -8 : 0)
+    }
+}
+extension AnyTransition {
+    static var chipDrop: AnyTransition {
+        if Motion.reduced { return .opacity }
+        return .asymmetric(
+            insertion: .modifier(active: DropIn(active: true), identity: DropIn(active: false)),
+            removal: .modifier(active: DropIn(active: true), identity: DropIn(active: false)))
     }
 }
 
@@ -32,28 +55,51 @@ func openURL(_ s: String) {
 
 struct ChipView: View {
     let item: TrayItem
+    var onDismiss: () -> Void
     @State private var hover = false
+    @State private var overX = false
     var body: some View {
-        Button { openURL(item.url) } label: {
-            HStack(spacing: 8) {
-                Image(systemName: symbol(for: item.kind))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Tok.accent)
-                    .frame(width: 16)
-                Text("\(item.kind.capitalized) \u{00B7} \(item.title)")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Tok.ink)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+        ZStack(alignment: .trailing) {
+            Button { openURL(item.url) } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: symbol(for: item.kind))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Tok.accent)
+                        .frame(width: 16)
+                    Text("\(item.kind.capitalized) \u{00B7} \(item.title)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Tok.ink)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer(minLength: 0)
+                }
+                .padding(.leading, 12)
+                .padding(.trailing, 32)
+                .frame(height: 32)
+                .frame(maxWidth: 300, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hover ? Tok.chipHover : Tok.chip))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(hover ? Tok.accent.opacity(0.45) : Tok.line, lineWidth: 1))
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            .padding(.horizontal, 12)
-            .frame(height: 32)
-            .frame(maxWidth: 260, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hover ? Tok.chipHover : Tok.chip))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Tok.line, lineWidth: 1))
+            .buttonStyle(.plain)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(overX ? Tok.ink : Tok.ink3)
+                    .frame(width: 20, height: 20)
+                    .background(Circle().fill(overX ? Color(white: 1, opacity: 0.18) : .clear))
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .padding(.trailing, 6)
+            .opacity(hover ? 1 : 0)
+            .scaleEffect(hover || Motion.reduced ? 1 : 0.8)
+            .onHover { h in withAnimation(Motion.hover) { overX = h } }
+            .help("Dismiss")
+            .accessibilityLabel("Dismiss \(item.title)")
         }
-        .buttonStyle(.plain)
-        .onHover { hover = $0 }
+        .scaleEffect(hover && !Motion.reduced ? 1.008 : 1)
+        .onHover { h in withAnimation(Motion.hover) { hover = h } }
         .help(item.url)
     }
 }
@@ -70,6 +116,8 @@ struct TrayContent: View {
                 Text(store.status ?? (store.items.isEmpty ? "" : "\(store.items.count)"))
                     .font(.system(size: 12))
                     .foregroundStyle(Tok.ink3)
+                    .contentTransition(.numericText())
+                    .animation(Motion.spring, value: store.items.count)
                 Spacer(minLength: 24)
                 Button { openURL(Endpoints.web.absoluteString) } label: {
                     HStack(spacing: 6) {
@@ -92,14 +140,13 @@ struct TrayContent: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(store.items) { item in
-                            ChipView(item: item)
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .top).combined(with: .opacity).combined(with: .scale(scale: 0.9)),
-                                    removal: .opacity))
+                            ChipView(item: item) { store.dismiss(item) }
+                                .transition(.chipDrop)
                         }
                     }
                 }
                 .frame(maxHeight: 150)
+                .animation(Motion.spring, value: store.items)
             }
         }
         .frame(minWidth: 340)
@@ -127,13 +174,15 @@ struct CompactTrailing: View {
                 Circle().fill(store.online ? Color(white: 0.35) : Color(white: 0.2)).frame(width: 6, height: 6)
             } else {
                 Text("\(store.items.count)")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold).monospacedDigit())
                     .foregroundStyle(.white)
+                    .contentTransition(.numericText(value: Double(store.items.count)))
                     .padding(.horizontal, 6)
                     .frame(minWidth: 18, minHeight: 16)
                     .background(Capsule().fill(Tok.accent))
             }
         }
         .padding(.trailing, 6)
+        .animation(Motion.spring, value: store.items.count)
     }
 }

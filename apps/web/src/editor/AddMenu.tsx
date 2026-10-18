@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { originFor, popover, useReducedMotionSafe } from "../ui/motion";
 import type { NodeType } from "@create/shared";
 import { useScreenStore } from "../store/screenStore";
 import { TYPE_LABELS } from "./EditorContext";
@@ -31,6 +32,7 @@ const ITEMS: { type: NodeType; hint: string }[] = [
 ];
 
 export function AddMenu() {
+  const { v } = useReducedMotionSafe();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const addNode = useScreenStore((s) => s.addNode);
@@ -71,7 +73,7 @@ export function AddMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex h-8 items-center gap-1.5 rounded-lg bg-hover px-3 text-sm font-medium text-ink transition-colors duration-150 hover:bg-line"
+        className="flex h-8 items-center gap-1.5 rounded-lg bg-hover px-3 text-sm font-medium text-ink transition-colors duration-120 hover:bg-line"
       >
         <PlusIcon /> Add
       </button>
@@ -80,9 +82,11 @@ export function AddMenu() {
           <motion.div
             role="menu"
             aria-label="Add an element"
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
+            variants={v(popover)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            style={{ transformOrigin: originFor("down", "right") }}
             className="absolute right-0 top-10 z-50 max-h-[70vh] w-72 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-soft"
           >
             <p className="px-2 pb-1.5 pt-1 text-xs text-ink-3">Adds {where}</p>
@@ -95,7 +99,7 @@ export function AddMenu() {
                   addNode(item.type);
                   setOpen(false);
                 }}
-                className="flex min-h-8 w-full items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm text-ink transition-colors duration-150 hover:bg-hover"
+                className="flex min-h-8 w-full items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-left text-sm text-ink transition-colors duration-120 hover:bg-hover"
               >
                 <span>{TYPE_LABELS[item.type]}</span>
                 <span className="text-right text-xs text-ink-3">{item.hint}</span>

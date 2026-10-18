@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { motion } from "motion/react";
+import { originFor, popover, useReducedMotionSafe } from "../ui/motion";
 import type { Node } from "@create/shared";
 import { useScreenStore } from "../store/screenStore";
 import { TYPE_LABELS } from "./EditorContext";
@@ -35,6 +36,7 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
   const [error, setError] = useState<string | null>(null);
   const [reply, setReply] = useState<string | null>(null);
   const [alignRight, setAlignRight] = useState(false);
+  const { v } = useReducedMotionSafe();
   const [inside, setInside] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const busy = useScreenStore((s) => s.aiBusyId === node.id);
@@ -77,9 +79,10 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
     <motion.div
       ref={boxRef}
       data-ai-box
-      initial={{ opacity: 0, y: -4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.15 }}
+      variants={v(popover)}
+      initial="hidden"
+      animate="show"
+      style={{ transformOrigin: originFor("down", alignRight ? "right" : "left") }}
       className={`absolute z-40 w-80 max-w-[min(20rem,90vw)] ${inside ? "top-3" : "top-full mt-2.5"} ${alignRight ? (inside ? "right-3" : "right-0") : inside ? "left-3" : "left-0"}`}
       onPointerDown={stop}
       onClick={stop}
@@ -112,7 +115,7 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
           <button
             type="submit"
             disabled={busy || !value.trim()}
-            className="h-8 rounded-lg bg-accent px-3 text-sm font-medium text-white dark:text-shell transition-opacity duration-150 hover:opacity-90 disabled:opacity-40"
+            className="h-8 rounded-lg bg-accent px-3 text-sm font-medium text-white dark:text-shell transition-opacity duration-120 hover:opacity-90 disabled:opacity-40"
           >
             {busy ? (
               <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current/40 border-t-current align-[-2px]" />
@@ -133,7 +136,7 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
                   key={s}
                   type="button"
                   onClick={() => void send(s)}
-                  className="rounded-full border border-line px-2.5 py-0.5 text-xs text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:opacity-40"
+                  className="rounded-full border border-line px-2.5 py-0.5 text-xs text-ink-2 transition-colors duration-120 hover:bg-hover hover:text-ink disabled:opacity-40"
                 >
                   {s}
                 </button>

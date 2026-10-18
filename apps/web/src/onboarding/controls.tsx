@@ -1,6 +1,7 @@
 import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { Check, ChevronDown, Minus, TriangleAlert } from "lucide-react";
 import { chip, focusRing, ICON, segmented, STROKE } from "../ui/styles";
+import { ActivePill } from "../ui/ActivePill";
 import type { PermState } from "./steps";
 
 type Option<T extends string> = { id: T; label: string };
@@ -36,7 +37,7 @@ export function ChoiceGroup<T extends string>({ label, labelId, options, value, 
             aria-checked={sel}
             tabIndex={sel ? 0 : -1}
             onClick={() => onChange(o.id)}
-            className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[14px] transition-colors duration-150 ${focusRing} ${sel ? "bg-hover text-ink" : "bg-tray text-ink-2 hover:bg-hover"}`}
+            className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[14px] transition-colors duration-120 ${focusRing} ${sel ? "bg-hover text-ink" : "bg-tray text-ink-2 hover:bg-hover"}`}
           >
             {o.label}
             {sel && <Check size={ICON.md} strokeWidth={STROKE} aria-hidden="true" />}
@@ -50,6 +51,7 @@ export function ChoiceGroup<T extends string>({ label, labelId, options, value, 
 /** Pill segmented control with radio semantics (theme, start-in mode). */
 export function SegmentedControl<T extends string>({ label, options, value, onChange }: { label: string; options: Option<T>[]; value: T; onChange: (v: T) => void }) {
   const { root, onKeyDown } = useRoving(options, value, onChange);
+  const pillId = useId();
   return (
     <div ref={root} role="radiogroup" aria-label={label} onKeyDown={onKeyDown} className={segmented.root}>
       {options.map((o) => {
@@ -62,8 +64,9 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
             aria-checked={sel}
             tabIndex={sel ? 0 : -1}
             onClick={() => onChange(o.id)}
-            className={`inline-flex h-7 items-center rounded-full px-3 text-[14px] transition-colors duration-150 ${focusRing} ${sel ? "bg-surface text-ink shadow-soft" : "text-ink-2 hover:text-ink"}`}
+            className={`${segmented.item} ${sel ? segmented.active : ""}`}
           >
+            {sel && <ActivePill layoutId={pillId} />}
             {o.label}
           </button>
         );
@@ -75,7 +78,7 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
 export function KeyCap({ children, pressed }: { children: ReactNode; pressed?: boolean }) {
   return (
     <kbd
-      className={`inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-line px-2 font-sans text-[14px] text-ink transition-[background-color,transform] duration-100 motion-reduce:transition-none ${
+      className={`inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-line px-2 font-sans text-[14px] text-ink transition-[background-color,transform] duration-120 motion-reduce:transition-none ${
         pressed ? "translate-y-px bg-hover motion-reduce:translate-y-0" : "bg-surface"
       }`}
     >

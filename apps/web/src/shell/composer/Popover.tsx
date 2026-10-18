@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { surface } from "../../ui/styles";
-
-const ease = [0.22, 1, 0.36, 1] as const;
+import { originFor, popover, useReducedMotionSafe } from "../../ui/motion";
 
 const FOCUSABLE = "button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
@@ -28,7 +27,7 @@ export function Popover({
   const ref = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
+  const { v } = useReducedMotionSafe();
   // A "down" menu flips up when the trigger sits near the bottom of the window (docked composer).
   const [flip, setFlip] = useState(false);
   useLayoutEffect(() => {
@@ -86,7 +85,6 @@ export function Popover({
     side === "down"
       ? align === "right" ? "top-full right-0 mt-2" : "top-full left-0 mt-2"
       : align === "right" ? "bottom-full right-0 mb-3" : "bottom-full left-0 mb-3";
-  const travel = reduce ? 0 : side === "down" ? -4 : 4;
 
   return (
     <div ref={ref} className="relative">
@@ -97,10 +95,11 @@ export function Popover({
             ref={menuRef}
             role="menu"
             onKeyDown={onMenuKeyDown}
-            initial={{ opacity: 0, y: travel }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: travel }}
-            transition={{ duration: reduce ? 0 : 0.2, ease }}
+            variants={v(popover)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            style={{ transformOrigin: originFor(side, align) }}
             className={`${surface.menu} absolute z-40 ${wide ? "w-72" : "max-w-72"} max-h-[min(420px,70vh)] overflow-auto ${position}`}
           >
             {panel}

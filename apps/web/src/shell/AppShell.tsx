@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { panelSlide, spring, useReducedMotionSafe } from "../ui/motion";
+import { ToastHost } from "../ui/Toast";
+import { toast } from "../ui/toastStore";
 import { Sidebar, SIDEBAR_RAIL, readSidebarWidth } from "./Sidebar";
 import { Header, type ShareOutcome, type WorkspaceActions } from "./Header";
 import { shareAndCopy } from "./output";
@@ -9,9 +12,6 @@ import { selectActiveChat, useWorkspaceStore } from "../store/workspaceStore";
 import { useScreenStore } from "../store/screenStore";
 import "./builder.css";
 
-/** Right panel open/close timing. Reduced motion makes both instant. */
-const PANEL_MS = 220;
-const PANEL_EASE = "easeOut" as const;
 /** Gap between the card and the window edge / panel (the card's mr-2). */
 const GUTTER = 8;
 
@@ -22,6 +22,9 @@ const GUTTER = 8;
  * panel, the sidebar collapses to its rail first, then the panel width is capped. The slot animates
  * width on open/close only; while the resize handle is dragged the width follows the pointer.
  * The panel stays mounted until the close animation finishes.
+ * The slot width is the one layout animation in the chrome (the card has to give up the space); the
+ * panel inside keeps a fixed width and slides and fades with transform and opacity, so its content
+ * never reflows mid-animation.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const chat = useWorkspaceStore(selectActiveChat);
@@ -39,7 +42,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const dragging = useRightPanel((s) => s.dragging);
   useInspectFollow();
   usePanelAutoOpen();
-  const reduce = useReducedMotion();
+  const { reduce, t, v } = useReducedMotionSafe();
+  const [animating, setAnimating] = useState(false);
 
   const rowRef = useRef<HTMLDivElement>(null);
   const [rowWidth, setRowWidth] = useState(0);
@@ -88,6 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     try {
       const { url, copied } = await shareAndCopy(current);
       log("share", url);
+      if (copied) toast("Link copied");
       return copied ? true : { url };
     } catch (err) {
       useScreenStore.setState({ error: err instanceof Error ? err.message : "Couldn't create a share link." });
@@ -95,7 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [log]);
 
-  const slotTransition = reduce || dragging ? { duration: 0 } : { duration: PANEL_MS / 1000, ease: PANEL_EASE };
+  const slotTransition = reduce || dragging ? { duration: 0 } : t(spring.gentle);
 
   return (
     <div ref={rowRef} className="relative flex h-dvh overflow-x-auto overflow-y-hidden bg-shell text-ink">
@@ -119,17 +124,27 @@ export function AppShell({ children }: { children: ReactNode }) {
         initial={false}
         animate={{ width: open ? panelWidth + GUTTER : 0 }}
         transition={slotTransition}
+        onAnimationStart={() => setAnimating(true)}
         onAnimationComplete={() => {
+          setAnimating(false);
           if (!openRef.current) setPanelMounted(false);
         }}
+        style={{ willChange: animating ? "width" : undefined }}
         className="flex h-full shrink-0 justify-end overflow-hidden"
       >
         {panelMounted ? (
-          <div className="my-2 mr-2 h-[calc(100%-1rem)] shrink-0" style={{ width: panelWidth }}>
+          <motion.div
+            variants={v(panelSlide)}
+            initial="hidden"
+            animate={open ? "show" : "exit"}
+            style={{ width: panelWidth, willChange: animating ? "transform, opacity" : undefined }}
+            className="my-2 mr-2 h-[calc(100%-1rem)] shrink-0"
+          >
             <RightPanel />
-          </div>
+          </motion.div>
         ) : null}
       </motion.div>
+      <ToastHost />
     </div>
   );
 }

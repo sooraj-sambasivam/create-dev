@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "motion/react";
 import { Check, CircleAlert, Copy, Database, Download, FileText, Globe, MousePointerClick, TextCursorInput, type LucideIcon } from "lucide-react";
 import type { StoredSubmission } from "@create/shared";
 import { listSubmissions, resolveAppId } from "../../components/forms";
@@ -8,37 +9,39 @@ import { useScreenStore } from "../../store/screenStore";
 import { curlExample, deriveAppBackend, sampleBody, type AppBackend, type BackendStatus } from "./appBackend";
 import { fetchHealth, lastSharedUrl } from "./shareApi";
 import { liveColumns, newIds, submissionsFor } from "./liveRows";
-import { button, chip, dot } from "../../ui/styles";
+import { ICON, STROKE, button, chip, dot, surface, text } from "../../ui/styles";
+import { duration, ease, fadeUp, listStagger, spring, useReducedMotionSafe } from "../../ui/motion";
 
 const PILL: Record<BackendStatus, { label: string; cls: string }> = {
-  connected: { label: "Connected", cls: "bg-ok" },
-  sample: { label: "Sample data", cls: "bg-warn" },
-  setup: { label: "Needs setup", cls: "bg-warn" },
+  connected: { label: "Connected", cls: dot.ok },
+  sample: { label: "Sample data", cls: dot.warn },
+  setup: { label: "Needs setup", cls: dot.warn },
 };
 
 function Pill({ status }: { status: BackendStatus }) {
   const p = PILL[status];
   return (
     <span className={`${chip.status} shrink-0`}>
-      <span className={`size-1.5 rounded-full ${p.cls}`} aria-hidden />
+      <span className={p.cls} aria-hidden />
       {p.label}
     </span>
   );
 }
 
 function Section({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: React.ReactNode }) {
+  const { v } = useReducedMotionSafe();
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="flex h-6 items-center gap-2 text-[14px] font-medium text-ink">
-        <Icon size={16} strokeWidth={1.75} className="text-ink-2" aria-hidden />
+    <motion.section variants={v(fadeUp)} className="flex flex-col gap-2">
+      <h3 className={`flex h-6 items-center gap-2 ${text.ui} font-medium`}>
+        <Icon size={ICON.md} strokeWidth={STROKE} className="text-ink-2" aria-hidden />
         {title}
       </h3>
       <div className="flex flex-col gap-2 pl-6">{children}</div>
-    </section>
+    </motion.section>
   );
 }
 
-const card = "flex flex-col gap-2 rounded-lg border border-line bg-surface p-3";
+const card = `flex flex-col gap-2 ${surface.inset} p-3`;
 const btn = `${button.secondary} w-full`;
 
 function Code({ children }: { children: string }) {
@@ -49,10 +52,10 @@ function Code({ children }: { children: string }) {
       <button
         aria-label="Copy"
         title="Copy"
-        className="absolute right-1 top-1 grid size-6 place-items-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className={`${button.iconSm} absolute right-1 top-1`}
         onClick={() => navigator.clipboard?.writeText(children).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }, () => {})}
       >
-        {copied ? <Check size={16} strokeWidth={1.75} className="text-ok" /> : <Copy size={16} strokeWidth={1.75} />}
+        {copied ? <Check size={ICON.md} strokeWidth={STROKE} className="text-ok" /> : <Copy size={ICON.md} strokeWidth={STROKE} />}
       </button>
     </div>
   );
@@ -103,20 +106,21 @@ function Responses({ appId, formId, fields, dev }: { appId: string; formId: stri
     };
   }, [appId, formId, visible]);
 
+  const { reduce } = useReducedMotionSafe();
   const cols = liveColumns(fields, rows ?? []);
   const count = rows?.length ?? 0;
   const live = visible && !failed && rows !== null;
   return (
     <div className="flex flex-col gap-1">
       <div className="flex h-8 items-center justify-between gap-2">
-        <span className="text-[14px] text-ink">{failed && rows === null ? "Couldn't load responses" : rows === null ? "Loading…" : `${count} ${count === 1 ? "response" : "responses"}`}</span>
+        <span className={text.ui}>{failed && rows === null ? "Couldn't load responses" : rows === null ? "Loading…" : `${count} ${count === 1 ? "response" : "responses"}`}</span>
         <span className={chip.status} role="status">
           <span className={failed ? dot.bad : live ? dot.ok : dot.idle} aria-hidden />
           {failed ? "Offline" : live ? "Live" : visible ? "Connecting…" : "Paused"}
         </span>
       </div>
       {count > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-line">
+        <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full border-collapse text-left text-[12px]">
             <thead>
               <tr className="bg-tray text-ink-2">
@@ -126,12 +130,29 @@ function Responses({ appId, formId, fields, dev }: { appId: string; formId: stri
             </thead>
             <tbody>
               {rows!.slice(0, 5).map((r) => (
-                <tr key={r.id} className={`border-t border-line transition-colors duration-700 ${fresh.has(r.id) ? "bg-hover" : "bg-surface"}`}>
+                <motion.tr
+                  key={r.id}
+                  layout={reduce ? false : "position"}
+                  initial={reduce || !fresh.has(r.id) ? false : { opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={reduce ? { duration: 0 } : { ...spring.gentle, opacity: { duration: duration.base, ease: ease.standard } }}
+                  className="relative border-t border-line bg-surface"
+                >
+                  {fresh.has(r.id) && !reduce && (
+                    // The flash: an accent wash that fades out. Opacity only, no colour transition.
+                    <motion.td
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 bg-accent/15 p-0"
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 0 }}
+                      transition={{ duration: 1.8, ease: ease.standard }}
+                    />
+                  )}
                   <td className="whitespace-nowrap px-2 py-1.5 font-mono text-ink-2" title={r.createdAt}>{r.createdAt.slice(11, 19)}</td>
                   {cols.map((c) => (
                     <td key={c.key} className={`max-w-[160px] truncate px-2 py-1.5 text-ink ${dev ? "font-mono" : ""}`} title={r.fields[c.key]}>{r.fields[c.key] ?? ""}</td>
                   ))}
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
@@ -152,6 +173,7 @@ function Empty() {
 
 /** Backend tab body: the backend of the user's app, derived from the current Screen. Renders inside the right panel. */
 export function BackendTab() {
+  const { v } = useReducedMotionSafe();
   const screen = useScreenStore((s) => s.screen);
   const level = useProfile((s) => s.level);
   const dev = isTechnical(level);
@@ -186,7 +208,7 @@ export function BackendTab() {
   const origin = typeof location !== "undefined" ? location.origin : "";
 
   return (
-    <div className="flex flex-col gap-4 overflow-y-auto px-4 py-3">
+    <motion.div variants={v(listStagger)} initial="hidden" animate="show" className="flex flex-col gap-4 overflow-y-auto px-4 py-3">
       <Section icon={FileText} title="Pages">
         {b.pages.map((p) => (
           <div key={p.id} className={`${card} flex-row items-center justify-between`}>
@@ -268,18 +290,18 @@ export function BackendTab() {
           )}
           {dev && (
             <button className={btn} onClick={exportCode} disabled={exporting}>
-              <Download size={16} strokeWidth={1.75} />
+              <Download size={ICON.md} strokeWidth={STROKE} />
               {exporting ? "Exporting…" : "Export HTML"}
             </button>
           )}
         </div>
         {error && (
           <p role="alert" className="flex items-center gap-1.5 text-[14px] text-bad">
-            <CircleAlert size={16} strokeWidth={1.75} aria-hidden className="shrink-0" />
+            <CircleAlert size={ICON.md} strokeWidth={STROKE} aria-hidden className="shrink-0" />
             {error}
           </p>
         )}
       </Section>
-    </div>
+    </motion.div>
   );
 }

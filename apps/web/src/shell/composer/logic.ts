@@ -21,23 +21,27 @@ export function applyMention(value: string, name: string): string {
 }
 
 /**
- * The fan is one row of 32px bubbles with 8px gaps, floating 12px above the composer's top edge and
- * right-aligned over Go, so it never covers the text field. Item 0 sits directly above Go; the rest
- * extend to its left.
+ * Radial fan around Go: three 32px bubbles at an even 45° step on a 76px radius (~58px between
+ * neighbours). It arcs from above Go out past the composer's right edge; when the right side is
+ * covered (right panel open) or clipped, it arcs above Go to the left instead.
  */
-export const FAN_BUBBLE = 32;
-export const FAN_GAP = 8;
-export const FAN_CLEARANCE = 12;
-export const FAN_PITCH = FAN_BUBBLE + FAN_GAP;
+export const FAN_RADIUS = 76;
+export const FAN_STEP = 45;
+export const FAN_ANGLES = [-75, -75 + FAN_STEP, -75 + 2 * FAN_STEP];
+export const FAN_ANGLES_LEFT = [-75, -75 - FAN_STEP, -75 - 2 * FAN_STEP];
+export type FanDir = "right" | "left";
 
-/** How far above Go's centre the row's centre sits, given Go's and the composer's viewport tops. */
-export function fanRise(goTop: number, composerTop: number): number {
-  return Math.round(goTop - composerTop + FAN_CLEARANCE + FAN_BUBBLE);
+/** Horizontal room the right arc needs beside Go's centre: radius, half a bubble, and a margin. */
+export const FAN_REACH = FAN_RADIUS + 16 + 8;
+
+export function fanOffset(index: number, dir: FanDir = "right"): { x: number; y: number } {
+  const rad = ((dir === "left" ? FAN_ANGLES_LEFT : FAN_ANGLES)[index] * Math.PI) / 180;
+  return { x: Math.round(Math.cos(rad) * FAN_RADIUS), y: Math.round(Math.sin(rad) * FAN_RADIUS) };
 }
 
-/** Offset of bubble `index` from Go's centre. */
-export function fanOffset(index: number, rise: number): { x: number; y: number } {
-  return { x: index === 0 ? 0 : -index * FAN_PITCH, y: -rise };
+/** Right unless the free space to Go's right is under FAN_REACH. */
+export function pickFanDir(goCenterX: number, rightEdge: number): FanDir {
+  return rightEdge - goCenterX >= FAN_REACH ? "right" : "left";
 }
 
 export type WorkMode = "chat" | "code";
@@ -55,7 +59,7 @@ export function isQuestion(text: string): boolean {
   return t.endsWith("?") || QUESTION_RE.test(t);
 }
 
-/** Where a submitted line goes: Chat always asks; Code asks only for questions, otherwise builds or edits. */
+/** Where a submitted line goes: Chat always asks; Work asks only for questions, otherwise builds or edits. */
 export function routeFor(text: string, mode: WorkMode): "ask" | "code" {
   return mode === "chat" || isQuestion(text) ? "ask" : "code";
 }

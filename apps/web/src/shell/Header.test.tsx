@@ -126,3 +126,14 @@ describe("Header markup", () => {
     expect(html).not.toContain('role="menu"');
   });
 });
+
+describe("Chat | Work toggle", () => {
+  it("renders in the header with Work as the second label", async () => {
+    const { ModeToggle, MODE_LABEL } = await import("./Header");
+    expect(MODE_LABEL).toEqual({ chat: "Chat", code: "Work" });
+    const html = renderToStaticMarkup(<ModeToggle />);
+    expect(html).toContain("Work");
+    expect(html).not.toContain(">Code<");
+    expect(renderToStaticMarkup(<Header {...baseProps} />)).toContain('data-testid="work-mode"');
+  });
+});

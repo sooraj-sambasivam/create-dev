@@ -207,8 +207,8 @@ export function GeneratingDemo({ session, onDone, onClose }: GeneratingDemoProps
           className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-hover"
         >
           <div
-            className="h-full rounded-full bg-ink transition-[width] duration-500 ease-out motion-reduce:transition-none"
-            style={{ width: `${pct}%` }}
+            className="h-full w-full origin-left rounded-full bg-ink transition-transform duration-500 ease-out motion-reduce:transition-none"
+            style={{ transform: `scaleX(${Math.max(0, Math.min(100, pct)) / 100})` }}
           />
         </div>
 

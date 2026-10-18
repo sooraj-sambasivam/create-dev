@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { RotateCcw, Settings } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useOnboarding } from "./onboardingStore";
 import { SettingsPanel } from "../settings";
-import { focusRing, ICON, menuItem, STROKE, surface } from "../ui/styles";
+import { avatar, ICON, menuItem, STROKE, surface } from "../ui/styles";
+import { originFor, popover, useReducedMotionSafe } from "../ui/motion";
 
 /** The avatar with a small menu: Settings and Replay onboarding. */
 export function AvatarMenu({ initials }: { initials: string }) {
@@ -11,6 +13,7 @@ export function AvatarMenu({ initials }: { initials: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
   const replay = useOnboarding((s) => s.open);
+  const { v } = useReducedMotionSafe();
 
   useEffect(() => {
     if (!open) return;
@@ -45,12 +48,22 @@ export function AvatarMenu({ initials }: { initials: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`grid size-8 place-items-center rounded-full border border-line bg-surface text-[12px] font-medium text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+        className={avatar}
       >
         {initials}
       </button>
+      <AnimatePresence>
       {open && (
-        <div role="menu" aria-label="Account" className={`${surface.menu} absolute bottom-full left-0 z-50 mb-2 w-64`}>
+        <motion.div
+          role="menu"
+          aria-label="Account"
+          variants={v(popover)}
+          initial="hidden"
+          animate="show"
+          exit="exit"
+          style={{ transformOrigin: originFor("up", "left") }}
+          className={`${surface.menu} absolute bottom-full left-0 z-50 mb-2 w-64`}
+        >
           <button
             type="button"
             role="menuitem"
@@ -76,9 +89,10 @@ export function AvatarMenu({ initials }: { initials: string }) {
             <RotateCcw size={ICON.lg} strokeWidth={STROKE} className="text-ink-2" aria-hidden="true" />
             Replay onboarding
           </button>
-        </div>
+        </motion.div>
       )}
-      {settings && <SettingsPanel onClose={closeSettings} />}
+      </AnimatePresence>
+      <AnimatePresence>{settings && <SettingsPanel onClose={closeSettings} />}</AnimatePresence>
     </div>
   );
 }

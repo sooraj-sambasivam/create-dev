@@ -10,6 +10,9 @@ import { PointerBubble, PointerLiveRegion, type PointerPhase } from "./PointerBu
 import { answerOffered, runAsk, runPointerCommand, type CommandCtx, type Offered } from "./pointerCommand";
 import { usePagePointer } from "./usePagePointer";
 import { buildIntentRequest, type HoverHit } from "./targets";
+import { emitCompanion } from "../../../companion/bus";
+import { useCompanionPhase } from "../../../companion/phaseBridge";
+import { handleAgentCommand } from "../../../ghost/agentRow";
 
 /** Hold this key anywhere to talk to the pointer. Option on macOS (reported as "Alt"). */
 export const HOLD_TO_TALK_KEY = HOLD_KEY;
@@ -39,6 +42,7 @@ export function HoldToTalk() {
   const bound = useRef<HoverHit | null>(null);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
+  useCompanionPhase(phase);
   /** The page as it was when the last edit finished; Undo only applies while it is still current. */
   const doneScreen = useRef<unknown>(null);
 
@@ -67,8 +71,13 @@ export function HoldToTalk() {
     const onTranscript = (text: string, final: boolean) => {
       if (muted) return;
       const hit = bound.current;
+      emitCompanion({ type: final ? "final" : "interim", text });
       if (!final) {
         setPhase({ kind: "listening", targetId: hit?.id ?? null, label: hit?.label ?? null });
+        return;
+      }
+      if (handleAgentCommand(text)) {
+        setPhase({ kind: "idle" });
         return;
       }
       const ctx = newCtx();
@@ -86,7 +95,11 @@ export function HoldToTalk() {
     };
     const voice = createVoice({
       onTranscript,
-      onState: (s) => { if (s === "unavailable") setPhase({ kind: "failed", targetId: null, label: null, message: "Microphone unavailable" }); },
+      onState: (s) => {
+        if (s === "unavailable") setPhase({ kind: "failed", targetId: null, label: null, message: "Microphone unavailable" });
+        else if (s === "listening" || s === "locked") emitCompanion({ type: "listening" });
+      },
+      onError: (message) => emitCompanion({ type: "error", text: message }),
     });
     if (!voice.available) return () => voice.destroy();
 

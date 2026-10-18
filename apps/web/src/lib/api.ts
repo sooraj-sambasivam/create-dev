@@ -7,6 +7,9 @@ import {
   type AskRequest,
   type AskResponse,
   type Asset,
+  type ExtractResponse,
+  type LiftResponse,
+  type ModelChoice,
   type EditNodeRequest,
   type EditNodeResponse,
   type GenerateRequest,
@@ -15,6 +18,8 @@ import {
   type Screen,
   type StoredSubmission,
 } from "@create/shared";
+
+import { currentRequestPrefs } from "../store/composerPrefs";
 
 async function readError(res: Response, fallback: string): Promise<string> {
   try {
@@ -36,19 +41,19 @@ async function postJson<T>(url: string, body: unknown, parse: (data: unknown) =>
 }
 
 export function generate(prompt: string, screen: Screen | null, history: string[], assets: Asset[]): Promise<GenerateResponse> {
-  const body: GenerateRequest = { prompt, screen, history: history.slice(-10), assets };
+  const body: GenerateRequest = { prompt, screen, history: history.slice(-10), assets, ...currentRequestPrefs() };
   return postJson("/api/generate", body, (d) => GenerateResponseSchema.parse(d), "Generation failed");
 }
 
 /** Ask the model to change one element (and its children) only. */
 export function editNode(screen: Screen, nodeId: string, prompt: string, assets: Asset[]): Promise<EditNodeResponse> {
-  const body: EditNodeRequest = { screen, nodeId, prompt, assets };
+  const body: EditNodeRequest = { screen, nodeId, prompt, assets, ...currentRequestPrefs() };
   return postJson("/api/edit-node", body, (d) => EditNodeResponseSchema.parse(d), "Edit failed");
 }
 
 /** Chat mode: answer a question about the page or the pointed-at element. Never edits. */
 export function ask(req: Pick<AskRequest, "question" | "screen" | "pointer" | "history">): Promise<AskResponse> {
-  return postJson("/api/ask", req, parseAskResponse, "Couldn't answer");
+  return postJson("/api/ask", { ...currentRequestPrefs(), ...req }, parseAskResponse, "Couldn't answer");
 }
 
 export function parseAskResponse(data: unknown): AskResponse {
@@ -140,7 +145,7 @@ export async function generateStream(
   const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...req, stream: true }),
+    body: JSON.stringify({ ...currentRequestPrefs(), ...req, stream: true }),
     signal,
   });
   if (!res.ok) throw new Error(await readError(res, `Generation failed (${res.status})`));
@@ -167,4 +172,60 @@ export async function generateStream(
   });
   if (!result) throw new Error("The connection closed before the page finished. Try again.");
   return result;
+}
+
+// ---- composer: models, health, lift from screen ----
+
+export interface ModelInfo {
+  id: ModelChoice;
+  label: string;
+  available: boolean;
+}
+
+export interface Health {
+  mock?: boolean;
+  hasAnthropic?: boolean;
+  hasTypesafe?: boolean;
+  hasMongo?: boolean;
+  hasPerceptron?: boolean;
+  hasGemini?: boolean;
+  hasInkling?: boolean;
+  hasOpenRouter?: boolean;
+}
+
+const MODEL_IDS: readonly string[] = ["sonnet", "haiku", "inkling", "gemini"];
+
+/** Accepts `{models:[...]}` or a bare array; drops rows that are not a known model id. */
+export function parseModels(data: unknown): ModelInfo[] {
+  const rows = Array.isArray(data) ? data : (data as { models?: unknown } | null)?.models;
+  if (!Array.isArray(rows)) return [];
+  return rows.flatMap((r) => {
+    const m = (r ?? {}) as Partial<ModelInfo>;
+    if (typeof m.id !== "string" || !MODEL_IDS.includes(m.id)) return [];
+    return [{ id: m.id as ModelChoice, label: typeof m.label === "string" && m.label ? m.label : m.id, available: m.available === true }];
+  });
+}
+
+/** GET /api/models: which models have a key on the server. */
+export async function models(): Promise<ModelInfo[]> {
+  const res = await fetch("/api/models");
+  if (!res.ok) throw new Error(await readError(res, `Couldn't load models (${res.status})`));
+  return parseModels(await res.json());
+}
+
+/** GET /api/health: which providers are connected. */
+export async function health(): Promise<Health> {
+  const res = await fetch("/api/health");
+  if (!res.ok) throw new Error(`Health check failed (${res.status})`);
+  return (await res.json()) as Health;
+}
+
+/** A pixel crop becomes a typed entity (Perceptron or Claude vision). */
+export function extractEntity(image: string, hint?: string): Promise<ExtractResponse> {
+  return postJson("/api/extract", { image, ...(hint ? { hint } : {}) }, (d) => d as ExtractResponse, "Couldn't read that region");
+}
+
+/** An entity becomes a live app with a share link. */
+export function liftEntity(entity: ExtractResponse["entity"], instruction?: string): Promise<LiftResponse> {
+  return postJson("/api/lift", { entity, ...(instruction ? { instruction } : {}) }, (d) => d as LiftResponse, "Couldn't build the app");
 }

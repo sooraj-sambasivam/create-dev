@@ -56,8 +56,9 @@ ws.onmessage = (m) => {
   if (d.id && pending.has(d.id)) { const { res, rej } = pending.get(d.id); pending.delete(d.id); d.error ? rej(new Error(d.error.message)) : res(d.result); }
   else listeners.forEach((l) => l(d));
 };
-const send = (method, params = {}) => new Promise((res, rej) => { const i = ++id; pending.set(i, { res, rej }); ws.send(JSON.stringify({ id: i, method, params })); });
+const send = (method, params = {}) => new Promise((res, rej) => { const i = ++id; const to = setTimeout(() => { pending.delete(i); rej(new Error("CDP timeout: " + method)); }, 30000); pending.set(i, { res: (v) => { clearTimeout(to); res(v); }, rej: (e) => { clearTimeout(to); rej(e); } }); ws.send(JSON.stringify({ id: i, method, params })); });
 listeners.push((d) => {
+  if (d.method === "Page.javascriptDialogOpening") send("Page.handleJavaScriptDialog", { accept: true }).catch(() => {});
   if (d.method === "Runtime.exceptionThrown") consoleErrors.push("exception: " + (d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text));
   if (d.method === "Runtime.consoleAPICalled" && d.params.type === "error") consoleErrors.push("console.error: " + d.params.args.map((a) => a.value ?? a.description ?? "").join(" ").slice(0, 300));
   if (d.method === "Network.loadingFailed" && !d.params.canceled) failedReqs.push(`${d.params.errorText} ${d.params.requestId}`);
@@ -77,12 +78,30 @@ const center = (sel) => ev(`(()=>{const e=document.querySelector(${JSON.stringif
 const modUrl = (name) => `(()=>{const e=performance.getEntriesByType('resource').map(r=>r.name).find(n=>n.includes('/src/store/${name}.ts'));return e||'/src/store/${name}.ts'})()`;
 const maxFs = (id) => `(()=>{const e=document.querySelector('[data-right-panel] [data-screen-root] [data-node-id="${id}"]');if(!e)return 0;return Math.max(...[e,...e.querySelectorAll('*')].map(x=>parseFloat(getComputedStyle(x).fontSize)||0))})()`;
 let skipped = false;
+let onbFrames = null, panelOpen = null;
 const step = async (name, fn) => { skipped = false; try { const r = await fn(); if (r !== undefined && r !== true) rec(name, false, String(r)); else if (skipped) rec(name, true, "SKIP: hook not present"); else rec(name, true); } catch (e) { rec(name, false, e.message.split("\n")[0]); } };
+
+// Frame-timing sampler, injected into every document. __ft.begin(label) starts a rAF sample; __ft.end() returns stats.
+// __ft.bootUntilRoot() starts sampling at the first frame where [data-screen-root] exists (lifted app arrival).
+const SAMPLER = `(()=>{if(window.__ft)return;let d=[],last=0,on=false,raf=0;
+  const tick=(t)=>{if(on){if(last)d.push(t-last);last=t;raf=requestAnimationFrame(tick)}};
+  window.__ft={begin(){d=[];last=0;on=true;cancelAnimationFrame(raf);raf=requestAnimationFrame(tick)},
+    end(){on=false;cancelAnimationFrame(raf);const a=d.slice(),n=a.length,s=[...a].sort((x,y)=>x-y);
+      return {n,dropped:a.filter(x=>x>20).length,p50:s[Math.floor(n*.5)]||0,p95:s[Math.floor(n*.95)]||0,max:s[n-1]||0}},
+    bootUntilRoot(){const w=()=>{if(document.querySelector('[data-screen-root]'))this.begin();else requestAnimationFrame(w)};w()}};
+  try{if(sessionStorage.getItem('__ftBoot')){sessionStorage.removeItem('__ftBoot');window.__ft.bootUntilRoot()}}catch{}})()`;
+const frameStats = [];
+const reportFrames = (label, s) => {
+  const pct = s.n ? (100 * s.dropped) / s.n : 100;
+  frameStats.push({ label, ...s, pct });
+  console.log(`  frames[${label}] n=${s.n} dropped(>20ms)=${s.dropped} (${pct.toFixed(1)}%) p50=${s.p50.toFixed(1)} p95=${s.p95.toFixed(1)} max=${s.max.toFixed(1)}ms`);
+  return s.n >= 20 && pct <= 10 ? true : `${label}: ${s.dropped}/${s.n} frames dropped (${pct.toFixed(1)}%)${s.n < 20 ? " (too few frames sampled)" : ""}`;
+};
 
 try {
   const apiUp = await fetch(BASE + "/api/health").then((r) => r.status < 500).catch(() => false);
   if (!apiUp) console.log("  WARN: " + BASE + "/api/* unreachable (api server down?)");
-  await send("Page.enable"); await send("Runtime.enable"); await send("Network.enable");
+  await send("Page.enable"); await send("Page.addScriptToEvaluateOnNewDocument", { source: SAMPLER }); await send("Runtime.enable"); await send("Network.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 
   // (0) onboarding on a fresh profile (the browser profile is new, so localStorage is empty)
@@ -103,13 +122,16 @@ try {
     await send("Page.navigate", { url: BASE });
     if (!(await waitFor(dialog, 15000))) return "onboarding dialog not shown";
     const radios = async (label) => ev(`(()=>{const r=[...document.querySelectorAll('[role="radio"]')].find(e=>e.textContent.includes(${JSON.stringify(label)}));if(!r)return false;r.click();return true})()`);
+    await ev(`window.__ft.begin()`);
     if (!(await clickText("Get started"))) { await shot("00b-no-get-started"); return "no Get started on the welcome step"; }
     await sleep(400);
     if (!(await radios("Ask"))) return "no Ask choice";
     if (!(await radios("developer"))) { await shot("00b-no-dev"); return "no developer choice"; }
     await clickText("Next"); await sleep(400);   // permissions
     await clickText("Next"); await sleep(400);   // try it
-    await clickText("Next"); await sleep(500); await shot("00b-onboarding-done");
+    await clickText("Next"); await sleep(500);
+    onbFrames = await ev(`window.__ft.end()`);
+    await shot("00b-onboarding-done");
     if (!(await clickText("Start creating"))) return "no Start creating on the last step";
     if (!(await waitFor(`!(${dialog})`, 5000))) return "dialog still open after finishing";
     const p = await ev(profileOf);
@@ -314,6 +336,89 @@ try {
     const { token } = await fetch(`${formsUrl}/token`, { method: "POST", headers: { Origin: new URL(BASE).origin } }).then((r) => r.json()).catch(() => ({}));
     const stored = await fetch(formsUrl, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).catch(() => []);
     if (!Array.isArray(stored) || !stored.some((r) => JSON.stringify(r.fields).includes("777"))) return "row not stored (Backend responses): " + JSON.stringify(stored).slice(0, 200);
+  });
+  // (10) tray: the lift from step 9 is queued for the notch
+  let liftedUrl = null;
+  await step("10a. tray: POST /api/lift -> GET /api/tray contains it", async () => {
+    const entity = { kind: "table", title: "Tray smoke " + Date.now(), columns: [{ key: "a", label: "Item", type: "text" }, { key: "b", label: "Qty", type: "number" }], rows: [{ a: "x", b: "1" }, { a: "y", b: "2" }], source: { title: "Sample page" } };
+    const lift = await fetch("http://localhost:3001/api/lift", { method: "POST", headers: { "content-type": "application/json", Origin: new URL(BASE).origin }, body: JSON.stringify({ entity, instruction: "track this" }) }).then((r) => r.json());
+    if (!lift?.url) return "bad lift response: " + JSON.stringify(lift);
+    liftedUrl = lift.url;
+    const tray = await fetch("http://localhost:3001/api/tray").then((r) => r.json());
+    const hit = (tray.items || []).find((i) => i.url === lift.url && i.title === entity.title);
+    if (!hit) return "lift not in tray; got " + (tray.items || []).length + " items";
+    if (!hit.id || !hit.kind || !hit.createdAt) return "tray item missing fields: " + JSON.stringify(hit);
+  });
+
+  // (11) agent cursor: on a lifted app, Ctrl+Shift+G makes the ghost add a row by itself
+  await step("11. agent cursor: ghost adds a row to the lifted app", async () => {
+    if (!liftedUrl) return "no lifted app from 10a";
+    const url = new URL(liftedUrl); url.protocol = new URL(BASE).protocol; url.host = new URL(BASE).host;
+    await send("Page.navigate", { url: url.toString() });
+    const rows = `document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length`;
+    if (!(await waitFor(`${rows}>=2`, 15000))) return "lifted app did not render";
+    await sleep(800);
+    const before = await ev(rows);
+    await ev(`document.activeElement&&document.activeElement.blur&&document.activeElement.blur()`);
+    const key = (type) => send("Input.dispatchKeyEvent", { type, key: "G", code: "KeyG", windowsVirtualKeyCode: 71, modifiers: 2 | 8 });
+    let viaHotkey = true;
+    await key("rawKeyDown"); await key("keyUp");
+    if (!(await waitFor(`${rows}>${before}`, 20000))) {
+      viaHotkey = false;
+      if (await ev(`typeof window.__createGhost?.addRow`) === "function") await ev(`Promise.resolve(window.__createGhost.addRow()).then(()=>1)`).catch(() => {});
+    }
+    const ok = await waitFor(`${rows}>${before}`, 25000);
+    await shot("11-ghost-row");
+    if (!ok) return `no new row after ghost run (rows ${before} -> ${await ev(rows)})`;
+    console.log(`  rows ${before} -> ${await ev(rows)} (via ${viaHotkey ? "Ctrl+Shift+G" : "__createGhost.addRow"})`);
+  });
+
+  // (12) frame timing: dropped frames (>20ms) must stay at or under 10% in each interaction
+  await step("12a. frames: lifted app arrival", async () => {
+    const lift = await fetch("http://localhost:3001/api/lift", { method: "POST", headers: { "content-type": "application/json", Origin: new URL(BASE).origin }, body: JSON.stringify({ entity: { kind: "schedule", title: "Frame smoke", columns: [{ key: "day", label: "Day", type: "text" }, { key: "riders", label: "Riders", type: "number" }], rows: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, i) => ({ day: d, riders: String(80 + i * 17) })), source: { title: "Sample page" } }, instruction: "track" }) }).then((r) => r.json());
+    const url = new URL(lift.url); url.protocol = new URL(BASE).protocol; url.host = new URL(BASE).host;
+    await ev(`sessionStorage.setItem('__ftBoot','1')`);   // the injected sampler starts at first [data-screen-root] frame on the next load
+    await send("Page.navigate", { url: url.toString() });
+    if (!(await waitFor(`document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length>=6 && !!document.querySelector('[data-screen-root] figure svg[role=img]')`, 15000))) return "lifted app did not render";
+    await sleep(1200);
+    return reportFrames("lifted app arrival", await ev(`window.__ft.end()`));
+  });
+  await step("12b. frames: right panel open/close", async () => {
+    await send("Page.navigate", { url: BASE });
+    await waitFor(`!!document.querySelector('[data-testid="message-input"]')`);
+    const c = await center('[data-testid="message-input"]'); await clickAt(c.x, c.y);
+    await send("Input.insertText", { text: "A landing page for a bakery called Crumb" });
+    await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, text: "\r" });
+    await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+    if (!(await waitFor(`document.querySelectorAll('[data-right-panel] [data-screen-root] [data-node-id]').length>0`, 30000))) return "panel never opened with a page";
+    await sleep(1500);
+    const toggle = (label) => ev(`(()=>{const b=document.querySelector('button[aria-label="${label}"]');if(!b)return false;b.click();return true})()`);
+    if (!(await toggle("Hide side panel"))) return "no Hide side panel button";
+    await sleep(900);
+    await ev(`window.__ft.begin()`);
+    if (!(await toggle("Show side panel"))) return "no Show side panel button";
+    await sleep(900);
+    await ev(`window.__ft.end()`).then((s) => { panelOpen = s; });
+    await ev(`window.__ft.begin()`);
+    await toggle("Hide side panel"); await sleep(900); await toggle("Show side panel"); await sleep(900);
+    const s2 = await ev(`window.__ft.end()`);
+    const merged = { n: panelOpen.n + s2.n, dropped: panelOpen.dropped + s2.dropped, p50: Math.max(panelOpen.p50, s2.p50), p95: Math.max(panelOpen.p95, s2.p95), max: Math.max(panelOpen.max, s2.max) };
+    return reportFrames("right panel open", merged);
+  });
+  await step("12c. frames: Go fan open/close", async () => {
+    const go = await center('[data-testid="go"]');
+    if (!go) return "no Go button";
+    await mouse(go.x + 400, go.y - 300); await sleep(500);
+    await ev(`window.__ft.begin()`);
+    await mouse(go.x, go.y); await sleep(900);
+    await mouse(go.x + 400, go.y - 300); await sleep(700);
+    await mouse(go.x, go.y); await sleep(900);
+    await mouse(go.x + 400, go.y - 300); await sleep(700);
+    return reportFrames("Go fan open/close", await ev(`window.__ft.end()`));
+  });
+  await step("12d. frames: onboarding step change", async () => {
+    if (!onbFrames) return "onboarding frames not captured in 0b";
+    return reportFrames("onboarding step change", onbFrames);
   });
   await sleep(500);
 } catch (e) {

@@ -79,10 +79,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return { ok: true, entity: r.entity, provider: r.provider };
     },
     lift: async () => {
-      const r = await post("/api/lift", { entity: msg.entity, ...(msg.instruction ? { instruction: msg.instruction } : {}) });
+      const snap = msg.snapshot && JSON.stringify(msg.snapshot).length <= 150_000 ? { snapshot: msg.snapshot } : {};
+      const r = await post("/api/lift", { entity: msg.entity, ...(msg.instruction ? { instruction: msg.instruction } : {}), ...snap });
       const { webOrigin } = await settings();
       const url = openUrl(r.url, webOrigin);
       await chrome.tabs.create({ url });
+      // Tell the tray app about the new app. Older servers answer 404; that is fine.
+      post("/api/tray", { title: String(msg.entity?.title || "Untitled").slice(0, 200), kind: String(msg.entity?.kind || "table").slice(0, 40), url }).catch(() => {});
       return { ok: true, url, id: r.id, formId: r.formId, provider: r.provider };
     },
   }[msg?.type];

@@ -8,10 +8,12 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
+import { motion } from "motion/react";
 import { Archive, ArchiveRestore, ChevronDown, ChevronRight, Folder, PanelLeft, Pencil, Plus, SquarePen, Trash2 } from "lucide-react";
 import { isBlankChat as isBlankWorkspaceChat, useWorkspaceStore } from "../store/workspaceStore";
 import { AvatarMenu } from "../onboarding";
 import { ICON, STROKE, button, focusRing, input } from "../ui/styles";
+import { duration, ease, spring, useReducedMotionSafe } from "../ui/motion";
 
 const AVATAR_INITIALS = "SS";
 
@@ -116,6 +118,8 @@ export function Sidebar({
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [width, setWidth] = useSidebarWidth();
   const [dragging, setDragging] = useState(false);
+  const { reduce, t } = useReducedMotionSafe();
+  const [sliding, setSliding] = useState(false);
   const drag = useRef<{ pointerId: number; startX: number; startWidth: number } | null>(null);
 
   // While dragging, keep the text unselectable and the column cursor on the whole page.
@@ -203,11 +207,23 @@ export function Sidebar({
 
   if (railShown) {
     return (
-      <aside
+      <motion.aside
         aria-label="Sidebar"
-        style={{ width: SIDEBAR_RAIL }}
-        className="flex h-full shrink-0 flex-col items-center bg-shell px-2 py-3"
+        initial={false}
+        animate={{ width: SIDEBAR_RAIL }}
+        transition={dragging ? { duration: 0 } : t(spring.snappy)}
+        onAnimationStart={() => setSliding(true)}
+        onAnimationComplete={() => setSliding(false)}
+        style={{ willChange: sliding ? "width" : undefined }}
+        className="flex h-full shrink-0 flex-col overflow-hidden bg-shell px-2 py-3"
       >
+        <motion.div
+          key="rail"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={reduce ? { duration: 0 } : { duration: duration.base, delay: 0.08, ease: ease.standard }}
+          className="flex min-h-0 flex-1 flex-col items-center"
+        >
         <div className="flex h-[44px] items-center px-1">
           <IconButton label={toggleLabel} onClick={expand}>
             <PanelLeft {...NAV} className="text-ink-2" />
@@ -224,15 +240,21 @@ export function Sidebar({
         <div className="mt-auto flex h-8 items-center">
           <Avatar />
         </div>
-      </aside>
+        </motion.div>
+      </motion.aside>
     );
   }
 
   return (
-    <aside
+    <motion.aside
       aria-label="Sidebar"
-      style={{ width }}
-      className="relative flex h-full shrink-0 flex-col bg-shell px-2 py-3"
+      initial={false}
+      animate={{ width }}
+      transition={dragging ? { duration: 0 } : t(spring.snappy)}
+      onAnimationStart={() => setSliding(true)}
+      onAnimationComplete={() => setSliding(false)}
+      style={{ willChange: sliding ? "width" : undefined }}
+      className="relative flex h-full shrink-0 flex-col overflow-hidden bg-shell px-2 py-3"
     >
       <div
         role="separator"
@@ -253,11 +275,19 @@ export function Sidebar({
       >
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-y-0 right-[3px] w-px transition-colors duration-150 ${
+          className={`pointer-events-none absolute inset-y-0 right-[3px] w-px transition-colors duration-120 ${
             dragging ? "bg-ink-3" : "bg-transparent group-hover:bg-line group-focus-visible:bg-accent"
           }`}
         />
       </div>
+      <motion.div
+        key="full"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={reduce ? { duration: 0 } : { duration: duration.base, delay: 0.08, ease: ease.standard }}
+        style={{ width: width - 16 }}
+        className="flex min-h-0 flex-1 flex-col"
+      >
       <div className="flex h-[44px] items-center px-1">
         <IconButton label={toggleLabel} onClick={collapse}>
           <PanelLeft {...NAV} className="text-ink-2" />
@@ -267,7 +297,7 @@ export function Sidebar({
       <button
         type="button"
         onClick={() => newChat()}
-        className={`mt-2 flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[14px] text-ink transition-colors duration-150 hover:bg-hover ${focusRing}`}
+        className={`mt-2 flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[14px] text-ink transition-colors duration-120 hover:bg-hover ${focusRing}`}
       >
         <SquarePen {...NAV} className="shrink-0 text-ink-2" />
         New chat
@@ -318,7 +348,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className={`flex h-8 w-full items-center gap-2 rounded-lg pr-2 pl-2 text-left text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink ${focusRing}`}
+            className={`flex h-8 w-full items-center gap-2 rounded-lg pr-2 pl-2 text-left text-[14px] text-ink-2 transition-colors duration-120 hover:bg-hover hover:text-ink ${focusRing}`}
           >
             <Plus {...NAV} className="shrink-0" />
             New project
@@ -388,7 +418,7 @@ export function Sidebar({
               type="button"
               aria-expanded={archivedOpen}
               onClick={() => setArchivedOpen((value) => !value)}
-              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-left text-[12px] text-ink-3 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-left text-[12px] text-ink-3 transition-colors duration-120 hover:bg-hover ${focusRing}`}
             >
               Archived
               <span className="ml-auto tabular-nums">{archived.length}</span>
@@ -423,13 +453,14 @@ export function Sidebar({
       <div className="flex h-8 items-center px-1">
         <Avatar />
       </div>
-    </aside>
+      </motion.div>
+    </motion.aside>
   );
 }
 
 const actionButton = button.iconSm;
 const revealActions =
-  "absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 rounded-lg bg-shell opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100";
+  "absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 rounded-lg bg-shell opacity-0 transition-opacity duration-120 group-hover:opacity-100 group-focus-within:opacity-100";
 
 /** Inline text field used to rename a row. Enter saves, Escape or blur cancels. */
 function RenameField({
@@ -651,7 +682,7 @@ function ChatRow({
         onClick={() => onSelect(chat.id)}
         aria-current={active ? "true" : undefined}
         title={chat.title}
-        className={`flex h-8 min-w-0 flex-1 items-center truncate rounded-lg text-left text-[14px] transition-colors duration-150 ${focusRing} ${
+        className={`flex h-8 min-w-0 flex-1 items-center truncate rounded-lg text-left text-[14px] transition-colors duration-120 ${focusRing} ${
           nested ? "pl-8" : "pl-2"
         } ${hasActions ? "pr-2 group-hover:pr-[88px] group-focus-within:pr-[88px]" : "pr-2"} ${
           active

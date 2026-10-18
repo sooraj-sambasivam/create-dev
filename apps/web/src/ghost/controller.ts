@@ -18,7 +18,15 @@ export interface GhostCursorApi {
   getPos(): Point;
 }
 
+/** What the React view re-renders for. Position is not in it: it changes every frame and bypasses React. */
+export interface GhostUiState {
+  visible: boolean;
+  caption: string | null;
+  rippleKey: number;
+}
+
 type Listener = () => void;
+type PosListener = (p: Point) => void;
 
 export function prefersReducedMotion(): boolean {
   try {
@@ -41,6 +49,9 @@ export class GhostController implements GhostCursorApi {
     rippleKey: 0,
   };
   private listeners = new Set<Listener>();
+  private uiListeners = new Set<Listener>();
+  private posListeners = new Set<PosListener>();
+  private ui: GhostUiState = { visible: false, caption: null, rippleKey: 0 };
   private cancelMove: (() => void) | null = null;
 
   subscribe = (l: Listener): (() => void) => {
@@ -50,9 +61,29 @@ export class GhostController implements GhostCursorApi {
 
   getState = (): GhostState => this.state;
 
+  /** Fires only when visibility, caption or ripple change (never per frame). */
+  subscribeUi = (l: Listener): (() => void) => {
+    this.uiListeners.add(l);
+    return () => this.uiListeners.delete(l);
+  };
+
+  /** Stable between changes, so useSyncExternalStore does not re-render on motion. */
+  getUi = (): GhostUiState => this.ui;
+
+  /** Per-frame position channel. The view writes the DOM transform directly from it. */
+  subscribePos = (l: PosListener): (() => void) => {
+    this.posListeners.add(l);
+    return () => this.posListeners.delete(l);
+  };
+
   private set(patch: Partial<GhostState>): void {
     this.state = { ...this.state, ...patch };
+    const { visible, caption, rippleKey } = this.state;
+    const uiChanged = visible !== this.ui.visible || caption !== this.ui.caption || rippleKey !== this.ui.rippleKey;
+    if (uiChanged) this.ui = { visible, caption, rippleKey };
     this.listeners.forEach((l) => l());
+    if (patch.pos) this.posListeners.forEach((l) => l(this.state.pos));
+    if (uiChanged) this.uiListeners.forEach((l) => l());
   }
 
   getPos(): Point {

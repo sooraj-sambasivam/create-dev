@@ -11,7 +11,7 @@ export const focusRing =
 export const ICON = { sm: 14, md: 16, lg: 18 } as const;
 export const STROKE = 1.75;
 
-const base = `inline-flex items-center justify-center gap-1.5 whitespace-nowrap select-none transition-colors disabled:pointer-events-none disabled:opacity-40 ${focusRing}`;
+const base = `inline-flex items-center justify-center gap-1.5 whitespace-nowrap select-none transition-[color,background-color,opacity,transform] duration-120 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40 ${focusRing}`;
 
 export const button = {
   /** Confirm actions (Next, Done, Save). Ink on surface, never accent. */
@@ -28,11 +28,16 @@ export const button = {
   danger: `${base} h-8 rounded-lg px-3 text-[14px] text-bad hover:bg-hover`,
 } as const;
 
+/** The round account button (initials) at the foot of the sidebar. */
+export const avatar = `${base} size-8 rounded-full border border-line bg-surface text-[12px] font-medium text-ink-2 hover:bg-hover`;
+
 /** Pill-shaped segmented control (Chat | Code, Output | Inspect | Backend, Edit | Preview). */
 export const segmented = {
-  root: "inline-flex h-8 items-center gap-0.5 rounded-full bg-tray p-0.5",
-  item: `${base} h-7 rounded-full px-3 text-[14px] text-ink-2 hover:text-ink`,
-  active: "bg-surface text-ink shadow-soft",
+  root: "isolate inline-flex h-8 items-center gap-0.5 rounded-full bg-tray p-0.5",
+  item: `${base} relative h-7 rounded-full px-3 text-[14px] text-ink-2 hover:text-ink`,
+  active: "text-ink",
+  /** The sliding highlight (render <ActivePill/> inside the active item). */
+  pill: "absolute inset-0 -z-10 rounded-full bg-surface shadow-soft",
 } as const;
 
 /** Compact labels: suggestion chips, element chips, status pills. */
@@ -57,6 +62,8 @@ export const dot = {
 export const surface = {
   card: "rounded-xl border border-line bg-surface shadow-soft",
   pill: "rounded-full border border-line bg-surface shadow-soft",
+  /** Bordered block inside a panel (no shadow): Backend rows, settings groups. */
+  inset: "rounded-xl border border-line bg-surface",
   menu: "min-w-48 rounded-xl border border-line bg-surface p-1.5 shadow-soft",
 } as const;
 

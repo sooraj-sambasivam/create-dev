@@ -24,6 +24,9 @@ import {
 } from "./targets";
 import type { IntentRequest } from "@create/shared";
 import { button } from "../../../ui/styles";
+import { emitCompanion } from "../../../companion/bus";
+import { useCompanionPhase } from "../../../companion/phaseBridge";
+import { handleAgentCommand } from "../../../ghost/agentRow";
 
 export type NarrateOverlayProps = {
   onFinish(session: NarrationSession): void;
@@ -69,6 +72,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
   const [phase, setPhase] = useState<PointerPhase>({ kind: "idle" });
   const phaseRef = useRef<PointerPhase>(phase);
   phaseRef.current = phase;
+  useCompanionPhase(phase);
   /** When the current utterance began (first interim), so "this" binds to where the pointer was then. */
   const utterStart = useRef<number | null>(null);
   /** The latest final line that had nothing to act on yet; a lasso within 4s after it still claims it. */
@@ -120,6 +124,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
     runCommand.current = (text, req, areas) => runPointerCommand(ctx, text, req, areas);
     const onTranscript = (text: string, final: boolean) => {
       setTranscript(text);
+      emitCompanion({ type: final ? "final" : "interim", text });
       if (!final) {
         if (utterStart.current === null) utterStart.current = Date.now();
         const k = phaseRef.current.kind;
@@ -135,6 +140,11 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
       const startT = utterStart.current ?? tFinal;
       utterStart.current = null;
       if (done.current) return;
+      // "Add a row for me" / "let the agent do it": the agent cursor takes the form.
+      if (handleAgentCommand(text)) {
+        pendingSpeech.current = null;
+        return;
+      }
       // "Which one?" answered out loud: apply the original line to the one named.
       const picked = answerOffered(offered.current, text, tFinal);
       if (picked) {
@@ -167,7 +177,12 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
     const v = createVoice({
       onTranscript,
       onEngine: () => setMicHint(BROWSER_SPEECH_HINT),
-      onState: (s) => { micRef.current = s as MicState; setMic(s as MicState); },
+      onState: (s) => {
+        micRef.current = s as MicState;
+        setMic(s as MicState);
+        if (s === "listening" || s === "locked") emitCompanion({ type: "listening" });
+      },
+      onError: (message) => emitCompanion({ type: "error", text: message }),
     });
     voice.current = v;
     if (!v.available) setMic("unavailable");

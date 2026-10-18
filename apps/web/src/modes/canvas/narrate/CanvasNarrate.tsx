@@ -317,8 +317,8 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
         <div
           key={i}
           aria-hidden
-          className="absolute rounded-md bg-accent/10 transition-[left,top,width,height] duration-150"
-          style={{ left: r.x - 4, top: r.y - 4, width: r.w + 8, height: r.h + 8, ...GLOW_STYLE }}
+          className="absolute left-0 top-0 origin-top-left rounded-md bg-accent/10 transition-transform duration-150 motion-reduce:transition-none"
+          style={{ width: r.w + 8, height: r.h + 8, transform: `translate(${r.x - 4}px, ${r.y - 4}px)`, ...GLOW_STYLE }}
         />
       ))}
       {lassoBox && (

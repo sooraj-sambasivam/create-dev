@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } f
 import { CircleHelp, NotebookPen, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { useScreenStore } from "../store/screenStore";
 import { ICON, STROKE, button, focusRing, surface } from "../ui/styles";
+import { duration, ease, fadeUp, spring } from "../ui/motion";
 import { Face } from "./Face";
 import { NotesCard } from "./NotesCard";
 import { activeByEvents, initialState, nextWake, reduce, type FaceKind, type MachineEvent } from "./machine";
@@ -27,6 +28,9 @@ const ORB_ANIM: Partial<Record<FaceKind, TargetAndTransition>> = {
   cancelled: { rotate: 0, y: [0, 3, 0], scale: 1 },
   done: { rotate: 0, y: 0, scale: 1 },
 };
+
+/** Faces that play a multi-step keyframe hop use a tween; everything else settles on a spring. */
+const KEYFRAMED = new Set<FaceKind>(["celebrate", "cancelled"]);
 
 /** Pip: the Narrate-mode companion. Visual only; the live regions already announce results. */
 export function Companion() {
@@ -64,10 +68,11 @@ export function Companion() {
           <motion.div
             key="full"
             className="flex items-end gap-3"
-            initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            transition={reduced ? { duration: duration.fast } : undefined}
           >
             <NotesCard notes={state.notes} reduced={reduced} />
             <div className="group pointer-events-none relative size-[60px]" data-companion={face}>
@@ -85,16 +90,20 @@ export function Companion() {
                       className="pointer-events-none absolute inset-0 rounded-full border border-ink-3"
                       initial={{ scale: 1, opacity: 0.5 }}
                       animate={{ scale: 1.9, opacity: 0 }}
-                      transition={{ duration: 0.9, delay: d, ease: "easeOut" }}
+                      transition={{ duration: 0.9, delay: d, ease: ease.standard }}
                     />
                   ))}
                 <motion.span
                   className="block rounded-full"
                   animate={orbAnim}
                   transition={
-                    idleLoop
-                      ? { scale: { duration: 4, repeat: Infinity, ease: "easeInOut" } }
-                      : { duration: reduced ? 0.15 : 0.22 }
+                    reduced
+                      ? { duration: 0.15 }
+                      : idleLoop
+                        ? { scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }, rotate: spring.gentle, y: spring.gentle }
+                        : KEYFRAMED.has(face)
+                          ? { duration: face === "celebrate" ? 0.7 : 0.28, ease: ease.standard }
+                          : spring.gentle
                   }
                 >
                   <Face face={face} nod={state.nod} reduced={reduced} />
@@ -107,9 +116,9 @@ export function Companion() {
                     aria-hidden="true"
                     className={`pointer-events-none absolute -top-2 -right-2 flex size-7 items-center justify-center ${surface.pill}`}
                     initial={reduced ? { opacity: 0 } : { scale: 0.6, opacity: 0 }}
-                    animate={reduced ? { opacity: 1 } : { scale: [0.6, 1.1, 1], opacity: 1 }}
-                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                    transition={{ duration: 0.22 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ opacity: 0, transition: { duration: duration.fast, ease: ease.exit } }}
+                    transition={reduced ? { duration: duration.fast } : { ...spring.bouncy, opacity: { duration: duration.fast } }}
                   >
                     <badge.Icon size={ICON.sm} strokeWidth={STROKE} className={badge.cls} />
                   </motion.span>
@@ -131,7 +140,7 @@ export function Companion() {
                 type="button"
                 aria-label="Hide companion"
                 onClick={() => choose("dot")}
-                className={`${button.iconSm} pointer-events-auto absolute -top-3 -left-3 border border-line bg-surface opacity-0 shadow-soft group-hover:opacity-100 focus-visible:opacity-100`}
+                className={`${button.iconSm} pointer-events-auto absolute -top-3 -left-3 border border-line bg-surface opacity-0 shadow-soft transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100`}
               >
                 <X size={12} strokeWidth={STROKE} />
               </button>
@@ -146,9 +155,10 @@ export function Companion() {
             aria-pressed={true}
             title="Show companion"
             onClick={() => choose("on")}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
+            transition={reduced ? { duration: duration.fast } : spring.bouncy}
             className={`pointer-events-auto flex size-6 items-center justify-center rounded-full ${focusRing}`}
           >
             <motion.span

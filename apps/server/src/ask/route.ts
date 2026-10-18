@@ -14,7 +14,7 @@ askRouter.post("/ask", limiter, async (req, res) => {
     return;
   }
   try {
-    res.json(await answerAsk(parsed.data));
+    res.json(await answerAsk(parsed.data, { onFallback: (c) => res.setHeader("x-model-fallback", c) }));
   } catch (err) {
     console.error("[ask] unexpected", err);
     res.status(500).json({ error: "Could not answer that." });

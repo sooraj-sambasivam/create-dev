@@ -63,8 +63,35 @@ Defined once as CSS variables in `src/index.css` (`@theme` for Tailwind 4) and u
 ## Menus, popovers, windows
 
 - **Menus:** `--surface`, radius 12, 1px `--line`, the one shadow, 6px padding. Items are 32px tall, radius 8, `--tray` on hover, with the icon at the left and a `Check` at the right for the selected item. Esc closes a menu and focus returns to its trigger.
-- **Floating windows (Sketch, Narrate, Backend):** `--surface`, radius 12, 1px `--line`, the one shadow, and a 44px title bar with a 14px title plus a close button. They open with a 200ms fade and 8px rise.
-- **Motion:** 150ms for hover and press, 200ms ease-out for menus, using `motion` only for menus and windows. Respect `prefers-reduced-motion`.
+- **Floating windows (Sketch, Narrate, Backend):** `--surface`, radius 12, 1px `--line`, the one shadow, and a 44px title bar with a 14px title plus a close button. They open with the `scaleIn` variant (fade from 96% scale on the gentle spring) and close with the exit tween.
+
+## Motion
+
+One system, in `apps/web/src/ui/motion.ts`. Nothing in the chrome declares its own duration, easing or spring; CSS-only transitions read the same values from `--duration-*` and `--ease-*` in `index.css`.
+
+| Token | Value | Use |
+|---|---|---|
+| `duration.fast` / `base` / `slow` | 120 / 200 / 320 ms | hover and press / menus and fades / panels and entrances |
+| `ease.standard` | cubic-bezier(0.2, 0, 0, 1) | default, and all CSS transitions |
+| `ease.emphasized` | cubic-bezier(0.3, 0, 0, 1) | entrances (things arriving) |
+| `ease.exit` | cubic-bezier(0.4, 0, 1, 1) | things leaving |
+| `spring.snappy` | stiffness 520, damping 38 | controls: the sliding pill, sidebar width, Go press |
+| `spring.gentle` | stiffness 260, damping 30 | panels, cards, composer dock, lifted-app rows |
+| `spring.bouncy` | stiffness 420, damping 22 | the Go fan and chart bars growing |
+| `STAGGER` | 24 ms (capped at 12 items) | lists: thread items, table rows, empty-state chips |
+
+Variants (`fadeUp`, `scaleIn`, `popover`, `panelSlide`, `listStagger`, `sharedAxis`, `fade`) cover every entrance: thread items `fadeUp` in a `listStagger` log, QR card and Settings `scaleIn`, every menu `popover` scaled from its trigger corner (`originFor(side, align)`), the right panel `panelSlide`, onboarding steps `sharedAxis` (slides with the direction of travel).
+
+Rules:
+
+- **Transform, opacity and clip-path only.** No animating `width`, `height`, `top`, `left`, `font-size` or colour. The one exception is the width of the two layout slots (the sidebar and the side-panel slot), because the main card has to give up the space; their content keeps a fixed width and fades, so it never reflows mid-animation. Growing text uses `scale`; growing bars use `scaleY` from the baseline; the line chart draws with `pathLength`; moving siblings use `layout="position"`.
+- **`will-change` only while animating** (set on animation start, cleared on complete). Never in a class.
+- **Shared elements use `layoutId`**: the segmented pill (`ActivePill`), the onboarding step dot, the composer gliding between the empty state and the docked position.
+- **Reduced motion:** `useReducedMotionSafe()` returns `{ reduce, t, v }`; `t(transition)` swaps in a 120ms fade and `v(variants)` strips every move, leaving opacity. The global rule in `index.css` also stops the shimmer and the caret and clamps CSS transitions.
+- **Press feedback:** every button scales to 0.97 while pressed (`styles.ts` base), Go springs to 0.94.
+- **Loading:** the shimmer is a translated highlight, not a moving background. The streaming caret blinks by opacity.
+
+Lifted apps arrive with the same tokens: table rows stagger in (`fadeUp`-like, 24ms apart), new live rows spring in from above and flash an accent wash that fades by opacity, chart bars grow from the baseline on `spring.bouncy`, the line draws over 0.9s.
 
 ## Accessibility
 
@@ -83,10 +110,11 @@ One set of class strings; surfaces compose these and never re-declare their own.
 | `button.ghost` | Text action in toolbars, menus and the header (Share) |
 | `button.icon` / `iconSm` | 32px / 24px icon-only; hover `--hover`; always with `aria-label`. Toggled on = `--hover` fill and `--ink` |
 | `button.danger` | Destructive confirm |
-| `segmented.root/item/active` | The one segmented control: Chat \| Code, Output \| Inspect \| Backend, Edit \| Preview |
+| `segmented.root/item/active/pill` | The one segmented control: Chat \| Code, Output \| Inspect \| Backend, Edit \| Preview. Render `<ActivePill layoutId>` (ui/ActivePill.tsx) inside the active item so the highlight slides |
+| `avatar` | The round account button |
 | `chip.action` / `tag` / `status` | Suggestion chip, element reference, status pill with a dot |
 | `dot.*` | Status dots, always beside text |
-| `surface.card` / `pill` / `menu` | Floating card (radius 12), floating pill, menu panel (radius 12, 6px padding) |
+| `surface.card` / `pill` / `menu` / `inset` | Floating card (radius 12), floating pill, menu panel (radius 12, 6px padding), bordered block inside a panel with no shadow |
 | `menuItem` | 32px row, radius 8, `--tray` on hover; icon left, check right |
 | `input` | 32px field, radius 8, 1px `--line`, focus ring |
 | `text.*` | meta 12 · ui 14 · body 16 · title 16 medium · display 28 |
@@ -96,3 +124,5 @@ Menu panels (`role="menu"`) repoint `--surface` and `--tray` through `--menu-sur
 ## Vocabulary
 
 Four ways to start: Type · Speak · Sketch · Narrate. Narrate is the mode; "point" is only the gesture ("Point at the heading"). Chat and Code are the work modes. The right-hand column is the side panel (Output, Inspect, Backend). Copy a link with "Copy link"; "Share" is the header button; "Export" is the HTML file. Say "microphone" in sentences and errors, "Speak" for the control.
+
+Toasts: `toast("Link copied")` from `ui/toastStore.ts`; `ToastHost` (mounted in AppShell) shows at most three, bottom centre, as `surface.pill` with a `Check`.

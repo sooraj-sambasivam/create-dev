@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMention, fanOffset, fanRise, filterMentions, mentionQuery, placeholderFor, isStoreBusy, isDeictic, routesToSelection, isQuestion, routeFor, defaultModeFor } from "./logic";
+import { applyMention, fanOffset, pickFanDir, filterMentions, mentionQuery, placeholderFor, isStoreBusy, isDeictic, routesToSelection, isQuestion, routeFor, defaultModeFor } from "./logic";
 
 describe("mentions", () => {
   it("detects a trailing @query", () => {
@@ -18,23 +18,23 @@ describe("mentions", () => {
 });
 
 describe("fan + placeholder", () => {
-  it("lines the bubbles up in one row above the composer, right-aligned on Go", () => {
-    const rise = fanRise(300, 200); // Go's top is 100px below the composer's top
-    expect(rise).toBe(100 + 12 + 32);
-    const offsets = [0, 1, 2].map((i) => fanOffset(i, rise));
-    expect(offsets[0].x).toBe(0);
-    for (const o of offsets) expect(o.y).toBe(-rise);
-    expect(offsets[1].x).toBeLessThan(offsets[0].x);
+  it("arcs to the right of Go, or above it to the left", () => {
+    for (let i = 0; i < 3; i++) {
+      expect(fanOffset(i, "right").x).toBeGreaterThan(0);
+      expect(fanOffset(i, "left").y).toBeLessThan(0);
+    }
+    expect(fanOffset(0, "right").y).toBeLessThan(0);
   });
-  it("leaves an 8px gap between neighbouring bubbles", () => {
-    expect(fanOffset(0, 50).x - fanOffset(1, 50).x - 32).toBe(8);
-    expect(fanOffset(1, 50).x - fanOffset(2, 50).x - 32).toBe(8);
+  it("keeps even spacing with a clear gap in both directions", () => {
+    for (const dir of ["right", "left"] as const) {
+      const d = (a: number, b: number) => Math.hypot(fanOffset(a, dir).x - fanOffset(b, dir).x, fanOffset(a, dir).y - fanOffset(b, dir).y);
+      expect(Math.abs(d(0, 1) - d(1, 2))).toBeLessThanOrEqual(2);
+      expect(Math.min(d(0, 1), d(1, 2))).toBeGreaterThanOrEqual(32 + 20);
+    }
   });
-  it("clears the composer top by at least 12px", () => {
-    const goTop = 300;
-    const rise = fanRise(goTop, goTop - 100);
-    const bubbleBottom = goTop + 16 - rise + 16;
-    expect(goTop - 100 - bubbleBottom).toBeGreaterThanOrEqual(12);
+  it("flips left only when the right side is cramped", () => {
+    expect(pickFanDir(500, 900)).toBe("right");
+    expect(pickFanDir(880, 900)).toBe("left");
   });
   it("placeholder", () => {
     expect(placeholderFor(false)).toBe("Describe what to build");

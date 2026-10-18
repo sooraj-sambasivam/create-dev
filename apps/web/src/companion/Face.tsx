@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useAnimationControls } from "motion/react";
+import { duration, ease, spring } from "../ui/motion";
+import { expApproach } from "../ghost/spring";
 import { getCompanionLevel } from "./bus";
 import type { FaceKind } from "./machine";
 
@@ -30,11 +32,14 @@ const EYE_L = 21;
 const EYE_R = 39;
 const EYE_Y = 26;
 
-function eyeRy(face: FaceKind, side: "l" | "r", blink: boolean): number {
-  if (face === "cancelled" || blink) return 0.7;
-  if (face === "hearing") return 5.2;
-  if (face === "confused") return side === "l" ? 5.6 : 3.4;
-  return 4.5;
+const EYE_RY = 4.5;
+
+/** Vertical eye scale (1 = resting). Transform-only, so blinks never trigger SVG layout. */
+export function eyeScaleY(face: FaceKind, side: "l" | "r", blink: boolean): number {
+  if (face === "cancelled" || blink) return 0.7 / EYE_RY;
+  if (face === "hearing") return 5.2 / EYE_RY;
+  if (face === "confused") return (side === "l" ? 5.6 : 3.4) / EYE_RY;
+  return 1;
 }
 
 function eyeRot(face: FaceKind, side: "l" | "r"): number {
@@ -53,7 +58,7 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
 
   useEffect(() => {
     if (reduced || nod === 0) return;
-    void nodCtl.start({ y: [0, 2, 0], transition: { duration: 0.16 } });
+    void nodCtl.start({ y: [0, 2, 0], transition: { duration: 0.18, ease: ease.standard } });
   }, [nod, reduced, nodCtl]);
 
   // Blink every 3.5-6s while calm.
@@ -82,7 +87,7 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
     const r = ring.current;
     if (!tracking) {
       if (g) {
-        g.style.transition = "transform 200ms ease-out";
+        g.style.transition = "transform 200ms cubic-bezier(0.2, 0, 0, 1)";
         g.style.transform = "translate(0px, 0px)";
       }
       if (r) r.style.opacity = "0";
@@ -93,18 +98,35 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
       pointer.current = { x: e.clientX, y: e.clientY, moved: true };
     };
     window.addEventListener("pointermove", onMove, { passive: true });
+    // The orb is fixed in place, so its box is measured once and on resize, never per frame.
+    let cx = 0;
+    let cy = 0;
+    const measure = () => {
+      const box = g?.ownerSVGElement?.getBoundingClientRect();
+      if (box) {
+        cx = box.left + box.width / 2;
+        cy = box.top + box.height / 2;
+      }
+    };
+    measure();
+    window.addEventListener("resize", measure, { passive: true });
     let raf = 0;
     let x = 0;
     let y = 0;
+    let last = 0;
     const tick = (t: number) => {
-      const host = g?.ownerSVGElement?.getBoundingClientRect();
-      if (host && pointer.current.moved) {
-        const dx = (pointer.current.x - (host.left + host.width / 2)) / 320;
-        const dy = (pointer.current.y - (host.top + host.height / 2)) / 320;
-        const tx = Math.max(-1, Math.min(1, dx)) * 3;
-        const ty = Math.max(-1, Math.min(1, dy)) * 1.5;
-        x += (tx - x) * 0.14;
-        y += (ty - y) * 0.14;
+      raf = requestAnimationFrame(tick);
+      if (document.hidden) {
+        last = 0;
+        return;
+      }
+      const dt = last ? (t - last) / 1000 : 1 / 60;
+      last = t;
+      if (pointer.current.moved) {
+        const tx = Math.max(-1, Math.min(1, (pointer.current.x - cx) / 320)) * 3;
+        const ty = Math.max(-1, Math.min(1, (pointer.current.y - cy) / 320)) * 1.5;
+        x = expApproach(x, tx, dt, 0.09);
+        y = expApproach(y, ty, dt, 0.09);
       }
       if (g) g.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
       if (r) {
@@ -114,18 +136,19 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
         r.style.opacity = String(0.3 + 0.6 * level);
         r.style.transform = `scale(${1 + 0.16 * level})`;
       }
-      raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("resize", measure);
     };
   }, [tracking]);
 
   const happy = HAPPY.includes(face);
   const gaze = GAZE[face] ?? { x: 0, y: 0 };
-  const dur = reduced ? 0.15 : 0.2;
+  const dur = reduced ? 0.15 : duration.base;
+  const eyeSpring = reduced ? { duration: 0.15 } : spring.snappy;
   const eyeShown = happy ? 0 : 1;
   const brows = face === "error" || face === "confused";
 
@@ -137,26 +160,28 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
       />
       <svg viewBox="0 0 60 60" width="60" height="60" aria-hidden="true" className="relative block">
         <g ref={track}>
-          <motion.g animate={{ x: gaze.x, y: gaze.y }} transition={{ duration: dur }}>
+          <motion.g animate={{ x: gaze.x, y: gaze.y }} transition={eyeSpring}>
             <motion.ellipse
               cx={EYE_L}
               cy={EYE_Y}
               rx={3}
+              ry={EYE_RY}
               className="fill-ink"
               initial={false}
-              animate={{ ry: eyeRy(face, "l", blink), opacity: eyeShown, rotate: eyeRot(face, "l") }}
+              animate={{ scaleY: eyeScaleY(face, "l", blink), opacity: eyeShown, rotate: eyeRot(face, "l") }}
               style={{ transformOrigin: `${EYE_L}px ${EYE_Y}px` }}
-              transition={{ duration: blink ? 0.06 : dur }}
+              transition={blink ? { duration: 0.06, ease: ease.standard } : eyeSpring}
             />
             <motion.ellipse
               cx={EYE_R}
               cy={EYE_Y}
               rx={3}
+              ry={EYE_RY}
               className="fill-ink"
               initial={false}
-              animate={{ ry: eyeRy(face, "r", blink), opacity: eyeShown, rotate: eyeRot(face, "r") }}
+              animate={{ scaleY: eyeScaleY(face, "r", blink), opacity: eyeShown, rotate: eyeRot(face, "r") }}
               style={{ transformOrigin: `${EYE_R}px ${EYE_Y}px` }}
-              transition={{ duration: blink ? 0.06 : dur }}
+              transition={blink ? { duration: 0.06, ease: ease.standard } : eyeSpring}
             />
             <motion.g initial={false} animate={{ opacity: happy ? 1 : 0 }} transition={{ duration: dur }}>
               <path d="M17.5 28.5 Q21 21.5 24.5 28.5" className="fill-none stroke-ink" strokeWidth={2} strokeLinecap="round" />
@@ -181,7 +206,7 @@ export function Face({ face, nod, reduced }: { face: FaceKind; nod: number; redu
         <motion.path
           initial={false}
           animate={{ d: MOUTH[face] }}
-          transition={{ duration: dur }}
+          transition={{ duration: dur, ease: ease.standard }}
           className="fill-none stroke-ink-2"
           strokeWidth={1.75}
           strokeLinecap="round"

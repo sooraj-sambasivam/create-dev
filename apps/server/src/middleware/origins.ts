@@ -10,5 +10,5 @@ export function allowedOrigins(): string[] {
 export function isAllowedOrigin(origin: string, path: string): boolean {
   if (LOCAL_ORIGINS.some((re) => re.test(origin))) return true;
   if (allowedOrigins().includes(origin)) return true;
-  return origin.startsWith("chrome-extension://") && path.startsWith("/api/import-element");
+  return origin.startsWith("chrome-extension://") && (path.startsWith("/api/import-element") || path.startsWith("/api/tray"));
 }

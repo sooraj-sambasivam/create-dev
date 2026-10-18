@@ -101,6 +101,15 @@ export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new 
         return row.length >= cols ? row.slice(0, cols) : [...row, ...Array(cols - row.length).fill("")];
       });
     }
+    if (type === "chart" && Array.isArray(node.labels) && Array.isArray(node.series)) {
+      const labels = (node.labels as unknown[]).slice(0, 200).map((l) => String(l ?? ""));
+      node.labels = labels;
+      node.series = (node.series as unknown[]).filter(isObj).slice(0, 4).map((sr) => {
+        const vals = (Array.isArray(sr.values) ? sr.values : []).map((v) => (typeof v === "number" && Number.isFinite(v) ? v : Number.isFinite(Number(v)) && v !== null && v !== "" ? Number(v) : 0));
+        const fixed = vals.length >= labels.length ? vals.slice(0, labels.length) : [...vals, ...Array(labels.length - vals.length).fill(0)];
+        return { ...sr, name: String(sr.name ?? ""), values: fixed };
+      });
+    }
     if (type === "container") node.children = sanitizeNodes(node.children, notes, taken, routes);
     out.push(node);
   }

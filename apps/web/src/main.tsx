@@ -6,9 +6,12 @@ import "tldraw/tldraw.css";
 import "./index.css";
 import App from "./App";
 import { mountCompanion } from "./companion";
+import { installAgentHotkey, mountGhost } from "./ghost";
 
 installReplay();
 mountCompanion();
+mountGhost();
+if (import.meta.env.DEV) installAgentHotkey();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -3,6 +3,11 @@ import { EntitySchema, type Entity, type ExtractResponse } from "@create/shared"
 import { PERCEPTRON_DEFAULT_MODEL } from "../canvasOps/perceptron";
 import { imageBlock } from "../ask/ask";
 import { DEFAULT_MODEL } from "../ai/claude";
+import { geminiText } from "../providers/http";
+import { judgeImage, type JevBox, type JevImageResult } from "../jev/image";
+
+/** Extract response plus the optional Jev image judgment; `focus` is the box the client may crop to. */
+export type ExtractResult = ExtractResponse & { jev?: JevImageResult; focus?: JevBox };
 
 const TIMEOUT_MS = 20_000;
 const PERCEPTRON_URL = "https://api.perceptron.inc/v1/chat/completions";
@@ -90,7 +95,7 @@ export function mockEntity(hint?: string): Entity {
 }
 
 type FetchFn = typeof fetch;
-export type ExtractDeps = { fetchImpl?: FetchFn; client?: Anthropic };
+export type ExtractDeps = { fetchImpl?: FetchFn; client?: Anthropic; jevFetch?: FetchFn };
 
 async function viaPerceptron(image: string, hint: string | undefined, fetchImpl: FetchFn): Promise<Entity | null> {
   const apiKey = process.env.PERCEPTRON_API_KEY?.trim();
@@ -132,6 +137,12 @@ async function viaPerceptron(image: string, hint: string | undefined, fetchImpl:
   }
 }
 
+async function viaGemini(image: string, hint: string | undefined, fetchImpl?: FetchFn): Promise<Entity | null> {
+  if (!process.env.GEMINI_API_KEY?.trim() || !imageBlock(image)) return null;
+  const text = await geminiText({ user: hint ? `${EXTRACT_PROMPT}\nContext: ${hint}` : EXTRACT_PROMPT, image, json: true, maxTokens: 3000, fetchImpl });
+  return text ? parseEntity(text, hint) : null;
+}
+
 let claudeClient: Anthropic | null = null;
 
 async function viaClaude(image: string, hint: string | undefined, client?: Anthropic): Promise<Entity | null> {
@@ -155,13 +166,28 @@ async function viaClaude(image: string, hint: string | undefined, client?: Anthr
   }
 }
 
-/** Perceptron first, then Claude vision, then a deterministic mock. Never throws for model trouble. */
-export async function extractEntity(image: string, hint?: string, deps: ExtractDeps = {}): Promise<ExtractResponse> {
+async function chain(image: string, hint: string | undefined, deps: ExtractDeps): Promise<ExtractResponse> {
   if (process.env.MOCK_AI !== "1") {
     const p = await viaPerceptron(image, hint, deps.fetchImpl ?? fetch);
     if (p) return { entity: p, provider: "perceptron" };
+    const g = await viaGemini(image, hint, deps.fetchImpl);
+    // ExtractResponse.provider is frozen in shared; the picker only needs to know it was not mock.
+    if (g) return { entity: g, provider: "gemini" as unknown as "claude" };
     const c = await viaClaude(image, hint, deps.client);
     if (c) return { entity: c, provider: "claude" };
   }
   return { entity: mockEntity(hint), provider: "mock" };
+}
+
+/**
+ * Perceptron first, then Claude vision, then a deterministic mock. Never throws for model trouble.
+ * Jev runs alongside (its own 1.5s timeout, null on any failure) and only adds `jev` and `focus`.
+ */
+export async function extractEntity(image: string, hint?: string, deps: ExtractDeps = {}): Promise<ExtractResult> {
+  const useJev = process.env.MOCK_AI !== "1" || Boolean(deps.jevFetch);
+  const jevP = useJev ? judgeImage(image, { fetchImpl: deps.jevFetch }).catch(() => null) : Promise.resolve(null);
+  const result = await chain(image, hint, deps);
+  const jev = await jevP;
+  if (!jev) return result;
+  return { ...result, jev, ...(jev.box ? { focus: jev.box } : {}) };
 }

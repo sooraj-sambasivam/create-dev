@@ -39,7 +39,9 @@ const site = createServer((req, res) => {
   const name = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "") || "route-44-schedule.html";
   const file = join(DEMO, name.replace(/\.\.+/g, ""));
   if (!existsSync(file)) { res.writeHead(404); res.end("not found"); return; }
-  res.writeHead(200, { "Content-Type": MIME[extname(file)] || "application/octet-stream" }); res.end(readFileSync(file));
+  // Pages 2+ of the paginated fixture answer slowly so the crawl progress chip is observable.
+  const lag = /^pricing-page-[2-9]\.html$/.test(name) ? 400 : 0;
+  setTimeout(() => { res.writeHead(200, { "Content-Type": MIME[extname(file)] || "application/octet-stream" }); res.end(readFileSync(file)); }, lag);
 });
 await new Promise((r) => site.listen(0, "127.0.0.1", r));
 const SITE = `http://127.0.0.1:${site.address().port}/`;
@@ -113,19 +115,22 @@ try {
   const closeTab = (id) => fetch(`http://127.0.0.1:${port}/json/close/${id}`).catch(() => {});
 
   /** Hold Option over `sel`, expect the chip, release, send with Enter, then inspect the app that opens. */
-  async function liftFlow(tag, file, sel, chipRx, expectRows, expectChart, typed) {
-    await step(`${tag}. hold Option over ${file}: highlight + chip`, async () => {
+  async function liftFlow(tag, file, sel, chipRx, expectRows, expectChart, typed, opts = {}) {
+    const P = opts.prefix || "ext-lift";
+    await step(`${tag}. ${opts.gesture ? "circle" : "hold Option over"} ${file}: highlight + chip`, async () => {
       await open(file);
       const before = new Set((await pages()).map((t) => t.id));
       pc.__before = before;
       const p = await center(sel);
       await key("keyDown", "Alt", "AltLeft", 18, 1);
-      await move(p.x - 4, p.y, 1); await move(p.x, p.y, 1);
-      await sleep(400);
-      await pc.shot(`ext-lift-${tag}-1-hover`);
+      if (opts.gesture) await opts.gesture(p);
+      else { await move(p.x - 4, p.y, 1); await move(p.x, p.y, 1); }
+      await sleep(opts.gesture ? 600 : 400);
+      await pc.shot(`${P}-${tag}-1-hover`);
       const chip = await lift("chip");
       if (!chipRx.test(chip)) return `chip was ${JSON.stringify(chip)}, wanted ${chipRx}`;
       console.log("  chip: " + chip);
+      if (opts.nodes) { const n = +(await lift("nodes")); if (!(n >= opts.nodes)) return `snapshot has ${n} nodes, wanted >= ${opts.nodes}`; console.log(`  deep capture: ${n} nodes`); }
     });
     await step(`${tag}. release Option: "Turn this into…" pill`, async () => {
       await sleep(100);
@@ -133,19 +138,27 @@ try {
       await sleep(300);
       if ((await lift("state")) !== "asking") return "state was " + (await lift("state"));
       if (typed) { await pc.send("Input.insertText", { text: typed }); await sleep(150); }
-      await pc.shot(`ext-lift-${tag}-2-pill`);
+      await pc.shot(`${P}-${tag}-2-pill`);
     });
     await step(`${tag}. Enter: progress, then the app opens`, async () => {
       await key("keyDown", "Enter", "Enter", 13); await key("keyUp", "Enter", "Enter", 13);
+      pc.__stop = false;
+      const seenChips = new Set();
+      let shotProgress = false;
+      const poll = (async () => { while (!pc.__stop) { const c = await lift("chip").catch(() => ""); if (c) seenChips.add(c); if (opts.progress && /^Page 2 of/.test(c) && !shotProgress) { shotProgress = true; await pc.shot(`${P}-${tag}-3-progress`); } await sleep(60); } })();
+      pc.__stop = false;
       const tab = await until(async () => (await pages()).find((t) => !pc.__before.has(t.id) && t.url.startsWith(WEB + "/?p=")), 30000);
       if (!tab) return "no tab opened at " + WEB + "/?p=; tabs: " + (await pages()).map((t) => t.url).join(", ") + "; chip: " + (await lift("chip"));
+      pc.__stop = true; await poll;
       console.log("  opened " + tab.url);
+      if (opts.progress && ![...seenChips].some((c) => /^Page 2 of \d+…$/.test(c))) return "never saw a 'Page 2 of N…' chip; saw: " + [...seenChips].join(" | ");
+      if (opts.progress) console.log("  chips: " + [...seenChips].join(" | "));
       const nc = await attach(tab.webSocketDebuggerUrl);
       await nc.send("Page.enable"); await nc.send("Runtime.enable");
       await nc.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
       const rowsJs = `document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length`;
       const ok = await until(async () => (await nc.ev(rowsJs).catch(() => 0)) > 0, 30000);
-      await sleep(800); await nc.shot(`ext-lift-${tag}-3-app`);
+      await sleep(800); await nc.shot(`${P}-${tag}-4-app`);
       const rows = ok ? await nc.ev(rowsJs) : 0;
       const charts = await nc.ev(`document.querySelectorAll('[data-screen-root] figure svg[role="img"]').length`);
       const form = await nc.ev(`!!document.querySelector('[data-screen-root] input, [data-screen-root] textarea')`);
@@ -159,6 +172,48 @@ try {
 
   await liftFlow("route44", "route-44-schedule.html", "#timetable tbody tr:nth-child(5)", /^Schedule · 12 rows × 4 cols$/, 12, false);
   await liftFlow("pricing", "pricing.html", ".plans .card:nth-child(2) h3", /^Cards · 3 plans$/, 3, true, "a pricing tracker");
+
+  // Circle to capture: Option + freehand loop around the three plan cards -> container -> app with 3 rows.
+  const circle = (sel, scale = 1.3) => async () => {
+    const box = await pc.ev(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); e.scrollIntoView({ block: "center" }); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; })()`);
+    await sleep(150);
+    const rx = (box.w / 2) * scale, ry = (box.h / 2) * scale, N = 48;
+    const at = (i) => { const a = -Math.PI / 2 + (i / N) * Math.PI * 2.08; return { x: box.x + Math.cos(a) * rx, y: box.y + Math.sin(a) * ry }; };
+    const p0 = at(0);
+    await pc.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p0.x, y: p0.y, button: "none", modifiers: 1 });
+    await pc.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p0.x, y: p0.y, button: "left", buttons: 1, clickCount: 1, modifiers: 1 });
+    for (let i = 1; i <= N; i++) {
+      const p = at(i);
+      await pc.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, button: "left", buttons: 1, modifiers: 1 });
+      if (i === Math.floor(N * 0.7)) { await sleep(250); await pc.shot("ext-circle-drawing"); }
+      await sleep(8);
+    }
+    const pe = at(N);
+    await pc.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: pe.x, y: pe.y, button: "left", buttons: 0, clickCount: 1, modifiers: 1 });
+  };
+  await liftFlow("pricing", "pricing.html", ".plans", /^Cards · 3 plans$/, 3, true, "a pricing tracker", { gesture: circle(".plans"), prefix: "ext-circle", nodes: 20 });
+  await liftFlow("table", "pricing.html", "#compare", /^Table · 5 rows × 4 cols$/, 5, false, "a feature tracker", { gesture: circle("#compare", 1.25), prefix: "ext-circle" });
+
+  await step("Escape cancels a loop", async () => {
+    await open("pricing.html");
+    const g = circle(".plans");
+    await key("keyDown", "Alt", "AltLeft", 18, 1);
+    const p = await center(".plans");
+    await pc.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x - 200, y: p.y - 60, button: "none", modifiers: 1 });
+    await pc.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p.x - 200, y: p.y - 60, button: "left", buttons: 1, clickCount: 1, modifiers: 1 });
+    for (let i = 0; i < 20; i++) await pc.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x - 200 + i * 20, y: p.y - 60 + Math.sin(i / 3) * 40, button: "left", buttons: 1, modifiers: 1 });
+    const mid = await lift("state");
+    await key("keyDown", "Escape", "Escape", 27); await key("keyUp", "Escape", "Escape", 27);
+    await pc.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", buttons: 0, clickCount: 1 });
+    await key("keyUp", "Alt", "AltLeft", 18); await sleep(300);
+    const after = await lift("state");
+    void g;
+    if (mid !== "drawing") return "state mid-stroke was " + mid;
+    if (after !== "idle") return "Escape did not cancel (state " + after + ")";
+  });
+
+  // Crawl: pagination across three same-origin pages, merged and deduped into one app (3 + 3 + 2 plans).
+  await liftFlow("crawl", "pricing-page-1.html", ".plans .card:nth-child(2) h3", /^Cards · 3 plans$/, 8, true, "a plan tracker for all pages", { prefix: "ext-circle", progress: true });
 
   await step("dining list detected as List · 7 items", async () => {
     await open("dining-hours.html");

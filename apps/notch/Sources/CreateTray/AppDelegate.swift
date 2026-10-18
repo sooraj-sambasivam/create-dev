@@ -23,6 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } compactTrailing: {
             CompactTrailing(store: s)
         }
+        notch?.transitionConfiguration = DynamicNotchTransitionConfiguration(
+            openingAnimation: Motion.spring, closingAnimation: Motion.spring, conversionAnimation: Motion.spring, skipIntermediateHides: true)
         Task { await notch?.compact() }
 
         store.onNewItems = { [weak self] _ in self?.peek() }

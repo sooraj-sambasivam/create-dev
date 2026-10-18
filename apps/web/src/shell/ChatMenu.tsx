@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Archive,
   ArchiveRestore,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { Asset } from "@create/shared";
 import { ICON, STROKE, button, input, menuItem, surface } from "../ui/styles";
+import { originFor, popover, useReducedMotionSafe } from "../ui/motion";
 
 export interface ChatProject {
   id: string;
@@ -39,8 +40,6 @@ export interface ChatMenuProps {
 }
 
 type View = "menu" | "rename" | "files" | "delete" | "project";
-
-const ease = [0.22, 1, 0.36, 1] as const;
 
 const separator = "my-1 h-px bg-line";
 
@@ -140,7 +139,7 @@ export function ChatMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
+  const { v } = useReducedMotionSafe();
 
   function close(returnFocus = false) {
     setOpen(false);
@@ -519,10 +518,11 @@ export function ChatMenu({
             aria-label={VIEW_LABEL[view]}
             onKeyDown={onPanelKeyDown}
             onFocus={(event) => setRovingStop(event.currentTarget, event.target)}
-            initial={reduceMotion ? false : { opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
-            transition={{ duration: reduceMotion ? 0 : 0.2, ease }}
+            variants={v(popover)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            style={{ transformOrigin: originFor("down", "right") }}
             className={`${surface.menu} absolute right-0 top-full z-40 mt-2 max-h-[min(420px,70vh)] overflow-auto`}
           >
             {panel}

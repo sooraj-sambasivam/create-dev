@@ -5,6 +5,7 @@ import { useScreenStore } from "../../../store/screenStore";
 import type { WorkMode } from "../../../store/modeStore";
 import type { PointerPhase } from "./PointerBubble";
 import { matchOffered } from "./pointerLogic";
+import { emitCompanion } from "../../../companion/bus";
 import { askText, isDeictic, MIN_INTENT_CONFIDENCE, PANEL_PAGE_ROOT, preResolve, prettyLabel } from "./targets";
 
 type Add = (e: Record<string, unknown>) => void;
@@ -114,6 +115,7 @@ export function runPointerCommand(ctx: CommandCtx, text: string, req: IntentRequ
       return;
     }
     add?.({ kind: "note", text: `Live command (${intent.action ?? "edit"}) on ${id}: ${text}`.slice(0, 4000) });
+    emitCompanion({ type: "note", label: labelOf(id) ?? undefined, text: text.slice(0, 60) });
     ctx.setPhase({ kind: "editing", targetId: id, label: labelOf(id) });
     let result: { error?: string; summary?: string };
     try {

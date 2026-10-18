@@ -22,6 +22,8 @@ import { EDIT_NODE_INSTRUCTIONS, SYSTEM_PROMPT } from "./prompt";
 import { outlineScreen } from "../canvasOps/outline";
 import { mockEditNode } from "./mockEdit";
 import { createPartialScreenBuilder } from "./streamScreen";
+import { altText, extractJson } from "../providers/http";
+import { claudeModelFor, hasGemini, hasOpenRouter } from "../providers/models";
 
 export const DEFAULT_MODEL = "claude-sonnet-5-5";
 /** Single-element edits run on Haiku: the request is small and latency is the product. */
@@ -201,6 +203,50 @@ async function runTool<T>(opts: {
   throw new GenerationError(lastProblem, 422);
 }
 
+type AltProvider = "inkling" | "gemini";
+
+/** The non-Claude provider to try for this choice, or null when the choice is Claude or the provider is not configured. */
+function altProviderFor(choice: GenerateRequest["model"]): AltProvider | null {
+  if (choice === "inkling") return hasOpenRouter() ? "inkling" : null;
+  if (choice === "gemini") return hasGemini() ? "gemini" : null;
+  return null;
+}
+
+/**
+ * One structured-output attempt on Inkling or Gemini: the schema goes in the prompt, the reply is
+ * parsed and validated with Zod. Returns null on any failure so the caller falls back to Sonnet.
+ */
+async function runAlt<T>(opts: {
+  provider: AltProvider;
+  label: string;
+  schema: z.ZodType;
+  toolName: string;
+  userMessage: string;
+  effort: Effort;
+  signal?: AbortSignal;
+  validate: (input: unknown, notes: string[]) => z.ZodSafeParseResult<T>;
+}): Promise<{ data: T; notes: string[] } | null> {
+  const started = Date.now();
+  const system =
+    `${SYSTEM_PROMPT}\n\nYou have no tools. Instead of calling ${opts.toolName}, reply with ONLY one JSON object that is the tool's input, ` +
+    `matching this JSON Schema, with no prose and no code fences:\n${JSON.stringify(toolSchema(opts.schema))}`;
+  const text = await altText(opts.provider, { system, user: opts.userMessage, json: true, maxTokens: 16000, effort: opts.effort, signal: opts.signal });
+  if (!text) return null;
+  const raw = extractJson(text);
+  if (raw === undefined) {
+    console.warn(`[${opts.label}] ${opts.provider} returned no JSON`);
+    return null;
+  }
+  const notes: string[] = [];
+  const parsed = opts.validate(raw, notes);
+  if (!parsed.success) {
+    console.warn(`[${opts.label}] ${opts.provider} output failed validation`);
+    return null;
+  }
+  console.log(`[${opts.label}] ${opts.provider} ${Date.now() - started}ms`);
+  return { data: parsed.data, notes };
+}
+
 // ---- post-processing shared by builds and edits ----
 
 /** Replace icon names that don't exist with the closest real icon; drop ones with no match. */
@@ -331,30 +377,47 @@ export interface GenerateStreamOptions {
   /** Called with a valid screen each time another top-level section completes (new pages only). */
   onPartial?: (screen: Screen) => void;
   signal?: AbortSignal;
+  /** Called when the chosen provider could not answer and Sonnet did instead. */
+  onFallback?: (choice: NonNullable<GenerateRequest["model"]>) => void;
   /** Skip the slow stock-photo existence check (the demo path builds many sections at once). */
   skipPhotoVerify?: boolean;
 }
 
 export async function generateWithClaude(req: GenerateRequest, opts: GenerateStreamOptions = {}): Promise<GenerateResponse> {
   // A new page benefits from more thought; page-wide edits stay quick.
-  const effort = req.screen
-    ? effortFrom(process.env.CLAUDE_EDIT_EFFORT, "low")
-    : effortFrom(process.env.CLAUDE_BUILD_EFFORT, "medium");
+  const effort =
+    req.effort ??
+    (req.screen ? effortFrom(process.env.CLAUDE_EDIT_EFFORT, "low") : effortFrom(process.env.CLAUDE_BUILD_EFFORT, "medium"));
   // Edits keep the rest of the page, so a partial (first sections only) would hide content.
   const builder = opts.onPartial && !req.screen ? createPartialScreenBuilder(opts.onPartial) : null;
-  const { data, notes } = await runTool({
-    label: "generate",
-    signal: opts.signal,
-    onToolJson: builder ? (json) => builder.push(json) : undefined,
-    tool: RENDER_TOOL,
-    userMessage: buildUserMessage(req),
-    effort,
-    allowWebFetch: URL_RE.test(req.prompt),
-    validate: (input, notes) => {
-      const raw = (input ?? {}) as Record<string, unknown>;
-      return GenerateResponseSchema.safeParse({ ...raw, screen: sanitizeScreen(raw.screen, notes, allowedRoutes(req.routes, req.screen)) });
-    },
-  });
+  const validate = (input: unknown, notes: string[]) => {
+    const raw = (input ?? {}) as Record<string, unknown>;
+    return GenerateResponseSchema.safeParse({ ...raw, screen: sanitizeScreen(raw.screen, notes, allowedRoutes(req.routes, req.screen)) });
+  };
+  const userMessage = buildUserMessage(req);
+  const alt = altProviderFor(req.model);
+  let result: { data: GenerateResponse; notes: string[] } | null = null;
+  if (alt) {
+    result = await runAlt({ provider: alt, label: "generate", schema: GenerateResponseSchema, toolName: "render_screen", userMessage, effort, signal: opts.signal, validate });
+    if (!result) opts.onFallback?.(req.model!);
+  } else if (req.model === "inkling" || req.model === "gemini") {
+    opts.onFallback?.(req.model);
+  }
+  const model = claudeModelFor(req.model);
+  const { data, notes } =
+    result ??
+    (await runTool({
+      label: "generate",
+      signal: opts.signal,
+      onToolJson: builder ? (json) => builder.push(json) : undefined,
+      tool: RENDER_TOOL,
+      userMessage,
+      effort,
+      ...(model ? { model } : {}),
+      sendEffort: req.model !== "haiku",
+      allowWebFetch: URL_RE.test(req.prompt),
+      validate,
+    }));
 
   let screen = preserveStyles(req.screen, data.screen);
   const [withIcons] = await Promise.all([fixIcons(screen.children, notes)]);
@@ -364,7 +427,12 @@ export async function generateWithClaude(req: GenerateRequest, opts: GenerateStr
   return { summary: withNotes(data.summary, notes), screen };
 }
 
-export async function editNodeWithClaude(req: EditNodeRequest): Promise<EditNodeResponse> {
+export interface EditNodeOptions {
+  /** Called when the chosen provider could not answer and Sonnet did instead. */
+  onFallback?: (choice: NonNullable<EditNodeRequest["model"]>) => void;
+}
+
+export async function editNodeWithClaude(req: EditNodeRequest, opts: EditNodeOptions = {}): Promise<EditNodeResponse> {
   const target = findNode(req.screen, req.nodeId);
   if (!target) throw new GenerationError("That element no longer exists. Select it again.", 404);
 
@@ -381,20 +449,35 @@ export async function editNodeWithClaude(req: EditNodeRequest): Promise<EditNode
     .filter(Boolean)
     .join("\n\n");
 
-  const { data, notes } = await runTool({
-    label: "edit-node",
-    tool: REPLACE_TOOL,
-    userMessage: message,
-    effort: effortFrom(process.env.CLAUDE_EDIT_EFFORT, "low"),
-    model: EDIT_MODEL,
-    maxTokens: 4000,
-    sendEffort: false,
-    allowWebFetch: URL_RE.test(req.prompt),
-    validate: (input, notes) => {
-      const raw = (input ?? {}) as Record<string, unknown>;
-      return EditNodeResponseSchema.safeParse({ ...raw, nodes: sanitizeNodes(raw.nodes, notes, new Set<string>(), allowedRoutes(req.routes, req.screen)) });
-    },
-  });
+  const effort = req.effort ?? effortFrom(process.env.CLAUDE_EDIT_EFFORT, "low");
+  const validate = (input: unknown, notes: string[]) => {
+    const raw = (input ?? {}) as Record<string, unknown>;
+    return EditNodeResponseSchema.safeParse({ ...raw, nodes: sanitizeNodes(raw.nodes, notes, new Set<string>(), allowedRoutes(req.routes, req.screen)) });
+  };
+  const alt = altProviderFor(req.model);
+  let result: { data: EditNodeResponse; notes: string[] } | null = null;
+  if (alt) {
+    result = await runAlt({ provider: alt, label: "edit-node", schema: EditNodeResponseSchema, toolName: "replace_element", userMessage: message, effort, validate });
+    if (!result) opts.onFallback?.(req.model!);
+  } else if (req.model === "inkling" || req.model === "gemini") {
+    opts.onFallback?.(req.model);
+  }
+  // Unset keeps the fast default (Haiku, no effort); an explicit Sonnet choice gets its effort.
+  const model = claudeModelFor(req.model) ?? (req.model ? DEFAULT_MODEL : EDIT_MODEL);
+  const claudeChosen = req.model === "sonnet" || req.model === "inkling" || req.model === "gemini";
+  const { data, notes } =
+    result ??
+    (await runTool({
+      label: "edit-node",
+      tool: REPLACE_TOOL,
+      userMessage: message,
+      effort,
+      model: claudeChosen ? DEFAULT_MODEL : model,
+      maxTokens: claudeChosen ? 8000 : 4000,
+      sendEffort: claudeChosen && Boolean(req.effort),
+      allowWebFetch: URL_RE.test(req.prompt),
+      validate,
+    }));
 
   // Carry over hand-set styles for nodes the model kept but returned without them.
   const kept = preserveStyles({ ...req.screen, children: [target] }, { ...req.screen, children: data.nodes });
@@ -403,10 +486,10 @@ export async function editNodeWithClaude(req: EditNodeRequest): Promise<EditNode
 }
 
 /** Real edit when a key is set; the deterministic edit when mocked, keyless or the model fails (404s still surface). */
-export async function editNodeWithFallback(req: EditNodeRequest): Promise<EditNodeResponse> {
+export async function editNodeWithFallback(req: EditNodeRequest, opts: EditNodeOptions = {}): Promise<EditNodeResponse> {
   if (process.env.MOCK_AI === "1" || !process.env.ANTHROPIC_API_KEY) return mockEditNode(req);
   try {
-    return await editNodeWithClaude(req);
+    return await editNodeWithClaude(req, opts);
   } catch (err) {
     if (err instanceof GenerationError && err.status === 404) throw err;
     console.warn("[edit-node] model failed, using the local edit:", err instanceof Error ? err.message : "unknown");

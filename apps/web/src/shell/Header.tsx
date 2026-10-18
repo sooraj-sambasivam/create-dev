@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Contrast, Copy, Moon, PanelRight, Share, Sun, X } from "lucide-react";
 import { useScreenStore } from "../store/screenStore";
+import { useWorkMode, type WorkMode } from "../store/modeStore";
+import { ActivePill } from "../ui/ActivePill";
 import { ChatMenu, type ChatProject } from "./ChatMenu";
 import { THEME_LABEL, useThemeStore, type ThemePreference } from "./theme";
-import { ICON, STROKE, button, input, surface } from "../ui/styles";
+import { ICON, STROKE, button, input, segmented, surface } from "../ui/styles";
+import { duration, ease, originFor, popover, useReducedMotionSafe } from "../ui/motion";
 
 export type { ChatProject };
 
@@ -97,6 +101,7 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
   const [busy, setBusy] = useState(false);
   const timer = useRef<number | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { v } = useReducedMotionSafe();
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
@@ -169,14 +174,20 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
         className={button.ghost}
       >
         <Share size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
-        <span role="status" aria-live="polite">
+        <motion.span key={label} role="status" aria-live="polite" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: duration.base, ease: ease.emphasized }}>
           {label}
-        </span>
+        </motion.span>
       </button>
+      <AnimatePresence>
       {state.kind === "manual" ? (
-        <div
+        <motion.div
           role="group"
           aria-label="Share link"
+          variants={v(popover)}
+          initial="hidden"
+          animate="show"
+          exit="exit"
+          style={{ transformOrigin: originFor("down", "right") }}
           className={`${surface.card} absolute right-0 top-full z-40 mt-1 w-96 max-w-[calc(100vw-2rem)] p-1.5`}
         >
           <p className="px-1 pb-1.5 text-[12px] text-ink-3">
@@ -214,8 +225,9 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
               <X size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
             </button>
           </div>
-        </div>
+        </motion.div>
       ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -246,15 +258,48 @@ export function ThemeToggle() {
   );
 }
 
+/** UI copy for the two modes. The stored value for Work stays "code". */
+export const MODE_LABEL: Record<WorkMode, string> = { chat: "Chat", code: "Work" };
+const MODE_HINT: Record<WorkMode, string> = { chat: "Chat: ask questions", code: "Work: build and edit" };
+
+/** Chat answers and never edits; Work builds and edits. Lives in the header centre. */
+export function ModeToggle() {
+  const mode = useWorkMode((s) => s.mode);
+  const setMode = useWorkMode((s) => s.setMode);
+  const pillId = useId();
+  return (
+    <div role="group" aria-label="Chat or Work" data-testid="work-mode" className={segmented.root}>
+      {(["chat", "code"] as const).map((m) => {
+        const active = mode === m;
+        return (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={active}
+            data-testid={`work-mode-${m}`}
+            title={MODE_HINT[m]}
+            onClick={() => setMode(m)}
+            className={`${segmented.item} ${active ? segmented.active : ""}`}
+          >
+            {active && <ActivePill layoutId={pillId} />}
+            {MODE_LABEL[m]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Header({ pageTitle, chat, projects, outputOpen, actions, onShare }: HeaderProps) {
   const assets = useScreenStore((s) => s.assets);
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 px-4">
-      <h1 className="min-w-0 flex-1 truncate text-[14px] font-normal text-ink" title={pageTitle}>
+    <header className="grid h-12 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-4">
+      <h1 className="min-w-0 truncate text-[14px] font-normal text-ink" title={pageTitle}>
         {pageTitle}
       </h1>
-      <div className="flex shrink-0 items-center gap-1">
+      <ModeToggle />
+      <div className="flex shrink-0 items-center justify-self-end gap-1">
         <ShareButton onShare={onShare} />
         <ThemeToggle />
         <ChatMenu

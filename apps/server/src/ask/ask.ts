@@ -3,6 +3,8 @@ import { findNode, type AskRequest, type AskResponse, type Node } from "@create/
 import { outlineScreen } from "../canvasOps/outline";
 import { readSketchWithPerceptron } from "../canvasOps/perceptron";
 import { DEFAULT_MODEL } from "../ai/claude";
+import { altText } from "../providers/http";
+import { claudeModelFor, hasGemini, hasOpenRouter } from "../providers/models";
 import { mockAnswerBody } from "./mockAnswer";
 
 /**
@@ -73,23 +75,49 @@ export function imageBlock(dataUrl: string | undefined): ImageBlock | null {
 }
 
 /** Answers the question. Never throws for model trouble: falls back to the mock answer. */
-export async function answerAsk(req: AskRequest, opts: { client?: Anthropic } = {}): Promise<AskResponse> {
+export async function answerAsk(
+  req: AskRequest,
+  opts: { client?: Anthropic; onFallback?: (choice: NonNullable<AskRequest["model"]>) => void } = {},
+): Promise<AskResponse> {
   const suggestCode = wantsEdit(req.question) || undefined;
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const reading = req.pointer?.image ? await readSketchWithPerceptron(req.pointer.image, req.question) : null;
   const provider = reading ? "perceptron+claude" : "claude";
-  if (process.env.MOCK_AI === "1" || (!opts.client && !apiKey)) {
+  if (process.env.MOCK_AI === "1") {
+    return { answer: mockAnswer(req, reading), provider: "mock", ...(suggestCode ? { suggestCode } : {}) };
+  }
+  if (req.model === "inkling" || req.model === "gemini") {
+    const configured = req.model === "inkling" ? hasOpenRouter() : hasGemini();
+    const text = configured
+      ? await altText(req.model, {
+          system: buildSystemPrompt(req, reading),
+          user: req.question,
+          image: imageBlock(req.pointer?.image) ? req.pointer?.image : undefined,
+          history: req.history.slice(-10),
+          maxTokens: 800,
+          effort: req.model === "inkling" ? req.effort : undefined,
+        })
+      : null;
+    if (text) return { answer: text, provider, ...(suggestCode ? { suggestCode } : {}) };
+    opts.onFallback?.(req.model);
+  }
+  if (!opts.client && !apiKey) {
     return { answer: mockAnswer(req, reading), provider: "mock", ...(suggestCode ? { suggestCode } : {}) };
   }
   try {
     client ??= new Anthropic({ apiKey: apiKey ?? "unset", timeout: ASK_TIMEOUT_MS, maxRetries: 0 });
-    const model = req.question.length <= SHORT_QUESTION && !req.screen ? ASK_FAST_MODEL : process.env.CLAUDE_ASK_MODEL || DEFAULT_MODEL;
+    const model =
+      claudeModelFor(req.model) ??
+      (req.question.length <= SHORT_QUESTION && !req.screen ? ASK_FAST_MODEL : process.env.CLAUDE_ASK_MODEL || DEFAULT_MODEL);
+    // Effort is honored on Sonnet only (Haiku does not take it).
+    const sendEffort = Boolean(req.effort) && model === DEFAULT_MODEL;
     const image = imageBlock(req.pointer?.image);
     const userContent = image ? [image, { type: "text" as const, text: req.question }] : req.question;
     const message = await (opts.client ?? client).messages.create(
       {
         model,
         max_tokens: 600,
+        ...(sendEffort ? { output_config: { effort: req.effort! } } : {}),
         system: buildSystemPrompt(req, reading),
         messages: [...req.history.slice(-10).map((h) => ({ role: h.role, content: h.text })), { role: "user" as const, content: userContent }],
       },
