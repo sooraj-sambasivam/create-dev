@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMention, fanOffset, filterMentions, mentionQuery, placeholderFor, isStoreBusy, isDeictic, routesToSelection } from "./logic";
+import { applyMention, fanOffset, pickFanDir, filterMentions, mentionQuery, placeholderFor, isStoreBusy, isDeictic, routesToSelection } from "./logic";
 import { useComposerSettings } from "./settings";
 
 describe("mentions", () => {
@@ -19,9 +19,26 @@ describe("mentions", () => {
 });
 
 describe("fan + placeholder", () => {
-  it("arcs to the right of Go", () => {
-    for (let i = 0; i < 3; i++) expect(fanOffset(i).x).toBeGreaterThan(0);
-    expect(fanOffset(0).y).toBeLessThan(0);
+  it("arcs to the right of Go, or mirrored to the left", () => {
+    for (let i = 0; i < 3; i++) {
+      expect(fanOffset(i, "right").x).toBeGreaterThan(0);
+      expect(fanOffset(i, "left").x).toBe(-fanOffset(i, "right").x);
+      expect(fanOffset(i, "left").y).toBe(fanOffset(i, "right").y);
+    }
+    expect(fanOffset(0, "right").y).toBeLessThan(0);
+    expect(fanOffset(0, "left").y).toBeLessThan(0);
+  });
+  it("keeps even spacing in both directions", () => {
+    for (const dir of ["right", "left"] as const) {
+      const d01 = Math.hypot(fanOffset(0, dir).x - fanOffset(1, dir).x, fanOffset(0, dir).y - fanOffset(1, dir).y);
+      const d12 = Math.hypot(fanOffset(1, dir).x - fanOffset(2, dir).x, fanOffset(1, dir).y - fanOffset(2, dir).y);
+      expect(Math.abs(d01 - d12)).toBeLessThanOrEqual(2);
+    }
+  });
+  it("mirrors left only when the right is cramped", () => {
+    expect(pickFanDir(100, 400, 0)).toBe("right");
+    expect(pickFanDir(380, 400, 0)).toBe("left");
+    expect(pickFanDir(20, 60, 0)).toBe("right");
   });
   it("spaces the bubbles evenly with a clear gap", () => {
     const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);

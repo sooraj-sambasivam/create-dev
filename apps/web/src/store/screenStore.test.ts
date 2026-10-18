@@ -20,7 +20,7 @@ vi.mock("../lib/api", () => ({ editNode: vi.fn(), generateStream: vi.fn(), uploa
 
 import { findNode, type Node, type Screen } from "@create/shared";
 import * as api from "../lib/api";
-import { cancelInFlight, fastEdit, isDeletePrompt, useScreenStore } from "./screenStore";
+import { cancelInFlight, elementLabel, fastEdit, isDeletePrompt, useScreenStore } from "./screenStore";
 
 const text = (extra: Partial<Node> = {}) => ({ id: "t", type: "text", text: "hi", ...extra }) as Node;
 const page = (): Screen =>
@@ -39,11 +39,22 @@ describe("fastEdit", () => {
     expect(fastEdit(text({ style: { fontSize: "lg" } }), "a bit smaller")?.node.style?.fontSize).toBe("base");
     expect(fastEdit(text({ style: { fontSize: "5xl" } }), "bigger")?.node).toMatchObject({ style: { fontSize: "5xl" } });
   });
+  it("steps one size from the size the renderer really uses", () => {
+    const h3 = { id: "b", type: "heading", text: "Ember", level: 3 } as Node;
+    expect(fastEdit(h3, "bigger")?.node.style?.fontSize).toBe("lg");
+    expect(fastEdit({ ...h3, level: 1 } as Node, "bigger")?.node.style?.fontSize).toBe("4xl");
+    expect(fastEdit({ ...h3, level: 2 } as Node, "smaller")?.node.style?.fontSize).toBe("xl");
+  });
+  it("labels edited elements", () => {
+    expect(elementLabel({ id: "b", type: "heading", text: "Ember", level: 3 } as Node)).toBe("Heading · Ember");
+    expect(elementLabel({ id: "i", type: "image" } as Node)).toBe("Image");
+    expect(elementLabel(text({ text: "x".repeat(40) } as Partial<Node>))).toBe(`Text · ${"x".repeat(27)}…`);
+  });
   it("uses widthPct for non-text", () => {
     const img = { id: "i", type: "image" } as Node;
-    expect(fastEdit(img, "make this bigger")?.node.widthPct).toBe(75);
+    expect(fastEdit(img, "make this bigger")?.node.widthPct).toBe(70);
     expect(fastEdit({ ...img, widthPct: 100 } as Node, "bigger")?.node.widthPct).toBe(100);
-    expect(fastEdit({ ...img, widthPct: 40 } as Node, "make that smaller")?.node.widthPct).toBe(25);
+    expect(fastEdit({ ...img, widthPct: 40 } as Node, "make that smaller")?.node.widthPct).toBe(30);
   });
   it("handles bold and centre", () => {
     expect(fastEdit(text(), "make it bold")?.node.style?.weight).toBe("bold");

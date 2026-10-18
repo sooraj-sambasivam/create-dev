@@ -29,9 +29,23 @@ export const FAN_RADIUS = 76;
 export const FAN_STEP = 45;
 export const FAN_ANGLES = [-75, -75 + FAN_STEP, -75 + 2 * FAN_STEP];
 
-export function fanOffset(index: number): { x: number; y: number } {
+export type FanDir = "right" | "left";
+
+/** Horizontal room the arc needs beside Go's centre: radius, half a bubble, and a margin. */
+export const FAN_REACH = FAN_RADIUS + 16 + 8;
+
+/** `left` mirrors the arc across Go's vertical axis, for when the right side is clipped or covered. */
+export function fanOffset(index: number, dir: FanDir = "right"): { x: number; y: number } {
   const rad = (FAN_ANGLES[index] * Math.PI) / 180;
-  return { x: Math.round(Math.cos(rad) * FAN_RADIUS), y: Math.round(Math.sin(rad) * FAN_RADIUS) };
+  const x = Math.round(Math.cos(rad) * FAN_RADIUS);
+  return { x: dir === "left" ? -x : x, y: Math.round(Math.sin(rad) * FAN_RADIUS) };
+}
+
+/** Prefer the right; mirror left when the right has less than FAN_REACH and the left has more. */
+export function pickFanDir(goCenterX: number, rightEdge: number, leftEdge: number): FanDir {
+  const right = rightEdge - goCenterX;
+  const left = goCenterX - leftEdge;
+  return right >= FAN_REACH || right >= left ? "right" : "left";
 }
 
 export function placeholderFor(hasScreen: boolean): string {

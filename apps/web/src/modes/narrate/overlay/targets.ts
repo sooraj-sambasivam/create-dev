@@ -170,6 +170,48 @@ export function prettyLabel(label: string): string {
   return rest ? `${head} · ${rest}` : head;
 }
 
+const TYPE_NAMES: Record<string, string> = { container: "Section", link: "Link", icon: "Icon", image: "Image" };
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+type LabelNode = { id?: string; type: string; children?: unknown; [k: string]: unknown };
+
+/** The node with this id from a depth-first walk of a Screen-like tree, or null. */
+export function findNodeById(nodes: readonly unknown[] | null | undefined, id: string): LabelNode | null {
+  for (const raw of nodes ?? []) {
+    const n = raw as LabelNode;
+    if (n.id === id) return n;
+    if (Array.isArray(n.children)) {
+      const hit = findNodeById(n.children, id);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+/** "Heading · Ember", "Button · Get started", "Image · coffee cup", "Section · Features". Content is cut at `max` chars. */
+export function describeNode(node: LabelNode, max = 28): string {
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  let content = "";
+  if (node.type === "container") {
+    const kids = Array.isArray(node.children) ? (node.children as LabelNode[]) : [];
+    const head = kids.find((k) => k.type === "heading");
+    content = str(head?.text) || cap(String(node.id ?? "").replace(/[-_]+/g, " ").replace(/\s+\d+$/, ""));
+  } else if (node.type === "image") content = str(node.alt) || str(node.query);
+  else content = str(node.text) || str(node.label) || str(node.title) || str(node.name).replace(/^lucide:/, "");
+  const head = TYPE_NAMES[node.type] ?? cap(node.type);
+  const body = snippet(content, max);
+  return body ? `${head} · ${body}` : head;
+}
+
+/** Human label for a hovered node: looked up in the screen tree, else the DOM label made pretty and cut short. */
+export function humanLabel(id: string, screen: { children?: readonly unknown[] } | null | undefined, fallback: string, max = 28): string {
+  const node = findNodeById(screen?.children, id);
+  if (node) return describeNode(node, max);
+  const pretty = prettyLabel(fallback);
+  const i = pretty.indexOf(" · ");
+  return i < 0 ? pretty : `${pretty.slice(0, i)} · ${snippet(pretty.slice(i + 3), max)}`;
+}
+
 /** The page node under the pointer. `el` lets the bubble re-measure the outline while the page scrolls. */
 export type HoverHit = { id: string; label: string; area: number; box: LassoRect; el?: ElementLike };
 

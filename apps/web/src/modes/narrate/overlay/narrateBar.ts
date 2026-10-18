@@ -19,7 +19,7 @@ export type NarrateBarPlacement = {
 };
 
 /** Gap between the bar's bottom edge and the composer's top edge. */
-export const BAR_GAP = 8;
+export const BAR_GAP = 14;
 /** Horizontal gutter kept between the bar and the main card's side edges. */
 export const BAR_CARD_GUTTER = 16;
 

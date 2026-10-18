@@ -20,7 +20,7 @@ import {
 } from "./voice";
 import { FilesMenu, ConnectorsMenu, ModelMenu, PermissionsMenu, PluginsMenu, ProjectMenu } from "./menus";
 import { menuItemClass } from "./Popover";
-import { MAX_FIELD_PX, applyMention, filterMentions, mentionQuery, isStoreBusy, placeholderFor, routesToSelection } from "./logic";
+import { MAX_FIELD_PX, applyMention, filterMentions, pickFanDir, type FanDir, mentionQuery, isStoreBusy, placeholderFor, routesToSelection } from "./logic";
 import { selectedLabel } from "./selection";
 
 /** Composer-local aliases of the shell theme tokens (index.css), so both themes apply. */
@@ -43,6 +43,7 @@ const TOKENS = {
 export function Composer() {
   const [value, setValue] = useState("");
   const [fanOpen, setFanOpen] = useState(false);
+  const [fanDir, setFanDir] = useState<FanDir>("right");
   const [mentionDismissed, setMentionDismissed] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -123,6 +124,15 @@ export function Composer() {
 
   const openFan = () => {
     window.clearTimeout(closeTimer.current);
+    // Measure once per open (not while open) so the arc never flips under the pointer.
+    if (!fanOpen) {
+      const go = goRef.current?.getBoundingClientRect();
+      const card = goRef.current?.closest("form")?.getBoundingClientRect();
+      if (go) {
+        const cx = go.left + go.width / 2;
+        setFanDir(pickFanDir(cx, Math.min(window.innerWidth, card?.right ?? window.innerWidth), Math.max(0, card?.left ?? 0)));
+      }
+    }
     setFanOpen(true);
   };
   const closeFan = (delay = 180) => {
@@ -310,7 +320,7 @@ export function Composer() {
   const goDisabled = !recording && (busy || empty || barOn);
 
   return (
-    <div style={TOKENS} className="relative z-20 mx-auto w-full max-w-[740px]">
+    <div style={TOKENS} className={`relative ${fanOpen ? "z-50" : "z-20"} mx-auto w-full max-w-[740px]`}>
       {mentionOpen ? (
         <div
           role="menu"
@@ -453,6 +463,7 @@ export function Composer() {
             </motion.button>
             <GoFan
               open={fanOpen}
+              dir={fanDir}
               items={[
                 {
                   key: "mic",

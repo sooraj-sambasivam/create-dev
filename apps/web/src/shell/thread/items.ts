@@ -2,7 +2,7 @@ import type { HistoryEntry, Status } from "../../store/screenStore";
 
 export type ThreadItem =
   | { kind: "user"; key: string; text: string }
-  | { kind: "assistant"; key: string; text: string; element: boolean }
+  | { kind: "assistant"; key: string; text: string; element: boolean; label: string | null }
   | { kind: "building"; key: string; label: string }
   | { kind: "error"; key: string; message: string; retryPrompt: string | null };
 
@@ -22,7 +22,7 @@ export function deriveItems({ history, status, error }: ThreadInput): ThreadItem
   const items: ThreadItem[] = [];
   history.forEach((h, i) => {
     if (h.prompt && h.prompt !== EDITED_PROMPT) items.push({ kind: "user", key: `u${i}`, text: h.prompt });
-    if (h.summary) items.push({ kind: "assistant", key: `a${i}`, text: h.summary, element: h.kind === "element" });
+    if (h.summary) items.push({ kind: "assistant", key: `a${i}`, text: h.summary, element: h.kind === "element", label: h.label ?? null });
   });
   if (status === "loading") items.push({ kind: "building", key: "building", label: "Building your page…" });
   else if (status === "transcribing") items.push({ kind: "building", key: "building", label: "Transcribing…" });

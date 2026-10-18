@@ -1,5 +1,6 @@
 // Toolbar click or Alt+Shift+P arms pointer mode; the content script is injected on demand (activeTab).
-const DEFAULTS = { apiOrigin: "http://localhost:3001", webOrigin: "http://localhost:5175" };
+// content.js arms itself on every run (a second run toggles it off), so no follow-up message is sent.
+const DEFAULTS = { apiOrigin: "http://localhost:3001", webOrigin: "http://localhost:5173" };
 
 async function settings() {
   const s = await chrome.storage.sync.get(DEFAULTS);
@@ -10,7 +11,6 @@ chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.id) return;
   try {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-    await chrome.tabs.sendMessage(tab.id, { type: "arm" });
   } catch (err) {
     console.warn("Create: cannot point on this page", err);
   }

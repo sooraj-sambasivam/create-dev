@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Crosshair } from "lucide-react";
-import { prettyLabel, type HoverHit } from "./targets";
+import { humanLabel, type HoverHit } from "./targets";
+import { useScreenStore } from "../../../store/screenStore";
 import type { PagePointer } from "./usePagePointer";
 
 /** What the pointer is doing with the last thing said. */
@@ -34,6 +35,28 @@ export function phaseText(phase: PointerPhase): string {
 }
 
 const OFFSET = 14;
+const EDGE_GAP = 6;
+
+/**
+ * Where the chip goes. Next to an element it sits on the element's outline: just above its top-left corner,
+ * or just below its bottom-left corner when there is no room above. With no element it follows the cursor.
+ */
+export function chipPosition(o: {
+  el: { left: number; top: number; width: number; height: number } | null;
+  cursor: { x: number; y: number };
+  chip: { w: number; h: number };
+  viewport: { w: number; h: number };
+}): { x: number; y: number } {
+  const { el, cursor, chip, viewport } = o;
+  if (!el) {
+    const x = cursor.x + OFFSET + chip.w > viewport.w ? cursor.x - OFFSET - chip.w : cursor.x + OFFSET;
+    return { x: Math.max(8, x), y: cursor.y + OFFSET };
+  }
+  const x = Math.min(Math.max(8, el.left - 2), Math.max(8, viewport.w - chip.w - 8));
+  const above = el.top - 2 - EDGE_GAP - chip.h;
+  const y = above >= 4 ? above : Math.min(el.top + el.height + 2 + EDGE_GAP, Math.max(4, viewport.h - chip.h - 4));
+  return { x, y };
+}
 
 /**
  * Chip next to the cursor naming the page element it points at ("Heading · Welcome"), then the progress of
@@ -46,7 +69,9 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
   const hoverEl = useRef<HoverHit["el"] | null>(null);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
-  const [hover, setHover] = useState<string | null>(null);
+  const cursorAt = useRef({ x: 0, y: 0 });
+  const [hover, setHover] = useState<{ id: string; label: string } | null>(null);
+  const screen = useScreenStore((st) => st.screen);
 
   const place = () => {
     const p = phaseRef.current;
@@ -54,8 +79,13 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
     const el = bound ?? hoverEl.current;
     const box = outline.current;
     if (!box) return;
-    if (!el) { box.style.opacity = "0"; return; }
-    const r = el.getBoundingClientRect();
+    const r = el?.getBoundingClientRect();
+    const c = chip.current;
+    if (c) {
+      const pos = chipPosition({ el: r ?? null, cursor: cursorAt.current, chip: { w: c.offsetWidth, h: c.offsetHeight }, viewport: { w: window.innerWidth, h: window.innerHeight } });
+      c.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+    }
+    if (!r) { box.style.opacity = "0"; return; }
     box.style.opacity = "1";
     box.style.transform = `translate(${r.left - 2}px, ${r.top - 2}px)`;
     box.style.width = `${r.width + 4}px`;
@@ -65,13 +95,8 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
   useEffect(() => {
     const move = (s: { x: number; y: number; hit: HoverHit | null }) => {
       hoverEl.current = s.hit?.el ?? null;
-      const c = chip.current;
-      if (c) {
-        const w = c.offsetWidth;
-        const x = s.x + OFFSET + w > window.innerWidth ? s.x - OFFSET - w : s.x + OFFSET;
-        c.style.transform = `translate(${Math.max(8, x)}px, ${s.y + OFFSET}px)`;
-      }
-      setHover(s.hit ? s.hit.label : null);
+      cursorAt.current = { x: s.x, y: s.y };
+      setHover(s.hit ? { id: s.hit.id, label: s.hit.label } : null);
       place();
     };
     const latest = pointer.latest();
@@ -79,7 +104,7 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
     return pointer.subscribe(move);
   }, [pointer]);
 
-  useEffect(place, [phase]);
+  useEffect(place, [phase, hover, screen]);
 
   // Scrolling moves the page under a still pointer: re-measure the outline (rAF-throttled, capture reaches nested scrollers).
   useEffect(() => {
@@ -95,7 +120,10 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
   }, []);
 
   const active = phase.kind !== "idle";
-  const label = phase.kind !== "idle" && phase.kind !== "ask" && phase.label ? phase.label : hover;
+  const bound = phase.kind !== "idle" && phase.kind !== "ask" && phase.label ? phase : null;
+  const label = bound
+    ? humanLabel(bound.targetId ?? "", screen, bound.label ?? "")
+    : hover ? humanLabel(hover.id, screen, hover.label) : null;
   const status = phaseText(phase);
   const show = Boolean(label) || phase.kind === "ask";
   const tone = phase.kind === "failed" ? "text-bad" : phase.kind === "done" ? "text-ok" : "text-ink-2";
@@ -113,7 +141,7 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
         style={{ opacity: show ? 1 : 0, transition: reduce ? "none" : "opacity 120ms" }}
       >
         <Crosshair size={12} strokeWidth={1.75} className={active ? "shrink-0 text-accent" : "shrink-0 text-ink-2"} />
-        {phase.kind !== "ask" && label && <span className="min-w-0 truncate">{prettyLabel(label)}</span>}
+        {phase.kind !== "ask" && label && <span className="min-w-0 truncate">{label}</span>}
         {status && <span className={`shrink-0 ${tone}`}>{phase.kind === "ask" || !label ? status : `· ${status}`}</span>}
       </div>
     </div>

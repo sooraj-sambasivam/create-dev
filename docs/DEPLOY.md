@@ -22,11 +22,11 @@ Steps:
 2. Import the repo in Vercel. Root `vercel.json` builds `apps/web` and serves SPA fallback.
 3. Add a rewrite so `/api/*` reaches the API (edit `vercel.json`, before the SPA rule):
    `{ "source": "/api/:path*", "destination": "https://<your-api-host>/api/:path*" }`
-4. Set `PUBLIC_URL` on the API to the Vercel URL. CORS in `index.ts` only allows localhost origins; same-origin via the rewrite avoids it.
+4. Set `PUBLIC_URL` on the API to the Vercel URL. CORS (`apps/server/src/app.ts`) allows localhost origins plus every origin in `ALLOWED_ORIGINS` (comma-separated), and additionally any `chrome-extension://` origin, but only for `/api/import-element`, so the "Point at any website" extension can POST without opening the rest of the API. Same-origin via the rewrite avoids CORS entirely. The extension's web origin defaults to `http://localhost:5173`; set it (and the API origin) on its options page for a deployed Create, and add that API host to the extension's `host_permissions` in `apps/extension/manifest.json`.
 
 ## 3. Env names
 
-Server: `PUBLIC_URL`, `PORT`, `MONGODB_URI`, `MOCK_AI`, `ANTHROPIC_API_KEY`, `CLAUDE_MODEL`, `ELEVENLABS_API_KEY`, `TYPESAFE_API_KEY`, `PERCEPTRON_API_KEY`, `YOUTUBE_API_KEY`. Values stay out of the repo.
+Server: `PUBLIC_URL`, `ALLOWED_ORIGINS`, `PORT`, `MONGODB_URI`, `MOCK_AI`, `ANTHROPIC_API_KEY`, `CLAUDE_MODEL`, `ELEVENLABS_API_KEY`, `TYPESAFE_API_KEY`, `PERCEPTRON_API_KEY`, `YOUTUBE_API_KEY`. Values stay out of the repo.
 
 ## 4. Desktop app (later)
 

@@ -25,6 +25,8 @@ export interface SnapshotNode {
   src?: string;
   alt?: string;
   href?: string;
+  /** Rendered height in px (images only); picks the Create image size. */
+  h?: number;
   style?: SnapshotStyle;
   children?: SnapshotNode[];
 }
@@ -113,6 +115,11 @@ function deepText(n: SnapshotNode): string {
   return clean([n.text ?? "", ...(n.children ?? []).map(deepText)].join(" "));
 }
 
+function imageSize(h: number | undefined): "logo" | "small" | "medium" | "full" {
+  if (!h || !Number.isFinite(h) || h > 240) return "full";
+  return h <= 60 ? "logo" : h <= 120 ? "small" : "medium";
+}
+
 const HEADING = /^h([1-6])$/;
 const SKIP = new Set(["script", "style", "noscript", "svg", "path", "iframe", "canvas", "template", "head", "meta", "link"]);
 const INLINE_TEXT = new Set(["p", "span", "label", "em", "strong", "b", "i", "small", "li", "blockquote", "figcaption", "td", "th", "dt", "dd", "cite", "time", "code", "pre"]);
@@ -137,7 +144,7 @@ function convertNode(n: SnapshotNode, ctx: Ctx, depth: number): Node[] {
   if (tag === "img") {
     const src = n.src && /^https:\/\/\S+$/.test(n.src) ? n.src : null;
     const alt = clean(n.alt) || "Image";
-    return [{ id: id(ctx, tag), type: "image", alt, src, query: src ? null : alt.slice(0, 60), aspect: "video", size: "full" } as Node];
+    return [{ id: id(ctx, tag), type: "image", alt, src, query: src ? null : alt.slice(0, 60), aspect: "video", size: imageSize(n.h) } as Node];
   }
 
   if (tag === "button" || tag === "a") {

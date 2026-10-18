@@ -9,6 +9,7 @@ import {
   moveNode,
   removeNode,
   ScreenSchema,
+  TEXT_FIELD,
   replaceNode,
   updateNode,
   updateStyle,
@@ -28,6 +29,19 @@ export interface HistoryEntry {
   summary: string;
   /** "element" for ✦ requests about one element, "page" for whole-page requests. */
   kind?: "page" | "element";
+  /** Element edits: the edited node and its label ("Heading · Ember"), kept even if the node is later removed. */
+  nodeId?: string;
+  label?: string;
+}
+
+/** "Heading · Ember": node type plus up to 28 characters of its text. Same rule as the pointer label. */
+export function elementLabel(node: Node): string {
+  const field = TEXT_FIELD[node.type];
+  const raw = field ? (node as Record<string, unknown>)[field] : null;
+  const t = typeof raw === "string" ? raw.replace(/\s+/g, " ").trim() : "";
+  const head = node.type.charAt(0).toUpperCase() + node.type.slice(1);
+  if (!t) return head;
+  return `${head} · ${t.length > 28 ? `${t.slice(0, 27)}…` : t}`;
 }
 
 /** Keep the AI's edited element on screen instead of letting the view jump. */
@@ -46,7 +60,9 @@ const UNDO_LIMIT = 60;
 
 const FONT_STEPS = ["sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl"] as const;
 const TEXT_TYPES = new Set<string>(["heading", "text", "button", "link", "badge"]);
-const HEADING_DEFAULT = ["", "4xl", "3xl", "2xl", "xl", "lg", "lg"];
+// Sizes the renderer actually gives each heading level (h3 is text-base).
+const HEADING_DEFAULT = ["", "3xl", "2xl", "base"];
+const WIDTH_STEP = 10;
 
 type FastResult = { node: Node; summary: string } | null;
 
@@ -84,7 +100,7 @@ export function fastEdit(node: Node, prompt: string): FastResult {
       return { node: { ...node, style: { ...node.style, fontSize: next } } as Node, summary: dir > 0 ? "Made it bigger." : "Made it smaller." };
     }
     const cur = node.widthPct ?? 60;
-    const next = Math.min(100, Math.max(10, Math.round(cur + dir * 15)));
+    const next = Math.min(100, Math.max(10, Math.round(cur + dir * WIDTH_STEP)));
     if (next === node.widthPct) return { node, summary: dir > 0 ? "Already full width." : "Already at the minimum width." };
     return { node: { ...node, widthPct: next } as Node, summary: dir > 0 ? "Made it bigger." : "Made it smaller." };
   }
@@ -209,12 +225,12 @@ export const useScreenStore = create<ScreenState>()(
 
   type EditResult = { error?: string; summary?: string };
 
-  const finishEdit = (prompt: string, summary: string, nextScreen: Screen, focusId: string | null) => {
+  const finishEdit = (prompt: string, summary: string, nextScreen: Screen, focusId: string | null, edited: Node) => {
     record(nextScreen);
     set((s) => ({
       aiBusyId: null,
       selectedId: focusId,
-      history: [...s.history, { prompt, summary, kind: "element" }],
+      history: [...s.history, { prompt, summary, kind: "element", nodeId: edited.id, label: elementLabel(edited) }],
     }));
     revealNode(focusId);
   };
@@ -238,7 +254,7 @@ export const useScreenStore = create<ScreenState>()(
       set((s) => ({
         selectedId: s.selectedId === id ? null : s.selectedId,
         editingId: null,
-        history: [...s.history, { prompt: trimmed, summary: "Removed it.", kind: "element" }],
+        history: [...s.history, { prompt: trimmed, summary: "Removed it.", kind: "element", nodeId: id, label: elementLabel(node) }],
       }));
       return { summary: "Removed it." };
     }
@@ -246,7 +262,7 @@ export const useScreenStore = create<ScreenState>()(
     if (fast) {
       if (fast.node !== node) {
         record(replaceNode(screen, id, [fast.node]).screen);
-        set((s) => ({ history: [...s.history, { prompt: trimmed, summary: fast.summary, kind: "element" }] }));
+        set((s) => ({ history: [...s.history, { prompt: trimmed, summary: fast.summary, kind: "element", nodeId: id, label: elementLabel(node) }] }));
       }
       return { summary: fast.summary };
     }
@@ -264,7 +280,7 @@ export const useScreenStore = create<ScreenState>()(
         return { error: "That element was removed while the AI was working." };
       }
       const { screen: next, ids } = replaceNode(latest, id, result.nodes);
-      finishEdit(trimmed, result.summary, next, ids[0] ?? null);
+      finishEdit(trimmed, result.summary, next, ids[0] ?? null, node);
       return { summary: result.summary };
     } catch (err) {
       if (epoch === mine && get().aiBusyId === id) set({ aiBusyId: null });

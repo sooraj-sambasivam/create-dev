@@ -116,7 +116,7 @@ export function NarrateBarView({
       transition={{ duration: dur }}
     >
       {hint && (
-        <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 rounded-full border border-line bg-surface px-3 text-[12px] leading-6 text-ink-2">
+        <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-full border border-line bg-surface px-3 text-[12px] leading-6 text-ink-2">
           {hint}
         </span>
       )}

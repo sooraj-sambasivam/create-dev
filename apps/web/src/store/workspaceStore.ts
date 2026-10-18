@@ -201,7 +201,10 @@ function parseHistory(raw: unknown): HistoryEntry[] {
     const e = h as Record<string, unknown>;
     if (typeof e.prompt !== "string" || typeof e.summary !== "string") return [];
     const kind = e.kind === "page" || e.kind === "element" ? e.kind : undefined;
-    return [{ prompt: e.prompt, summary: e.summary, ...(kind ? { kind } : {}) }];
+    return [{ prompt: e.prompt, summary: e.summary, ...(kind ? { kind } : {}),
+        ...(typeof e.nodeId === "string" ? { nodeId: e.nodeId } : {}),
+        ...(typeof e.label === "string" ? { label: e.label } : {}),
+      }];
   });
 }
 

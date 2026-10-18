@@ -25,6 +25,7 @@ const SnapNode: z.ZodType<SnapshotNode> = z.lazy(() =>
     src: z.string().max(2000).optional(),
     alt: z.string().max(500).optional(),
     href: z.string().max(2000).optional(),
+    h: z.number().finite().min(0).max(100000).optional(),
     style: StyleSnap.optional(),
     children: z.array(SnapNode).max(MAX_NODES).optional(),
   }),
@@ -40,7 +41,7 @@ export const ImportElementRequestSchema = z.object({
   sourceUrl: z.string().max(2000).optional(),
 });
 
-const FALLBACK_ORIGIN = "http://localhost:5175";
+const FALLBACK_ORIGIN = "http://localhost:5173";
 
 /** Applies the instruction to the converted root (real model when configured, else the mock edit). */
 async function applyInstruction(screen: Screen, instruction: string): Promise<Screen> {

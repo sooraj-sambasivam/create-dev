@@ -49,7 +49,7 @@
     };
     const own = [...el.childNodes].filter((c) => c.nodeType === 3).map((c) => c.textContent).join(" ").replace(/\s+/g, " ").trim().slice(0, MAX_TEXT);
     if (own) node.text = own;
-    if (node.tag === "img") { node.src = abs(el.currentSrc || el.src); node.alt = (el.alt || "").slice(0, 200); }
+    if (node.tag === "img") { node.src = abs(el.currentSrc || el.src); node.alt = (el.alt || "").slice(0, 200); node.h = Math.round(el.getBoundingClientRect().height); }
     if (node.tag === "a" && el.getAttribute("href")) node.href = abs(el.getAttribute("href"));
     if (node.tag === "input" || node.tag === "textarea") { node.text = el.placeholder || ""; node.alt = el.getAttribute("aria-label") || ""; }
     if (depth < MAX_DEPTH) {

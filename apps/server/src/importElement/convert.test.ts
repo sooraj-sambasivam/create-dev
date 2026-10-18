@@ -56,6 +56,13 @@ describe("domToScreen", () => {
   });
 });
 
+describe("image size", () => {
+  it("maps rendered height to a Create image size", () => {
+    const size = (h?: number) => (domToScreen({ root: { tag: "img", src: "https://x.test/a.png", alt: "a", h } }).children[0] as { size: string }).size;
+    expect([size(40), size(100), size(200), size(400), size()]).toEqual(["logo", "small", "medium", "full", "full"]);
+  });
+});
+
 describe("helpers", () => {
   it("toHex", () => {
     expect(toHex("rgb(255, 0, 0)")).toBe("#ff0000");

@@ -9,6 +9,8 @@ import {
   isDeictic,
   mapToHost,
   nodeLabel,
+  describeNode,
+  humanLabel,
   overlapFraction,
   pickHover,
   preResolve,
@@ -81,6 +83,21 @@ describe("pointer", () => {
   it("prettifies labels", () => {
     expect(prettyLabel("heading: Welcome")).toBe("Heading · Welcome");
     expect(prettyLabel("button")).toBe("Button");
+  });
+  it("describes nodes by type and short content", () => {
+    expect(describeNode({ type: "heading", text: "Ember" })).toBe("Heading · Ember");
+    expect(describeNode({ type: "button", label: "Get started" })).toBe("Button · Get started");
+    expect(describeNode({ type: "image", alt: "coffee cup" })).toBe("Image · coffee cup");
+    expect(describeNode({ id: "features", type: "container", children: [] })).toBe("Section · Features");
+    expect(describeNode({ id: "f0", type: "container", children: [{ type: "heading", text: "Type" }] })).toBe("Section · Type");
+    const t = describeNode({ type: "text", text: "We roast beans every single morning" });
+    expect(t).toBe("Text · We roast beans every single…");
+    expect(t.length - "Text · ".length).toBeLessThanOrEqual(28);
+  });
+  it("looks hovered nodes up in the screen tree", () => {
+    const screen = { children: [{ id: "a", type: "container", children: [{ id: "b", type: "button", label: "Buy" }] }] };
+    expect(humanLabel("b", screen, "div: whatever")).toBe("Button · Buy");
+    expect(humanLabel("zz", screen, "div: A landing page for a coffee shop called Ember")).toBe("Div · A landing page for a coffee…");
   });
   it("picks the deepest node under the pointer from an elementsFromPoint stack", () => {
     const root = { contains: () => true, getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) };

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Crosshair, RotateCw, Sparkles } from "lucide-react";
-import { selectedLabel } from "../composer/selection";
 import { useScreenStore } from "../../store/screenStore";
 import { useRightPanel } from "../rightPanel";
 import { deriveItems, type ThreadItem } from "./items";
@@ -40,7 +39,7 @@ function Building({ label }: { label: string }) {
   );
 }
 
-function Item({ item, hasPage, elementLabel }: { item: ThreadItem; hasPage: boolean; elementLabel: string | null }) {
+function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
   const generate = useScreenStore((s) => s.generate);
   const openTab = useRightPanel((s) => s.openTab);
   if (item.kind === "user") {
@@ -58,7 +57,7 @@ function Item({ item, hasPage, elementLabel }: { item: ThreadItem; hasPage: bool
           {item.element && (
             <span className="mb-1 mr-2 inline-flex h-5 max-w-full items-center gap-1 rounded-md bg-tray px-1.5 text-[12px] text-ink-2">
               <Crosshair size={12} strokeWidth={1.75} aria-hidden />
-              <span className="truncate">{elementLabel ?? "Element"}</span>
+              <span className="truncate">{item.label ?? "Element"}</span>
             </span>
           )}
           <p className="whitespace-pre-wrap break-words text-[16px] leading-6 text-ink">{item.text}</p>
@@ -101,9 +100,6 @@ export function Thread() {
   const error = useScreenStore((s) => s.error);
   const hasPage = useScreenStore((s) => s.screen !== null);
   const items = deriveItems({ history, status, error });
-  const selLabel = useScreenStore(selectedLabel);
-  // Only the newest element edit can be tied to the current selection.
-  const lastElementKey = [...items].reverse().find((i) => i.kind === "assistant" && i.element)?.key;
   const endRef = useRef<HTMLDivElement>(null);
   const lastKey = items.length ? items[items.length - 1].key : "";
 
@@ -116,7 +112,7 @@ export function Thread() {
     <div className="min-h-0 flex-1 overflow-y-auto" data-testid="thread">
       <div role="log" aria-label="Conversation" className="mx-auto flex w-full max-w-[740px] flex-col gap-6 px-4 py-6">
         {items.map((item) => (
-          <Item key={item.key} item={item} hasPage={hasPage} elementLabel={item.key === lastElementKey ? selLabel : null} />
+          <Item key={item.key} item={item} hasPage={hasPage} />
         ))}
         <div ref={endRef} aria-hidden />
       </div>
