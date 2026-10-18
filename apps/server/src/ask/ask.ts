@@ -4,7 +4,7 @@ import { outlineScreen } from "../canvasOps/outline";
 import { readSketchWithPerceptron } from "../canvasOps/perceptron";
 import { DEFAULT_MODEL } from "../ai/claude";
 import { altText } from "../providers/http";
-import { claudeModelFor, hasGemini, hasOpenRouter } from "../providers/models";
+import { claudeModelFor, hasGemini, hasInkling } from "../providers/models";
 import { mockAnswerBody } from "./mockAnswer";
 
 /**
@@ -83,11 +83,9 @@ export async function answerAsk(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const reading = req.pointer?.image ? await readSketchWithPerceptron(req.pointer.image, req.question) : null;
   const provider = reading ? "perceptron+claude" : "claude";
-  if (process.env.MOCK_AI === "1") {
-    return { answer: mockAnswer(req, reading), provider: "mock", ...(suggestCode ? { suggestCode } : {}) };
-  }
+  // A configured Inkling or Gemini runs even with MOCK_AI=1, like Jev intent routing: its key means it is real.
   if (req.model === "inkling" || req.model === "gemini") {
-    const configured = req.model === "inkling" ? hasOpenRouter() : hasGemini();
+    const configured = req.model === "inkling" ? hasInkling() : hasGemini();
     const text = configured
       ? await altText(req.model, {
           system: buildSystemPrompt(req, reading),
@@ -98,8 +96,11 @@ export async function answerAsk(
           effort: req.model === "inkling" ? req.effort : undefined,
         })
       : null;
-    if (text) return { answer: text, provider, ...(suggestCode ? { suggestCode } : {}) };
+    if (text) return { answer: text, provider: req.model, ...(suggestCode ? { suggestCode } : {}) };
     opts.onFallback?.(req.model);
+  }
+  if (process.env.MOCK_AI === "1") {
+    return { answer: mockAnswer(req, reading), provider: "mock", ...(suggestCode ? { suggestCode } : {}) };
   }
   if (!opts.client && !apiKey) {
     return { answer: mockAnswer(req, reading), provider: "mock", ...(suggestCode ? { suggestCode } : {}) };

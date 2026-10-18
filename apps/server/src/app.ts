@@ -75,6 +75,7 @@ app.use("/api", extractRouter); // own big JSON parser
       hasTypesafe: Boolean(process.env.TYPESAFE_API_KEY?.trim()),
       hasMongo: Boolean(process.env.MONGODB_URI?.trim()),
       hasOpenRouter: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
+      hasTinker: Boolean(process.env.TINKER_API_KEY?.trim()),
       hasGemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
       hasPerceptron: Boolean(process.env.PERCEPTRON_API_KEY?.trim()),
       hasYoutube: Boolean(process.env.YOUTUBE_API_KEY?.trim()),

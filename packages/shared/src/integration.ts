@@ -146,7 +146,7 @@ export const AskRequestSchema = z.object({
   effort: EffortSchema.optional(),
 });
 export type AskRequest = z.infer<typeof AskRequestSchema>;
-export type AskResponse = { answer: string; provider: "claude" | "perceptron+claude" | "mock"; suggestCode?: boolean };
+export type AskResponse = { answer: string; provider: "claude" | "perceptron+claude" | "inkling" | "gemini" | "mock"; suggestCode?: boolean };
 
 /** POST /api/forms/:appId stores a submission from a form on a user's page; GET lists them. */
 export const FormSubmissionSchema = z.object({
@@ -184,4 +184,4 @@ export const ExtractRequestSchema = z.object({
   image: z.string().min(1).max(4_000_000),
   hint: z.string().max(500).optional(),
 });
-export type ExtractResponse = { entity: Entity; provider: "perceptron" | "claude" | "mock" };
+export type ExtractResponse = { entity: Entity; provider: "perceptron" | "gemini" | "claude" | "mock" };

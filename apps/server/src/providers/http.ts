@@ -1,5 +1,5 @@
 import type { EffortChoice } from "@create/shared";
-import { geminiModel, hasGemini, hasOpenRouter, inklingModel } from "./models";
+import { geminiModel, hasGemini, hasOpenRouter, hasTinker, inklingModel, tinkerBaseUrl } from "./models";
 
 type FetchFn = typeof fetch;
 const TIMEOUT_MS = 90_000;
@@ -27,10 +27,12 @@ function withTimeout(signal: AbortSignal | undefined): { signal: AbortSignal; do
   return { signal: c.signal, done: () => { clearTimeout(t); signal?.removeEventListener("abort", onAbort); } };
 }
 
-/** One OpenRouter chat completion with Inkling. Returns the text, or null on any failure (never logs the key). */
+/** One chat completion with Inkling via Tinker (TINKER_API_KEY) or else OpenRouter. Returns the text, or null on any failure (never logs the key). */
 export async function inklingText(call: TextCall): Promise<string | null> {
-  const key = process.env.OPENROUTER_API_KEY?.trim();
-  if (!key || !hasOpenRouter()) return null;
+  const tinker = hasTinker();
+  const key = tinker ? process.env.TINKER_API_KEY?.trim() : process.env.OPENROUTER_API_KEY?.trim();
+  if (!key || !(tinker || hasOpenRouter())) return null;
+  const url = tinker ? `${tinkerBaseUrl()}/chat/completions` : OPENROUTER_URL;
   const t = withTimeout(call.signal);
   try {
     const userContent = call.image
@@ -41,7 +43,7 @@ export async function inklingText(call: TextCall): Promise<string | null> {
       ...(call.history ?? []).map((h) => ({ role: h.role, content: h.text })),
       { role: "user", content: userContent },
     ];
-    const res = await (call.fetchImpl ?? globalThis.fetch)(OPENROUTER_URL, {
+    const res = await (call.fetchImpl ?? globalThis.fetch)(url, {
       method: "POST",
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
       signal: t.signal,
@@ -50,7 +52,7 @@ export async function inklingText(call: TextCall): Promise<string | null> {
         messages,
         max_tokens: call.maxTokens ?? 8000,
         ...(call.json ? { response_format: { type: "json_object" } } : {}),
-        ...(call.effort ? { reasoning: { effort: call.effort } } : {}),
+        ...(call.effort && !tinker ? { reasoning: { effort: call.effort } } : {}),
       }),
     });
     if (!res.ok) {

@@ -8,7 +8,7 @@ import { answerAsk } from "../ask/ask";
 import { extractEntity } from "../extract/extract";
 import { generateRouter } from "../routes/generate";
 
-const KEYS = ["OPENROUTER_API_KEY", "GEMINI_API_KEY", "INKLING_MODEL", "GEMINI_MODEL", "MOCK_AI", "ANTHROPIC_API_KEY"];
+const KEYS = ["TINKER_API_KEY", "TINKER_BASE_URL", "OPENROUTER_API_KEY", "GEMINI_API_KEY", "INKLING_MODEL", "GEMINI_MODEL", "MOCK_AI", "ANTHROPIC_API_KEY"];
 beforeEach(() => KEYS.forEach((k) => delete process.env[k]));
 afterEach(() => {
   KEYS.forEach((k) => delete process.env[k]);
@@ -41,6 +41,31 @@ describe("providers", () => {
     expect(url).toBe("https://openrouter.ai/api/v1/chat/completions");
     expect(JSON.parse(init.body as string).model).toBe("x/custom");
     expect(JSON.parse(init.body as string).reasoning).toEqual({ effort: "high" });
+  });
+  it("inkling prefers Tinker over OpenRouter, with overridable base URL and model", async () => {
+    process.env.TINKER_API_KEY = "tk-secret";
+    process.env.OPENROUTER_API_KEY = "sk-secret";
+    const f = ok({ choices: [{ message: { content: "ok" } }] });
+    expect(await inklingText({ user: "hi", effort: "high", fetchImpl: f as never })).toBe("ok");
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1/chat/completions");
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer tk-secret");
+    expect(JSON.parse(init.body as string).model).toBe("thinkingmachines/Inkling");
+    process.env.TINKER_BASE_URL = "http://x.test/v1/";
+    process.env.INKLING_MODEL = "m/custom";
+    const g = ok({ choices: [{ message: { content: "ok" } }] });
+    await inklingText({ user: "hi", fetchImpl: g as never });
+    const [u2, i2] = g.mock.calls[0] as unknown as [string, RequestInit];
+    expect(u2).toBe("http://x.test/v1/chat/completions");
+    expect(JSON.parse(i2.body as string).model).toBe("m/custom");
+  });
+  it("tinker alone marks inkling available and failures return null without logging the key", async () => {
+    process.env.TINKER_API_KEY = "tk-secret";
+    expect(listModels().find((m) => m.id === "inkling")!.available).toBe(true);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const bad = vi.fn(async () => new Response("no", { status: 401 }));
+    expect(await inklingText({ user: "hi", fetchImpl: bad as never })).toBeNull();
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("tk-secret");
   });
   it("returns null without a key or on HTTP errors, and never logs the key", async () => {
     expect(await inklingText({ user: "hi" })).toBeNull();
