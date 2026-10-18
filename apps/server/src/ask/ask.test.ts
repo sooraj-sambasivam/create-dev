@@ -51,15 +51,74 @@ describe("mock answer", () => {
     expect(r.suggestCode).toBeUndefined();
   });
 
+  it("answers a bare rating question with no pointer from the page", () => {
+    expect(mockAnswer(ask("what does the 4.9 mean?", { screen }))).toBe(
+      'The "4.9" next to the five stars is an average rating out of 5, shown with "from 1,200 makers" — so about 1,200 people rated it.',
+    );
+  });
+
   it("answers an edit request and suggests Code", async () => {
     const r = await answerAsk(ask("make this bigger", { screen, pointer: { targetId: "t1" } }));
     expect(r.suggestCode).toBe(true);
-    expect(r.answer).toContain("Switch to Code");
+    expect(r.answer).toMatch(/Want me to change it\? Switch to Code\.$/);
+    expect(r.answer).not.toContain("I can only explain");
     expect(r.answer).not.toMatch(/\bI (changed|made|updated)\b/);
   });
 
   it("falls back to the pointer label without a screen", () => {
     expect(mockAnswer(ask("what is this?", { pointer: { targetId: "x", label: "Pricing card" } }))).toContain("Pricing card");
+  });
+});
+
+const page = (...children: object[]) =>
+  ({ title: "Shop", theme: "light", children: [{ id: "c", type: "container", direction: "column", gap: "md", padding: "md", children }] }) as unknown as Screen;
+const text = (id: string, t: string) => ({ id, type: "text", text: t });
+const heading = (id: string, t: string) => ({ id, type: "heading", text: t, level: 2 });
+const a = (q: string, s: Screen, pointer?: AskRequest["pointer"]) => mockAnswer(ask(q, { screen: s, ...(pointer ? { pointer } : {}) }));
+
+describe("mock answer templates", () => {
+  it("price", () => {
+    const s = page(heading("h", "Pro plan"), text("p", "$29/mo"));
+    const r = a("what is the $29?", s);
+    expect(r).toContain('"$29/mo" is a price in US dollars');
+    expect(r).toContain('"Pro plan"');
+    expect(r).toContain("billed per month");
+  });
+  it("percentage and discount", () => {
+    const r = a("what does 20% mean", page(heading("h", "Spring sale"), text("p", "20% off")));
+    expect(r).toContain("20 out of every 100");
+    expect(r).toContain("discount");
+    expect(r).toContain('"Spring sale"');
+  });
+  it("count", () => {
+    const r = a("how many is 1,200?", page(text("t", "1,200 makers"), heading("h", "Community")));
+    expect(r).toContain('is a count of makers: about 1,200');
+  });
+  it("date", () => {
+    const r = a("when is 2026-03-03", page(text("t", "Launch 2026-03-03"), heading("h", "Roadmap")));
+    expect(r).toContain("is a date");
+    expect(r).toContain("Tuesday");
+  });
+  it("rating node via pointer, with its label", () => {
+    const s = page({ id: "r", type: "rating", value: 4.6, label: "1,240 reviews" });
+    const r = a("what is this?", s, { targetId: "r" });
+    expect(r).toContain('The "4.6" next to the five stars is an average rating out of 5');
+    expect(r).toContain("about 1,240");
+  });
+  it("quoted word and key noun match", () => {
+    const s = page(heading("h", "Welcome"), { id: "b", type: "button", label: "Get started", variant: "primary" });
+    expect(a('what does "Get started" do', s)).toContain('That button reads "Get started"');
+    expect(a("what is the welcome part?", s)).toContain('That heading reads "Welcome"');
+  });
+  it("plain element with parent context, and page summary when nothing matches", () => {
+    const s = page(heading("h", "Welcome"), text("t", "We build things"));
+    expect(a("what is this?", s, { targetId: "t" })).toContain('That text reads "We build things", next to "Welcome"');
+    expect(a("explain zzz", s)).toContain('This page is "Shop"');
+  });
+  it("never claims an edit", () => {
+    const r = a("make the 4.9 bigger", screen);
+    expect(r).not.toMatch(/\b(changed|updated|made it)\b/i);
+    expect(r.endsWith("Want me to change it? Switch to Code.")).toBe(true);
   });
 });
 

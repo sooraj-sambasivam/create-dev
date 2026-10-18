@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { MongoClient, type Collection } from "mongodb";
+import { join } from "node:path";
+import type { Collection } from "mongodb";
 import type { Screen, SharedPrototype } from "@create/shared";
+import { dataDir } from "../runtime";
+import { getMongoClient, warnIfEphemeral } from "./mongo";
 
 /** What a caller provides; the store assigns the id and timestamp. */
 export type NewPrototype = { title: string; screen: Screen };
@@ -49,11 +50,10 @@ export class StoredDataError extends Error {
   }
 }
 
-const DEFAULT_DATA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".data", "prototypes");
 
 /** One JSON file per prototype: <dir>/<id>.json. Good for local dev without MongoDB. */
 export class FileStore implements PrototypeStore {
-  constructor(private readonly dir: string = DEFAULT_DATA_DIR) {}
+  constructor(private readonly dir: string = dataDir("data/prototypes")) {}
 
   private pathFor(id: string): string {
     // Validate before building any path so a crafted id can never escape the directory.
@@ -96,10 +96,7 @@ export class FileStore implements PrototypeStore {
 
 type PrototypeDoc = SharedPrototype;
 
-/** Fail fast when Mongo is unreachable instead of letting requests hang for the driver's ~30s default. */
-const SERVER_SELECTION_TIMEOUT_MS = 5000;
-
-/** MongoDB collection "prototypes" in database "create-dev". One client per process, connected lazily. */
+/** MongoDB collection "prototypes" in database "create-dev". Uses the process-wide shared client, connected lazily. */
 export class MongoStore implements PrototypeStore {
   private collectionPromise: Promise<Collection<PrototypeDoc>> | null = null;
 
@@ -111,17 +108,10 @@ export class MongoStore implements PrototypeStore {
   private collection(): Promise<Collection<PrototypeDoc>> {
     if (!this.collectionPromise) {
       const attempt = (async () => {
-        const client = new MongoClient(this.uri, { serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS });
-        try {
-          await client.connect();
-          const col = client.db(this.dbName).collection<PrototypeDoc>("prototypes");
-          await col.createIndex({ id: 1 }, { unique: true });
-          return col;
-        } catch (err) {
-          // Do not keep a half-initialised client alive; the next call starts from scratch.
-          await client.close().catch(() => {});
-          throw err;
-        }
+        const client = await getMongoClient(this.uri);
+        const col = client.db(this.dbName).collection<PrototypeDoc>("prototypes");
+        await col.createIndex({ id: 1 }, { unique: true });
+        return col;
       })();
       this.collectionPromise = attempt;
       // Any failure (connect or createIndex) clears the cache so the next call retries.
@@ -160,5 +150,7 @@ export class MongoStore implements PrototypeStore {
 /** MongoStore when MONGODB_URI is set, otherwise FileStore. */
 export function createPrototypeStore(env: NodeJS.ProcessEnv = process.env): PrototypeStore {
   const uri = env.MONGODB_URI?.trim();
-  return uri ? new MongoStore(uri) : new FileStore();
+  if (uri) return new MongoStore(uri);
+  warnIfEphemeral(env);
+  return new FileStore();
 }

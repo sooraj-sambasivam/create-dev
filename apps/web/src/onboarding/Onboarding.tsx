@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Check, Hammer, Layers, MessageCircleQuestion, Mic, X } from "lucide-react";
+import { Check, Crosshair, Hammer, Layers, MessageCircleQuestion, Mic, X } from "lucide-react";
 import { useProfile, type ProfileIntent, type ProfileLevel } from "./profile";
 import { useWorkMode } from "../store/modeStore";
 import { useOnboarding } from "./onboardingStore";
 import {
   INTENT_OPTIONS,
   LEVEL_OPTIONS,
+  HEADING_SIZES,
   STEP_COUNT,
   defaultModeFor,
+  growHeading,
   isLastStep,
   nextStep,
   pointingHint,
   prevStep,
   requestMic,
+  sampleReply,
   type MicResult,
   type StepIndex,
 } from "./steps";
@@ -53,24 +57,50 @@ function Choice({ selected, onSelect, icon, label, hint }: { selected: boolean; 
   );
 }
 
-/** Sample page for the pointing step. Static markup carrying data-node-id like the real renderer. */
-function SamplePage() {
+/** Same look as the live pointer chip. */
+function Chip({ label }: { label: string }) {
+  return (
+    <div className="pointer-events-none absolute -top-7 left-0 z-10 flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 text-[12px] leading-6 text-ink shadow-soft">
+      <Crosshair size={12} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden="true" />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+/** Sample page for the pointing step. Static markup carrying data-node-id like the real renderer; hover shows the chip. */
+function SamplePage({ size, answer, reduce }: { size: number; answer: string | null; reduce: boolean | null }) {
+  const [hover, setHover] = useState<"heading" | "rating" | null>(null);
+  const hoverCls = "relative w-fit rounded-md px-1 transition-colors duration-150 hover:bg-hover";
   return (
     <div data-screen-root className="rounded-xl border border-line bg-tray p-4">
-      <h3 data-node-id="onb-heading" className="w-fit rounded-md px-1 text-[16px] font-medium text-ink transition-colors duration-150 hover:bg-hover">
-        Corner Coffee
-      </h3>
-      <p data-node-id="onb-rating" className="mt-1 w-fit rounded-md px-1 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover">
+      <div className={hoverCls} onPointerEnter={() => setHover("heading")} onPointerLeave={() => setHover(null)}>
+        {hover === "heading" && <Chip label="Heading · Corner Coffee" />}
+        <h3 data-node-id="onb-heading" style={{ fontSize: size, transition: reduce ? "none" : "font-size 150ms" }} className="font-medium leading-tight text-ink">
+          Corner Coffee
+        </h3>
+      </div>
+      <p data-node-id="onb-rating" className={`${hoverCls} mt-1 text-[14px] text-ink-2`} onPointerEnter={() => setHover("rating")} onPointerLeave={() => setHover(null)}>
+        {hover === "rating" && <Chip label="Rating · 4.9" />}
         <span className="text-ink">4.9</span> from 212 reviews
       </p>
-      <span data-node-id="onb-button" className="mt-3 inline-flex h-8 items-center rounded-lg bg-ink px-3 text-[14px] text-surface">
-        Order now
-      </span>
+      <div>
+        <span data-node-id="onb-button" className="mt-3 inline-flex h-8 items-center rounded-lg bg-ink px-3 text-[14px] text-surface">
+          Order now
+        </span>
+      </div>
+      {answer && (
+        <div role="status" className="mt-3 w-full rounded-xl border border-line bg-surface p-2.5 text-[12px] leading-5 text-ink shadow-soft">
+          {answer}
+        </div>
+      )}
     </div>
   );
 }
 
 function TryPointing({ onDone, done }: { onDone: () => void; done: boolean }) {
+  const reduce = useReducedMotion();
+  const [sizeIdx, setSizeIdx] = useState(0);
+  const [answer, setAnswer] = useState<string | null>(null);
   const mode = useWorkMode((s) => s.mode);
   const [mic, setMic] = useState<MicResult | "idle" | "asking">("idle");
   const [typed, setTyped] = useState("");
@@ -84,7 +114,7 @@ function TryPointing({ onDone, done }: { onDone: () => void; done: boolean }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <SamplePage />
+      <SamplePage size={HEADING_SIZES[sizeIdx]} answer={answer} reduce={reduce} />
       <p className="text-[14px] text-ink-2">{pointingHint(mode)}</p>
       <div className="flex items-center gap-2">
         <button
@@ -101,7 +131,11 @@ function TryPointing({ onDone, done }: { onDone: () => void; done: boolean }) {
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && typed.trim()) onDone();
+            if (e.key !== "Enter" || !typed.trim()) return;
+            const r = sampleReply(typed);
+            if (r?.kind === "answer") setAnswer(r.text);
+            else if (r?.kind === "bigger") { setAnswer(null); setSizeIdx(growHeading); }
+            onDone();
           }}
           aria-label="Type instead"
           placeholder="Or type it here"
@@ -158,6 +192,13 @@ export function Onboarding() {
     }
   };
 
+  // Lock page scroll while the card is open.
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prevOverflow; };
+  }, []);
+
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     cardRef.current?.focus();
@@ -169,14 +210,15 @@ export function Onboarding() {
       e.stopPropagation();
       finish();
     } else if (e.key === "Tab") {
-      const f = cardRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled), input");
-      if (!f?.length) return;
+      const f = cardRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled), [href], [tabindex]:not([tabindex=\"-1\"])");
+      if (!f?.length) { e.preventDefault(); return; }
       const first = f[0];
       const last = f[f.length - 1];
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === cardRef.current)) {
+      const inside = cardRef.current?.contains(document.activeElement) ?? false;
+      if (e.shiftKey && (document.activeElement === first || !inside || document.activeElement === cardRef.current)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
         e.preventDefault();
         first.focus();
       }
@@ -185,7 +227,14 @@ export function Onboarding() {
 
   const last = isLastStep(step);
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center bg-black/30 px-4" onKeyDown={onKeyDown}>
+    <motion.div
+      className="fixed inset-0 z-[100] grid place-items-center bg-black/40 px-4 backdrop-blur-sm dark:bg-black/60"
+      onKeyDown={onKeyDown}
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={reduce ? undefined : { opacity: 0 }}
+      transition={{ duration: reduce ? 0 : 0.2, ease }}
+    >
       <motion.div
         ref={cardRef}
         role="dialog"
@@ -194,6 +243,7 @@ export function Onboarding() {
         tabIndex={-1}
         initial={reduce ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
+        exit={reduce ? undefined : { opacity: 0, y: 8 }}
         transition={{ duration: reduce ? 0 : 0.2, ease }}
         className="w-full max-w-[460px] rounded-xl border border-line bg-surface p-5 shadow-soft outline-none"
       >
@@ -245,7 +295,7 @@ export function Onboarding() {
           </div>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -254,5 +304,8 @@ export function OnboardingGate({ show }: { show: boolean }) {
   const replay = useOnboarding((s) => s.replay);
   const dismissed = useOnboarding((s) => s.dismissed);
   // `show` covers first run and ?onboarding=1; replay reopens it from the avatar menu.
-  return (show && !dismissed) || replay ? <Onboarding /> : null;
+  const open = (show && !dismissed) || replay;
+  if (typeof document === "undefined") return null;
+  // Portaled to body so no ancestor stacking context or overflow clips the scrim.
+  return createPortal(<AnimatePresence>{open && <Onboarding key="onboarding" />}</AnimatePresence>, document.body);
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  clampStep, defaultModeFor, isLastStep, nextStep, pointingHint, prevStep, requestMic, setupSummary, shouldShowOnboarding,
+  clampStep, defaultModeFor, growHeading, sampleReply, isLastStep, nextStep, pointingHint, prevStep, requestMic, setupSummary, shouldShowOnboarding,
 } from "./steps";
 
 describe("onboarding steps", () => {
@@ -35,5 +35,12 @@ describe("onboarding steps", () => {
     expect(stop).toHaveBeenCalledTimes(2);
     expect(await requestMic({ getUserMedia: vi.fn().mockRejectedValue(new Error("denied")) })).toBe("denied");
     expect(await requestMic(undefined)).toBe("unsupported");
+  });
+  it("answers the two sample commands", () => {
+    expect(sampleReply("What does this mean?")).toMatchObject({ kind: "answer" });
+    expect(sampleReply("  make this   bigger ")).toEqual({ kind: "bigger" });
+    expect(sampleReply("hello")).toBeNull();
+    expect(growHeading(0)).toBe(1);
+    expect(growHeading(2)).toBe(2);
   });
 });

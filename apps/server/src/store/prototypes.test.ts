@@ -56,6 +56,8 @@ vi.mock("mongodb", () => {
 
 // Imported after the mock is registered (vi.mock is hoisted, so a static import is fine).
 const { FileStore, MongoStore, StoredDataError } = await import("./prototypes");
+const { resetMongoForTests } = await import("./mongo");
+const { MongoFormStore } = await import("../forms/store");
 
 const screen = mockGenerate("Store test").screen;
 
@@ -70,7 +72,10 @@ function resetState() {
   state.createIndexCalls = 0;
 }
 
-beforeEach(resetState);
+beforeEach(() => {
+  resetState();
+  resetMongoForTests();
+});
 
 describe("MongoStore duplicate-key retry", () => {
   it("retries a save when Mongo reports a duplicate key (numeric code 11000)", async () => {
@@ -108,17 +113,22 @@ describe("MongoStore connection lifecycle", () => {
     expect(state.clientOptions[0]?.serverSelectionTimeoutMS).toBe(5000);
   });
 
-  it("recovers after createIndex fails: closes the leaked client and retries on the next call", async () => {
+  it("recovers after createIndex fails: keeps the shared client and retries the index on the next call", async () => {
     state.createIndexFailures = 1;
     const store = new MongoStore("mongodb://unused");
 
     await expect(store.save({ title: "first", screen })).rejects.toThrow("createIndex failed");
-    expect(state.clientsClosed).toBe(1);
 
     const second = await store.save({ title: "second", screen });
     expect(second.title).toBe("second");
-    expect(state.clientsOpened).toBe(2);
+    expect(state.clientsOpened).toBe(1);
     expect(state.createIndexCalls).toBe(2);
+  });
+
+  it("reuses one client for prototypes and form submissions", async () => {
+    await new MongoStore("mongodb://unused").save({ title: "a", screen });
+    await new MongoFormStore("mongodb://unused").add("app1", {} as never);
+    expect(state.clientsOpened).toBe(1);
   });
 
   it("recovers after connect fails: closes the client and retries on the next call", async () => {

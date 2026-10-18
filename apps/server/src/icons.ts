@@ -6,8 +6,8 @@
 
 import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { Request, Response } from "express";
+import { dataDir } from "./runtime";
 
 const API = "https://api.iconify.design";
 
@@ -120,7 +120,7 @@ export const ICON_NAME = /^[a-z0-9-]+:[a-z0-9-]+$/i;
 export const ICON_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const UPSTREAM_TIMEOUT_MS = 5000;
 /** Lives beside images.ts's cache, in the same gitignored .cache folder. */
-export const DEFAULT_ICON_CACHE = join(dirname(fileURLToPath(import.meta.url)), "..", ".cache", "icons");
+export const DEFAULT_ICON_CACHE = join(dataDir("cache"), "icons");
 
 export type IconSvg = { kind: "found"; svg: string } | { kind: "missing" } | { kind: "unavailable" };
 

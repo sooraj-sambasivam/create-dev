@@ -1,16 +1,16 @@
 import { randomBytes } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import express, { Router } from "express";
 import multer from "multer";
 import type { Asset } from "@create/shared";
+import { dataDir } from "../runtime";
 import { ICON_STYLES, iconSvgHandler, searchIcons } from "../icons";
 
 export const assetsRouter = Router();
 
-const UPLOAD_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".cache", "uploads");
-mkdirSync(UPLOAD_DIR, { recursive: true });
+// Created on first upload, never at import: on Vercel only /tmp is writable.
+const UPLOAD_DIR = dataDir("cache/uploads");
 
 // SVG is excluded on purpose: it can carry scripts.
 const TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" };
@@ -25,7 +25,14 @@ assetsRouter.post("/upload", upload.single("file"), (req, res) => {
     return;
   }
   const name = `${randomBytes(8).toString("hex")}.${ext}`;
-  writeFileSync(join(UPLOAD_DIR, name), file.buffer);
+  try {
+    mkdirSync(UPLOAD_DIR, { recursive: true });
+    writeFileSync(join(UPLOAD_DIR, name), file.buffer);
+  } catch (err) {
+    console.error("[upload] could not save file", err);
+    res.status(500).json({ error: "Could not store the upload." });
+    return;
+  }
   const body: Asset = { url: `/api/uploads/${name}`, name: file.originalname.slice(0, 200) };
   res.json(body);
 });

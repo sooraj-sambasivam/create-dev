@@ -3,6 +3,7 @@ import { findNode, type AskRequest, type AskResponse, type Node } from "@create/
 import { outlineScreen } from "../canvasOps/outline";
 import { readSketchWithPerceptron } from "../canvasOps/perceptron";
 import { DEFAULT_MODEL } from "../ai/claude";
+import { mockAnswerBody } from "./mockAnswer";
 
 /**
  * Chat mode: answers a question about the page or the pointed-at element. It never edits.
@@ -39,45 +40,10 @@ export function nodeText(n: Node): string {
   }
 }
 
-/** Nearby text of the pointed node's parent, so a bare "4.9" can be tied to "from 1,200 makers". */
-function siblingText(req: AskRequest, id: string): string[] {
-  if (!req.screen) return [];
-  const out: string[] = [];
-  const visit = (nodes: Node[]): boolean => {
-    if (nodes.some((n) => n.id === id)) {
-      for (const n of nodes) if (n.id !== id && ["text", "heading", "badge"].includes(n.type)) out.push(nodeText(n));
-      return true;
-    }
-    return nodes.some((n) => n.type === "container" && visit(n.children));
-  };
-  visit(req.screen.children);
-  return out.filter(Boolean).slice(0, 3);
-}
-
-/** Deterministic answer that quotes the pointed element and the question. */
+/** Deterministic answer: explains the matched element from the page. Offers Code, never claims an edit. */
 export function mockAnswer(req: AskRequest, reading?: string | null): string {
-  const q = req.question.trim();
-  const id = req.pointer?.targetId ?? null;
-  const node = id && req.screen ? findNode(req.screen, id) : null;
-  const text = node ? nodeText(node) : "";
-  const label = req.pointer?.label?.trim() || text;
-  const parts: string[] = [];
-  if (node && node.type === "rating") {
-    const near = siblingText(req, node.id);
-    const tail = node.label ? ` ${node.label}` : near[0] ? ` next to "${near[0]}"` : "";
-    parts.push(`That "${node.value}" is the star rating shown${tail}. It is an average out of 5.`);
-  } else if (node && text) {
-    const near = siblingText(req, node.id);
-    parts.push(`That ${node.type} reads "${text.slice(0, 120)}"${near[0] ? `, next to "${near[0].slice(0, 80)}"` : ""}.`);
-  } else if (label) {
-    parts.push(`You pointed at "${label.slice(0, 120)}".`);
-  } else if (req.screen) {
-    parts.push(`This page is "${req.screen.title}" with ${req.screen.children.length} top-level sections.`);
-  }
-  if (reading) parts.push(`What I can see there: ${reading.replace(/\s+/g, " ").slice(0, 300)}`);
-  parts.push(`On "${q.slice(0, 120)}": I can only explain here and I have not changed anything.`);
-  if (wantsEdit(q)) parts.push("Switch to Code if you want me to make that change.");
-  return parts.join(" ");
+  const body = mockAnswerBody(req, reading);
+  return wantsEdit(req.question) ? `${body} Want me to change it? Switch to Code.` : body;
 }
 
 export function buildSystemPrompt(req: AskRequest, reading?: string | null): string {

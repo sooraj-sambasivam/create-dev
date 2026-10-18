@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dataDir } from "./runtime";
 
 /**
  * Finds relevant photos for a short search phrase via Openverse (openly licensed images,
@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
  * and on disk, and in-flight lookups are shared.
  */
 
-const CACHE_FILE = join(dirname(fileURLToPath(import.meta.url)), "..", ".cache", "images.json");
+const CACHE_FILE = join(dataDir("cache"), "images.json");
 const CACHE_VERSION = 2;
 const cache = new Map<string, string[]>();
 const inflight = new Map<string, Promise<string[]>>();

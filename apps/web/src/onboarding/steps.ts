@@ -37,6 +37,20 @@ export function pointingHint(mode: WorkMode): string {
     : "Hover the heading and say 'make this bigger'";
 }
 
+export type SampleReply = { kind: "answer"; text: string } | { kind: "bigger" } | null;
+
+/** What the step 3 sample does with a typed command. Only the two suggested phrases are understood. */
+export function sampleReply(input: string): SampleReply {
+  const t = input.toLowerCase().replace(/[?.!]+$/g, "").replace(/\s+/g, " ").trim();
+  if (t === "what does this mean") return { kind: "answer", text: "4.9 is the average star rating, out of 5, from 212 reviews." };
+  if (t === "make this bigger") return { kind: "bigger" };
+  return null;
+}
+
+/** Heading text sizes (px) for "make this bigger"; each step grows one notch and stops at the last. */
+export const HEADING_SIZES = [16, 20, 24] as const;
+export const growHeading = (i: number): number => Math.min(HEADING_SIZES.length - 1, Math.max(0, i + 1));
+
 /** Onboarding shows on first run, or when ?onboarding=1 is present. Never on the shared viewer. */
 export function shouldShowOnboarding(onboarded: boolean, search: string, sharedId: string | null): boolean {
   if (sharedId) return false;

@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { MongoClient, type Collection } from "mongodb";
+import { join } from "node:path";
+import type { Collection } from "mongodb";
 import type { FormSubmission, StoredSubmission } from "@create/shared";
+import { dataDir } from "../runtime";
+import { getMongoClient, warnIfEphemeral } from "../store/mongo";
 
 /** Submissions per app kept and returned, newest first. */
 export const MAX_SUBMISSIONS = 200;
@@ -24,13 +25,11 @@ function newSubmissionId(): string {
   return randomBytes(8).toString("hex");
 }
 
-const DEFAULT_DATA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".data", "forms");
-
 /** One JSON array per app: <dir>/<appId>.json, newest first, capped. Good for local dev without MongoDB. */
 export class FileFormStore implements FormStore {
   private chain: Promise<unknown> = Promise.resolve();
 
-  constructor(private readonly dir: string = DEFAULT_DATA_DIR) {}
+  constructor(private readonly dir: string = dataDir("data/forms")) {}
 
   private pathFor(appId: string): string {
     // Validate before building any path so a crafted id can never escape the directory.
@@ -65,9 +64,7 @@ export class FileFormStore implements FormStore {
   }
 }
 
-const SERVER_SELECTION_TIMEOUT_MS = 5000;
-
-/** MongoDB collection "form_submissions" in database "create-dev". One client per process, connected lazily. */
+/** MongoDB collection "form_submissions" in database "create-dev". Uses the process-wide shared client, connected lazily. */
 export class MongoFormStore implements FormStore {
   private collectionPromise: Promise<Collection<StoredSubmission>> | null = null;
 
@@ -79,16 +76,10 @@ export class MongoFormStore implements FormStore {
   private collection(): Promise<Collection<StoredSubmission>> {
     if (!this.collectionPromise) {
       const attempt = (async () => {
-        const client = new MongoClient(this.uri, { serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS });
-        try {
-          await client.connect();
-          const col = client.db(this.dbName).collection<StoredSubmission>("form_submissions");
-          await col.createIndex({ appId: 1, createdAt: -1 });
-          return col;
-        } catch (err) {
-          await client.close().catch(() => {});
-          throw err;
-        }
+        const client = await getMongoClient(this.uri);
+        const col = client.db(this.dbName).collection<StoredSubmission>("form_submissions");
+        await col.createIndex({ appId: 1, createdAt: -1 });
+        return col;
       })();
       this.collectionPromise = attempt;
       attempt.catch(() => {
@@ -120,5 +111,7 @@ export class MongoFormStore implements FormStore {
 /** MongoFormStore when MONGODB_URI is set, otherwise FileFormStore. */
 export function createFormStore(env: NodeJS.ProcessEnv = process.env): FormStore {
   const uri = env.MONGODB_URI?.trim();
-  return uri ? new MongoFormStore(uri) : new FileFormStore();
+  if (uri) return new MongoFormStore(uri);
+  warnIfEphemeral(env);
+  return new FileFormStore();
 }
