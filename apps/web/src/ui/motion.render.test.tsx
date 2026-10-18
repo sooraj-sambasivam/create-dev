@@ -23,8 +23,8 @@ describe("motion surfaces render", () => {
     expect(renderToStaticMarkup(<GoFan open={false} items={items} dir="right" />)).not.toContain("Speak");
   });
 
-  it("empty state keeps its example prompts", () => {
-    expect(renderToStaticMarkup(<EmptyState />)).toContain("Track weekly orders for my bakery");
+  it("empty state shows the lift hint", () => {
+    expect(renderToStaticMarkup(<EmptyState />)).toContain("to lift a table, chart or list into an app");
   });
 
   it("table rows and chart bars render with data", () => {
