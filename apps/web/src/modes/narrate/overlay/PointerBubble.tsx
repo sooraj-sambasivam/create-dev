@@ -9,7 +9,6 @@ import { usePin } from "../../../narrate/pinStore";
 import { hasAnswerSink, sendAnswerToChat } from "../../../narrate/answerSink";
 import type { PagePointer } from "./usePagePointer";
 import { button, ICON, STROKE, surface } from "../../../ui/styles";
-import { useLook } from "../../../ui/look";
 import { spring } from "../../../ui/motion";
 import { ActionCard } from "./ActionCard";
 import { ConfidenceMeter, PointerFx, type FxRect } from "./PointerFx";
@@ -131,7 +130,7 @@ const pageNode = (id: string) => document.querySelector<HTMLElement>(`${PANEL_PA
  * the command (Listening, Understanding, Editing, Done or Couldn't do that). The chip moves through a ref, so
  * a pointer move never re-renders the chip text. Resting on a table cell widens the target (cell, row, table,
  * section) every 450ms, and `]` / `[` widen or narrow by hand. Pinning a target opens the chip into the action
- * card. The marks around the target are drawn per look (see PointerFx). Only the card and the page list take
+ * card. The marks around the target are drawn by PointerFx. Only the card and the page list take
  * pointer events.
  */
 export function PointerBubble({
@@ -146,12 +145,11 @@ export function PointerBubble({
   phase: PointerPhase;
   reduce: boolean | null;
   onUndo?: () => void;
-  /** The live spoken line; its "this" gets the highlighter and the thread. */
+  /** The live spoken line; its "this" is accented and gets the thread. */
   transcript?: string;
   /** The action card's pick, for the pinned target. */
   onAction?: (action: PointerAction, target: { id: string; label: string }) => void;
 }) {
-  const look = useLook((st) => st.look);
   const slow = useSlow(phase);
   const chip = useRef<HTMLDivElement>(null);
   const hoverEl = useRef<HoverHit["el"] | null>(null);
@@ -364,10 +362,9 @@ export function PointerBubble({
 
   return (
     <>
-      {/* Marks and the dimmed room sit under the narrate bar (z-60), so the bar is never dimmed. */}
+      {/* Marks sit under the narrate bar (z-60), so the bar is never dimmed. */}
       <div data-narrate-ignore aria-hidden="true" className="pointer-events-none fixed inset-0 z-[59]">
         <PointerFx
-          look={look}
           rect={rect}
           seed={`${targetId}:${lv?.kind ?? "x"}`}
           strong={strong || Boolean(preview)}
@@ -402,7 +399,7 @@ export function PointerBubble({
                 <Crosshair size={ICON.md} strokeWidth={STROKE} className={active ? "shrink-0 text-accent" : "shrink-0 text-ink-2"} />
                 {phase.kind !== "ask" && label && <span className="min-w-0 max-w-[150px] shrink-0 truncate">{label}</span>}
                 {status && <span className={`min-w-0 truncate ${tone}`}>{phase.kind === "ask" || !label ? status : `· ${status}`}</span>}
-                {conf !== null && label && (phase.kind === "idle" || phase.kind === "listening" || phase.kind === "understanding") && <ConfidenceMeter look={look} value={conf} />}
+                {conf !== null && label && (phase.kind === "idle" || phase.kind === "listening" || phase.kind === "understanding") && <ConfidenceMeter value={conf} />}
                 {phase.kind === "done" && phase.undoable && onUndo && (
                   <button type="button" className={`${action} -mr-1.5`} onClick={onUndo}>Undo</button>
                 )}

@@ -18,8 +18,10 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const API = (process.env.EVAL_API ?? "http://localhost:3001").replace(/\/$/, "");
 const MANIFEST = resolve(process.env.EVAL_CORPUS ?? (existsSync(join(HERE, "corpus", "manifest.json")) ? join(HERE, "corpus", "manifest.json") : join(HERE, "corpus", "index.json")));
 const CONCURRENCY = 3;
-const TIMEOUT_MS = 10_000;
+const TIMEOUT_MS = 20_000;
 const CHAIN_N = Number(process.env.EVAL_CHAIN_N ?? 10);
+// EVAL_MODE=hover|commit is sent as LocateRequest.mode (unset = legacy chain).
+const MODE = process.env.EVAL_MODE === "hover" || process.env.EVAL_MODE === "commit" ? process.env.EVAL_MODE : undefined;
 
 // Mirror of STAGE_BUDGET_MS in packages/shared/src/capture.ts (kept literal so this script needs no build step).
 const STAGE_BUDGET_MS = { capture: 120, locate: 300, read: 1500, intent: 300, act: 800 };
@@ -141,7 +143,7 @@ async function runLocate(provider, t) {
   const input = buildInput(provider, t);
   if (!input) return { target: t.id, app: t.app, provider, skipped: "no input for this target" };
   const providers = provider === "fused" ? undefined : [provider];
-  const { ms, json, error } = await call("/api/locate", providers ? { input, providers } : { input });
+  const { ms, json, error } = await call("/api/locate", providers ? { input, providers, ...(MODE ? { mode: MODE } : {}) } : { input, ...(MODE ? { mode: MODE } : {}) });
   const row = { target: t.id, app: t.app, provider, ms: Math.round(ms), costUsd: error ? 0 : costOf(provider, json) };
   if (error) return { ...row, error, top1: false, iou: 0 };
   const r = json?.result ?? null;
@@ -214,7 +216,7 @@ async function main() {
   const chain = chainRows.length ? { n: chainRows.length, p50: percentile(totals, 50), p95: percentile(totals, 95), silentFailures: chainRows.filter((r) => r.silentFailure).length, rows: chainRows } : null;
 
   const startedAt = new Date().toISOString();
-  const results = { startedAt, api: API, mock: health.mock, healthFlags: flags, concurrency: CONCURRENCY, timeoutMs: TIMEOUT_MS, targetCount: targets.length, pricing: PRICING, stageBudgetMs: STAGE_BUDGET_MS, providers, stages, chain };
+  const results = { startedAt, mode: MODE ?? "legacy", api: API, mock: health.mock, healthFlags: flags, concurrency: CONCURRENCY, timeoutMs: TIMEOUT_MS, targetCount: targets.length, pricing: PRICING, stageBudgetMs: STAGE_BUDGET_MS, providers, stages, chain };
   const dir = join(HERE, "results");
   mkdirSync(dir, { recursive: true });
   const stamp = startedAt.replace(/[:.]/g, "-");

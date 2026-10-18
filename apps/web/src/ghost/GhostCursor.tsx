@@ -6,49 +6,11 @@ import { duration, ease, spring } from "../ui/motion";
 import { ghostController, type GhostController } from "./controller";
 import { atRest, expApproach, springStep, tiltFor, type Spring1 } from "./spring";
 
-import { useLook, type Look } from "../ui/look";
-
-const SURFACE = "var(--color-surface, var(--surface, #FFFFFF))";
-const INK = "var(--color-ink, var(--ink, #0D0D0D))";
-const LINE = "var(--color-line, var(--line, #E6E6E6))";
-const SHADOW = "var(--shadow-soft, 0 4px 20px rgba(0,0,0,0.05))";
-
-/**
- * The agent cursor's two bodies. Paper: a hollow pen-blue arrow with a strip of tape for its tag, so it never
- * reads as the vermilion user pointer. Luminous: a magenta glass arrow with a frosted tag.
- */
-export const CURSOR_SKIN: Record<Look, { stroke: string; fill: string; glow: string; tag: React.CSSProperties }> = {
-  paper: {
-    stroke: "var(--color-pen, #2c4a93)",
-    fill: "transparent",
-    glow: "none",
-    tag: {
-      color: INK,
-      background: "var(--color-highlight, rgba(242,207,85,.62))",
-      border: "none",
-      borderRadius: 2,
-      transform: "rotate(-3deg)",
-      clipPath: "polygon(0 8%, 4% 0, 8% 10%, 12% 0, 100% 0, 97% 25%, 100% 50%, 97% 75%, 100% 100%, 12% 100%, 8% 90%, 4% 100%, 0 92%)",
-      padding: "2px 10px",
-      boxShadow: "none",
-    },
-  },
-  luminous: {
-    stroke: "var(--color-accent, #ff3d9a)",
-    fill: "color-mix(in oklab, var(--color-accent, #ff3d9a) 30%, transparent)",
-    glow: "drop-shadow(0 0 6px var(--color-glow, rgba(255,92,170,.4)))",
-    tag: {
-      color: INK,
-      background: "color-mix(in oklab, var(--color-accent, #ff3d9a) 20%, transparent)",
-      border: "1px solid color-mix(in oklab, var(--color-accent, #ff3d9a) 65%, transparent)",
-      borderRadius: 999,
-      backdropFilter: "blur(10px) saturate(1.6)",
-      WebkitBackdropFilter: "blur(10px) saturate(1.6)",
-      padding: "2px 9px",
-      boxShadow: "0 0 18px -4px var(--color-glow, rgba(255,92,170,.4))",
-    },
-  },
-};
+const ACCENT = "var(--accent, #3E7BF0)";
+const SURFACE = "var(--surface, #FFFFFF)";
+const INK = "var(--ink, #0D0D0D)";
+const LINE = "var(--line, #E6E6E6)";
+const SHADOW = "0 4px 20px rgba(0,0,0,0.05)";
 const Z = 2147483000;
 
 /**
@@ -123,8 +85,6 @@ function useCursorMotion(controller: GhostController, reduce: boolean) {
 export function GhostCursor({ controller = ghostController }: { controller?: GhostController }) {
   const s = useSyncExternalStore(controller.subscribeUi, controller.getUi, controller.getUi);
   const reduce = !!useReducedMotion();
-  const look = useLook((st) => st.look);
-  const skin = CURSOR_SKIN[look];
   const { place, lean } = useCursorMotion(controller, reduce);
   if (typeof document === "undefined") return null;
 
@@ -154,12 +114,12 @@ export function GhostCursor({ controller = ghostController }: { controller?: Gho
                   transition={spring.bouncy}
                   style={{ display: "block", transformOrigin: "2px 2px" }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 18 18" style={{ display: "block", filter: skin.glow === "none" ? "drop-shadow(0 2px 3px rgba(0,0,0,0.12))" : skin.glow }}>
+                  <svg width="18" height="18" viewBox="0 0 18 18" style={{ display: "block", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.12))" }}>
                     <path
                       d="M2 1.5 L2 14 L5.6 10.8 L8 16 L10.4 14.9 L8.1 9.8 L13 9.6 Z"
-                      fill={skin.fill}
-                      stroke={skin.stroke}
-                      strokeWidth="1.6"
+                      fill={SURFACE}
+                      stroke={ACCENT}
+                      strokeWidth="1.5"
                       strokeLinejoin="round"
                     />
                   </svg>
@@ -170,9 +130,14 @@ export function GhostCursor({ controller = ghostController }: { controller?: Gho
                   position: "absolute",
                   left: 14,
                   top: 16,
-                  font: "600 12px/16px var(--font-ui, Inter Variable, Inter, system-ui, sans-serif)",
+                  font: "500 12px/16px Inter Variable, Inter, system-ui, sans-serif",
+                  color: INK,
+                  background: SURFACE,
+                  border: `1.5px solid ${ACCENT}`,
+                  borderRadius: 999,
+                  padding: "2px 8px",
+                  boxShadow: SHADOW,
                   whiteSpace: "nowrap",
-                  ...skin.tag,
                 }}
               >
                 Agent
@@ -190,7 +155,7 @@ export function GhostCursor({ controller = ghostController }: { controller?: Gho
                     width: 24,
                     height: 24,
                     borderRadius: 999,
-                    border: `2px solid ${skin.stroke}`,
+                    border: `2px solid ${ACCENT}`,
                   }}
                 />
               )}
@@ -209,7 +174,7 @@ export function GhostCursor({ controller = ghostController }: { controller?: Gho
               exit={{ opacity: 0, transition: { duration: duration.fast, ease: ease.exit } }}
               transition={reduce ? { duration: duration.fast } : spring.gentle}
               style={{
-                font: "400 14px/20px var(--font-ui, Inter Variable, Inter, system-ui, sans-serif)",
+                font: "400 14px/20px Inter Variable, Inter, system-ui, sans-serif",
                 color: INK,
                 background: SURFACE,
                 border: `1px solid ${LINE}`,

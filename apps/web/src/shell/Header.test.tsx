@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { Header, copyShareLink, type WorkspaceActions } from "./Header";
 import { archiveLabel, assetLabel, nextTitle, ChatMenu } from "./ChatMenu";
 import { applyTheme, nextTheme, resolveTheme, useThemeStore, THEME_STORAGE_KEY } from "./theme";
-import { LookSwitch } from "./Header";
+import { ThemeToggle } from "./Header";
 
 const actions: WorkspaceActions = {
   renameChat: vi.fn(),
@@ -74,11 +74,9 @@ describe("theme", () => {
     expect(() => applyTheme("dark")).not.toThrow();
   });
 
-  it("renders the look switch with Paper and Luminous", () => {
-    const html = renderToStaticMarkup(<LookSwitch />);
-    expect(html).toContain('aria-label="Look"');
-    expect(html).toContain("Paper");
-    expect(html).toContain("Luminous");
+  it("renders the theme toggle with an aria-label for the current preference", () => {
+    const html = renderToStaticMarkup(<ThemeToggle />);
+    expect(html).toContain('aria-label="Theme: System"');
   });
 });
 
@@ -90,9 +88,9 @@ describe("share link copy", () => {
 });
 
 describe("Header markup", () => {
-  it("places the look switch next to Share", () => {
+  it("places the theme toggle next to Share", () => {
     const html = renderToStaticMarkup(<Header {...baseProps} />);
-    expect(html).toContain('data-testid="look-switch"');
+    expect(html).toContain('aria-label="Theme: System"');
   });
 
   it("shows the page title, Share, the chat menu trigger and the Output toggle", () => {

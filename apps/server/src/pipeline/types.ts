@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { CaptureInput, LocateResult, LocateSource } from "@create/shared";
+import type { CaptureInput, LocateMode, LocateResult, LocateSource } from "@create/shared";
 
 export type FetchFn = typeof fetch;
 
@@ -17,6 +17,8 @@ export interface ImageCtx {
 }
 
 export interface LocateDeps {
+  /** hover = structural + Jev inside the label budget; commit = also Perceptron (8 s cap) and Gemini. Unset = legacy chain. */
+  mode?: LocateMode;
   fetchImpl?: FetchFn;
   client?: Anthropic;
   /** Per-provider timeouts in ms; omitted keys use PROVIDER_TIMEOUT_MS. */

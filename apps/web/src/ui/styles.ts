@@ -74,11 +74,6 @@ export const row = {
 /** Hairline between sidebar groups. */
 export const hairline = "mx-2 my-2 h-px bg-line/60";
 
-/** Highlighter swipe behind inline text (Paper yellow, Luminous rose). */
-export const highlight = "bg-highlight rounded-sm px-0.5 [box-decoration-break:clone]";
-
-/** Looks add: text-pen, bg-highlight, bg-glow, bg-spotlight-dim, font-display, font-ui, font-mono, font-note. */
-
 /** Floating surfaces. */
 export const surface = {
   card: "rounded-xl border border-line bg-surface shadow-soft",
@@ -94,12 +89,6 @@ export const input = `h-8 w-full rounded-lg border border-line bg-surface px-3 t
 
 /** Type scale: 12 meta, 14 UI, 16 body; display sizes only for page-level headings. */
 export const text = {
-  /** Spoken words and page-level lines: Fraunces in Paper, italic Instrument Serif in Luminous. */
-  spoken: "font-display text-[24px] leading-8 text-ink",
-  /** Handwritten margin note (Paper only; Luminous falls back to the UI face). 16px minimum. */
-  note: "font-note text-[18px] leading-6 text-pen",
-  /** Numbers, timings, confidence: Geist Mono with tabular figures. */
-  mono: "font-mono text-[14px] leading-5 tabular-nums text-ink-2",
   meta: "text-[12px] leading-4 text-ink-3",
   ui: "text-[14px] leading-5 text-ink",
   body: "text-[16px] leading-6 text-ink",

@@ -79,8 +79,7 @@ function Builder() {
               variants={v(fadeUp)}
               initial="hidden"
               animate="show"
-              data-part="empty-heading"
-              className="font-display text-[34px] leading-10 font-normal tracking-[-0.01em] text-ink"
+              className="text-[28px] leading-9 font-normal tracking-[-0.01em] text-ink"
             >
               What should we work on?
             </motion.h2>

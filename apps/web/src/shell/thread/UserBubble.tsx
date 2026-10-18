@@ -30,7 +30,7 @@ export function UserBubble({ text }: { text: string }) {
         layout={!reduce}
         transition={t(spring.gentle)}
         data-part="user-bubble"
-        className="max-w-[70%] rounded-3xl bg-tray px-4 py-2.5 font-display text-[18px] leading-6 text-ink"
+        className="max-w-[70%] rounded-3xl bg-tray px-4 py-2.5 text-[16px] leading-6 text-ink"
       >
         <motion.div
           ref={ref}

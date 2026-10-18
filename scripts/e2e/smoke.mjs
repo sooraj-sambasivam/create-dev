@@ -125,10 +125,6 @@ try {
     await ev(`window.__ft.begin()`);
     if (!(await clickText("Get started"))) { await shot("00b-no-get-started"); return "no Get started on the welcome step"; }
     await sleep(400);
-    if (!(await radios("Luminous"))) { await shot("00b-no-look"); return "no Luminous choice on the look step"; }
-    await sleep(200);
-    if ((await ev(`document.documentElement.dataset.look`)) !== "luminous") return "look not applied after choosing Luminous";
-    await clickText("Next"); await sleep(400);   // look -> you
     if (!(await radios("Ask"))) return "no Ask choice";
     if (!(await radios("developer"))) { await shot("00b-no-dev"); return "no developer choice"; }
     await clickText("Next"); await sleep(400);   // permissions
@@ -148,7 +144,6 @@ try {
   for (const scheme of ["light", "dark"]) {
     await step(`1. load + screenshot (${scheme})`, async () => {
       await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: scheme }] });
-      await ev(`localStorage.removeItem('create-look')`);   // 0b chose Luminous; drop it so the system default (Paper light / Luminous dark) applies
       await send("Page.navigate", { url: BASE });
       if (!(await waitFor(`!!document.querySelector('[data-testid="message-input"]')`))) return "composer not found";
       await sleep(600); await shot(`01-load-${scheme}`);

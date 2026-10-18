@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { findNode, type AskRequest, type AskResponse, type Node } from "@create/shared";
 import { outlineScreen } from "../canvasOps/outline";
-import { readSketchWithPerceptron } from "../canvasOps/perceptron";
+import { describeImageWithPerceptron } from "../canvasOps/perceptron";
 import { DEFAULT_MODEL } from "../ai/claude";
 import { altText } from "../providers/http";
 import { claudeModelFor, hasGemini, hasInkling } from "../providers/models";
@@ -81,23 +81,25 @@ export async function answerAsk(
 ): Promise<AskResponse> {
   const suggestCode = wantsEdit(req.question) || undefined;
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  const reading = req.pointer?.image ? await readSketchWithPerceptron(req.pointer.image, req.question) : null;
+  const reading = req.pointer?.image ? await describeImageWithPerceptron(req.pointer.image, req.question) : null;
   const provider = reading ? "perceptron+claude" : "claude";
   // A configured Inkling or Gemini runs even with MOCK_AI=1, like Jev intent routing: its key means it is real.
-  if (req.model === "inkling" || req.model === "gemini") {
-    const configured = req.model === "inkling" ? hasInkling() : hasGemini();
+  // With no explicit pick, Inkling is the default whenever it is configured; Claude is the fallback.
+  const choice = req.model ?? (hasInkling() ? "inkling" : undefined);
+  if (choice === "inkling" || choice === "gemini") {
+    const configured = choice === "inkling" ? hasInkling() : hasGemini();
     const text = configured
-      ? await altText(req.model, {
+      ? await altText(choice, {
           system: buildSystemPrompt(req, reading),
           user: req.question,
           image: imageBlock(req.pointer?.image) ? req.pointer?.image : undefined,
           history: req.history.slice(-10),
           maxTokens: 800,
-          effort: req.model === "inkling" ? req.effort : undefined,
+          effort: choice === "inkling" ? req.effort : undefined,
         })
       : null;
-    if (text) return { answer: text, provider: req.model, ...(suggestCode ? { suggestCode } : {}) };
-    opts.onFallback?.(req.model);
+    if (text) return { answer: text, provider: choice, ...(suggestCode ? { suggestCode } : {}) };
+    if (req.model) opts.onFallback?.(req.model);
   }
   if (process.env.MOCK_AI === "1") {
     return { answer: mockAnswer(req, reading), provider: "mock", ...(suggestCode ? { suggestCode } : {}) };

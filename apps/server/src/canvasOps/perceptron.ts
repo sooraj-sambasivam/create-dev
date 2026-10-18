@@ -16,7 +16,7 @@ const READING_PROMPT =
   "arrangement (columns, rows, stacking). Be brief. No preamble.";
 
 type FetchFn = typeof fetch;
-export type PerceptronOptions = { fetchImpl?: FetchFn; timeoutMs?: number; apiKey?: string };
+export type PerceptronOptions = { fetchImpl?: FetchFn; timeoutMs?: number; apiKey?: string; prompt?: string };
 
 let resolvedModel: string | null = null;
 
@@ -73,7 +73,7 @@ export async function readSketchWithPerceptron(
             role: "user",
             content: [
               { type: "image_url", image_url: { url: image } },
-              { type: "text", text: label ? `${READING_PROMPT}\nThe user's note: ${label}` : READING_PROMPT },
+              { type: "text", text: label ? `${opts.prompt ?? READING_PROMPT}\nThe user's note: ${label}` : (opts.prompt ?? READING_PROMPT) },
             ],
           },
         ],
@@ -94,4 +94,13 @@ export async function readSketchWithPerceptron(
   } finally {
     clearTimeout(timer);
   }
+}
+
+const DESCRIBE_PROMPT =
+  "Describe what this image shows for someone who cannot see it. Name the kind of thing (photo, chart, table, screenshot, sketch, UI), " +
+  "transcribe any visible text and numbers exactly, and note colors, layout and anything that stands out. Be brief and factual. No preamble.";
+
+/** General visual description for Chat image questions (Perceptron perceptron-mk1.5). Null without a key or on any failure. */
+export function describeImageWithPerceptron(image: string, question: string, opts: PerceptronOptions = {}): Promise<string | null> {
+  return readSketchWithPerceptron(image, question, { ...opts, prompt: DESCRIBE_PROMPT });
 }

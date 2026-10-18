@@ -16,7 +16,7 @@ locateRouter.post("/locate", limiter, bigJson("That capture is too large. Send a
     return;
   }
   try {
-    res.json(await locate(parsed.data.input, parsed.data.providers));
+    res.json(await locate(parsed.data.input, parsed.data.providers, { mode: parsed.data.mode }));
   } catch (err) {
     console.error("[locate] unexpected", err instanceof Error ? err.message : "unknown");
     res.status(500).json({ error: "Could not locate that. Which one?" });

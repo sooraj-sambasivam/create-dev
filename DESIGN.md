@@ -14,7 +14,7 @@ Defined once as CSS variables in `src/index.css` (`@theme` for Tailwind 4) and u
 
 | Token | Value | Use |
 |---|---|---|
-| `--shell` | `#ECECEC` (dark `#0F0F0F`) | App background, sidebar, collapsed rail |
+| `--shell` | `#F3F2F2` (dark `#141414`) | App background, sidebar, collapsed rail |
 | `--surface` | `#FFFFFF` (dark `#1C1C1C`) | Main work card, side panel card, composer, menus, windows |
 | `--tray` | `#F4F4F4` | Tray under the composer, hover fill |
 | `--hover` | `#EDEDED` | Hover on surface and tray controls |
@@ -34,28 +34,9 @@ Defined once as CSS variables in `src/index.css` (`@theme` for Tailwind 4) and u
 
 **Spacing:** 4px grid. Composer padding is 14/16. Menu items are 32px tall with 8px horizontal padding.
 
-## Looks (Paper and Luminous)
+## Theme
 
-Two selectable looks, picked in onboarding and changeable in Settings. `html[data-look="paper"|"luminous"]` defines the whole token set in `src/index.css`; the neutral tokens above remain the fallback when no look is set. `ui/look.ts` exports `useLook()` (zustand, persisted as `create-look`), `applyLook`, `defaultLook`, `LOOKS`, `LOOK_LABEL`, `LOOK_BLURB`, `LOOK_SWATCH`. `setLook(look)` sets `data-look`, mirrors the `dark` class and `color-scheme` (Paper light, Luminous dark) and marks the choice as made. Until chosen, the default is data-theme dark -> luminous, light -> paper, system -> prefers-color-scheme. `index.html` applies the saved look before first paint.
-
-| Token | Paper | Luminous |
-|---|---|---|
-| `shell` / `surface` / `tray` | `#F1EBDD` / `#FBF8F0` / `#F6F0E2` | `#0A0912` / `#14122A` / `#1B1836` |
-| `hover` / `hover-shell` / `selected` | `#EFE8D6` / ink alpha .06 / ink alpha .10 | `#231F44` / white alpha .06 / magenta alpha .14 |
-| `line` | `#DDD4BF` | `#2B2750` |
-| `ink` / `ink-2` / `ink-3` | `#1F1C17` / `#4B453A` / `#6B6354` | `#F3F1FA` / `#B9B5D0` / `#9490B0` |
-| `accent` / `on-accent` | vermilion `#B8361D` / `#FFF8F0` | magenta `#FF3D9A` / `#14020B` |
-| `ok` / `warn` / `bad` | `#2F6B3A` / `#8F5A00` / `#B3261E` | `#4ADE9A` / `#FFB86B` / `#FF7B72` |
-| `pen` | pen blue `#2C4A93` | rose `#FF8AC2` |
-| `highlight` | highlighter yellow, alpha .62 | rose, alpha .28 |
-| `glow` | vermilion alpha .14 | magenta-rose alpha .40 |
-| `spotlight-dim` | warm brown alpha .18 | near-black alpha .70 |
-| `shadow-soft` / `shadow-card` | warm brown shadows | black shadow; card adds a faint magenta bloom |
-| `--paper-grain` | 1 (SVG noise on the body only) | 0 (ambient magenta and violet gradient instead) |
-
-Utilities: `text-pen`, `bg-highlight`, `bg-glow`, `bg-spotlight-dim`, plus `font-display`, `font-ui`, `font-mono`, `font-note`. Luminous accent is magenta only, never green. Contrast was computed: ink, ink-2, ink-3, accent, ok, warn, bad and pen are all at least 4.5:1 on shell, surface and tray in both looks, and on-accent on accent is at least 4.5:1.
-
-**Fonts** (Google Fonts `<link>` in `index.html`; exposed as CSS variables): `--font-display` Fraunces (Paper) or Instrument Serif italic (Luminous) for spoken words and page lines; `--font-ui` Figtree (Paper) or Inter (Luminous); `--font-mono` Geist Mono for numbers and timings; `--font-note` Caveat (Paper margin notes, never below 16px; Luminous falls back to Inter). `ui/styles.ts` adds `text.spoken`, `text.note`, `text.mono` and `highlight`. Readability floor in both looks: no text under 12px, body at least 14px.
+One minimal look: neutral grays, a single blue accent (`#3E7BF0` light, `#6E9CF5` dark) and soft shadows. The header control cycles Light, Dark, System (`shell/theme.ts`, persisted as `create-theme`); Settings offers the same three. There are no alternative looks and no extra fonts. Pointing is drawn the same way in both themes: a 2px accent outline, a small label chip, an action card on `--surface` with `--line`, size ticks and a note chip in `--ink-2`; no dimming, glow, hand-drawn strokes or handwriting. Pip is a neutral orb; the agent cursor is a simple accent arrow.
 
 ## Type
 

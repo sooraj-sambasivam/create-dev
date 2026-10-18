@@ -1,5 +1,37 @@
 # Create pointer: results (one page)
 
+## Latest run: hover vs commit modes (real server :3002, real keys)
+
+Runs `eval/pointer/results/2026-10-18T08-27-49-235Z.{json,md}` (`EVAL_MODE=hover`) and `2026-10-18T08-31-15-215Z.{json,md}` (`EVAL_MODE=commit`), both `pnpm eval:pointer` against `http://localhost:3002` (`mock=false`, Perceptron, Jev, Gemini and Anthropic keys present). Same 30 targets and hit rule as below (IoU >= 0.5 and the box contains the cursor). `LocateRequest.mode` is new and additive: **hover** runs DOM, AX and Jev only (no Perceptron, Gemini or Claude) so it stays inside the 300 ms label budget; **commit** adds Perceptron `/v1/detect` with an 8 s cap (was 4 s), Gemini when keyed, waits for Perceptron before fusing, and keeps the Claude last resort. Omitting `mode` keeps the old chain. Lift and the extension's Enter-commit pass `mode: "commit"`.
+
+**Fused top-1: hover 66.7% (20/30), commit 80.0% (24/30). The 90% target is still not met.** Mean IoU 0.65 -> 0.75. Web targets 20/22 in both modes. PDF targets 0/8 -> 4/8.
+
+| Provider (called alone) | Hover run | Commit run | p50 / p95 ms (hover; commit) | Cost / call* |
+|---|---|---|---|---|
+| DOM (22 web) | 17/22 (IoU 0.75) | 17/22 | 1 / 7; 2 / 6 | $0 |
+| AX (22 web) | 14/22 (IoU 0.65) | 14/22 | 2 / 2; 2 / 4 | $0 |
+| Jev (30) | 2/30 (0/8 PDF) | 1/30 (0/8 PDF) | 111 / 176; 117 / 171 | $0.001 |
+| Perceptron /v1/detect (30) | 3/30 (1/8 PDF), 24 of 30 hit the 4 s cap | 6/30 (**4/8 PDF**), 16 of 30 hit the 8 s cap | 4004 / 4009; 8003 / 8008 | $0.002 |
+| Gemini (30) | 0/30 (all 30 timed out at 3.5 s) | 1/30 (29 timed out) | 3507 / 3511; 3507 / 3512 | $0.0015 |
+| Claude vision (30) | 0/30 (not called in hover) | 7/30 (4/8 PDF) | 2 / 4; 2630 / 3184 | $0.006 |
+| **Fused** | **20/30** | **24/30** | **4 / 137**; **2 / 5133** | $0.004 |
+
+*Cost is the placeholder per-call price in `eval/pointer/run.mjs`, not a vendor invoice. Treat totals as estimates only.
+
+**Perceptron on the 8 PDF targets (commit, 8 s cap):** n01 schedule table hit (IoU 0.99), n02 arrival miss, n03 pricing table hit (0.99), n04 pro price miss, n05 revenue chart hit (0.87), n06 Q4 bar miss, n07 invoice items hit (0.99), n08 invoice total miss. Tables and charts hit; single cells (price, total, one bar) miss. PDF calls took 3.5 to 5.9 s, so the old 4 s cap was cutting off most of them (hover/4 s: 1/8). On web screenshots Perceptron mostly timed out even at 8 s (16 of 30 calls overall), so it is not a web locator at this image size.
+
+**Latency per mode (fused, 30 targets):**
+- Hover: p50 4 ms, p95 137 ms, max 147 ms. Inside the 300 ms label budget on every target. Chain (locate + read + intent, first 10 targets): locate p50 107 ms, total p50 1.7 s.
+- Commit: p50 2 ms (22 web targets take the structural fast path), p95 5.1 s, max 5.4 s on the 8 PDF targets that wait for Perceptron. Chain locate p50 3.8 s, total p50 5.5 s. Commit is the "user pressed Enter" path, not the hover path; it does not meet the 300 ms locate budget when pixels are needed and was never meant to.
+
+**Risk to know about:** in commit mode, 6 of 30 fused answers are wrong with no "Which one?" prompt (the PDF Perceptron boxes that miss are returned alone, so nothing disagrees with them). In hover mode it is 2 silent wrong plus 8 wrong-with-prompt. Commit trades more hits for more confident misses on PDFs. Not tuned in this lane.
+
+**Chat (`/api/ask`):** with `TINKER_API_KEY` set and no model chosen, the default is now Inkling, with Claude as the fallback when Inkling returns nothing. Image questions now get a Perceptron (`perceptron-mk1.5`) visual description in the system prompt whenever `PERCEPTRON_API_KEY` is set. Covered by unit tests with fetch mocked (server vitest 30 files, 330 tests pass; tsc clean for shared, server, web). Answer quality and latency of Inkling and Perceptron chat were not measured here.
+
+**Eval harness changes:** `EVAL_MODE=hover|commit` sends `mode` with every locate; the per-call timeout is now 20 s so the 8 s Perceptron cap can finish; the results JSON records `mode`. A first hover attempt was discarded because the :3002 dev server restarted mid-run (30 "fetch failed" rows); the numbers above are from clean reruns.
+
+---
+
 ## Latest run (container lane + Jev small copy + fusion tuning)
 
 Eval run `eval/pointer/results/2026-10-18T08-16-45-287Z.{json,md}` (`pnpm eval:pointer`), same 30 targets, same hit rule (IoU >= 0.5 and the box contains the cursor). The server ran with `MOCK_AI=1`. Perceptron had a key this time and was measured; Gemini had no key (not run); Claude vision answered "unavailable" (0/30, no real call).

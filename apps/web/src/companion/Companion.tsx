@@ -1,12 +1,10 @@
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useLayoutEffect, useReducer, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react";
 import { CircleHelp, NotebookPen, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { useScreenStore } from "../store/screenStore";
 import { ICON, STROKE, button, focusRing, surface } from "../ui/styles";
 import { duration, ease, fadeUp, spring } from "../ui/motion";
 import { Face } from "./Face";
-import { PipBody, faceTone, pipButtonClass } from "./PipBody";
-import { useLook } from "../ui/look";
 import { NotesCard } from "./NotesCard";
 import { activeByEvents, initialState, nextWake, reduce, type FaceKind, type MachineEvent } from "./machine";
 import { readPref, writePref, type CompanionPref } from "./prefs";
@@ -34,12 +32,69 @@ const ORB_ANIM: Partial<Record<FaceKind, TargetAndTransition>> = {
 /** Faces that play a multi-step keyframe hop use a tween; everything else settles on a spring. */
 const KEYFRAMED = new Set<FaceKind>(["celebrate", "cancelled"]);
 
+
+export interface DockRect { left: number; top: number; right: number; bottom: number }
+export interface Dock { right: number; bottom: number; collapsed: boolean }
+
+/** Pip's footprint: the 60px orb plus the badge and close button hanging off its corners. */
+const PIP = 76;
+const DEFAULT_DOCK = { right: 20, bottom: 24 };
+
+const overlaps = (a: DockRect, b: DockRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
+/**
+ * Where Pip sits: just above the composer, at its right edge, on the main card. If that spot would
+ * cover an interactive element of the right panel, it collapses to a dot instead of hiding a control.
+ * Pure: the caller measures the composer and the panel's interactive elements.
+ */
+export function computeDock(viewport: { w: number; h: number }, composer: DockRect | null, panelControls: readonly DockRect[]): Dock {
+  const pos = composer
+    ? { right: Math.max(8, viewport.w - composer.right + 8), bottom: Math.max(8, viewport.h - composer.top + 12) }
+    : DEFAULT_DOCK;
+  const pip: DockRect = { left: viewport.w - pos.right - PIP, top: viewport.h - pos.bottom - PIP, right: viewport.w - pos.right, bottom: viewport.h - pos.bottom };
+  return { ...pos, collapsed: panelControls.some((r) => overlaps(pip, r)) };
+}
+
+const INTERACTIVE = "button, a[href], input, select, textarea, [role='button'], [role='tab'], [role='switch'], [tabindex]:not([tabindex='-1'])";
+
+function measureDock(): Dock {
+  const rect = (el: Element): DockRect => {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  };
+  const composer = document.querySelector("[data-testid='composer']");
+  const controls = Array.from(document.querySelectorAll("[data-right-panel]")).flatMap((p) => Array.from(p.querySelectorAll(INTERACTIVE)).map(rect));
+  return computeDock({ w: window.innerWidth, h: window.innerHeight }, composer ? rect(composer) : null, controls.filter((r) => r.right > r.left && r.bottom > r.top));
+}
+
+function useDock(): Dock {
+  const [dock, setDock] = useState<Dock>({ ...DEFAULT_DOCK, collapsed: false });
+  useLayoutEffect(() => {
+    const update = () => {
+      const next = measureDock();
+      setDock((d) => (d.right === next.right && d.bottom === next.bottom && d.collapsed === next.collapsed ? d : next));
+    };
+    update();
+    window.addEventListener("resize", update);
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    document.querySelectorAll("[data-testid='composer'], [data-right-panel]").forEach((el) => ro?.observe(el));
+    // Panel tabs and cards change without a resize; a light poll keeps the dock honest.
+    const id = window.setInterval(update, 600);
+    return () => {
+      window.removeEventListener("resize", update);
+      ro?.disconnect();
+      window.clearInterval(id);
+    };
+  }, []);
+  return dock;
+}
+
 /** Pip: the Narrate-mode companion. Visual only; the live regions already announce results. */
 export function Companion() {
   const mode = useScreenStore((s) => s.mode);
-  const look = useLook((s) => s.look);
   const reduced = !!useReducedMotion();
   const [pref, setPref] = useState<CompanionPref>(readPref);
+  const dock = useDock();
   const [state, dispatch] = useReducer(reducer, initialState);
   useCompanionSignals((evt) => dispatch({ evt, now: Date.now() }));
 
@@ -56,6 +111,7 @@ export function Companion() {
     writePref(v);
   };
   const { face } = state;
+  const shown: CompanionPref = pref === "on" && dock.collapsed ? "dot" : pref;
   const badge = BADGES[face];
   const orbAnim: TargetAndTransition =
     ORB_ANIM[face] ??
@@ -65,9 +121,9 @@ export function Companion() {
   const idleLoop = face === "idle" && !reduced;
 
   return (
-    <div className={`pointer-events-none fixed right-5 bottom-6 flex items-end gap-3 ${mode === "narrate" ? "z-[101]" : "z-40"}`}>
+    <div className="pointer-events-none fixed z-40 flex items-end gap-3" style={{ right: dock.right, bottom: dock.bottom }} data-pip-dock={dock.collapsed ? "dot" : "full"}>
       <AnimatePresence>
-        {visible && pref === "on" && (
+        {visible && shown === "on" && (
           <motion.div
             key="full"
             className="flex items-end gap-3"
@@ -84,20 +140,20 @@ export function Companion() {
                 aria-label="Hide companion"
                 aria-pressed={false}
                 onClick={() => choose("dot")}
-                className={`pointer-events-auto relative block size-[60px] ${pipButtonClass(look)} ${focusRing}`}
+                className={`pointer-events-auto relative block size-[60px] rounded-full border border-line bg-surface shadow-soft ${focusRing}`}
               >
                 {!reduced && face === "celebrate" &&
                   [0, 0.18, 0.36].map((d) => (
                     <motion.span
                       key={`${state.nonce}-${d}`}
-                      className="pointer-events-none absolute inset-0 rounded-full border border-accent"
+                      className="pointer-events-none absolute inset-0 rounded-full border border-ink-3"
                       initial={{ scale: 1, opacity: 0.5 }}
                       animate={{ scale: 1.9, opacity: 0 }}
                       transition={{ duration: 0.9, delay: d, ease: ease.standard }}
                     />
                   ))}
                 <motion.span
-                  className="relative block size-[60px] rounded-full"
+                  className="block rounded-full"
                   animate={orbAnim}
                   transition={
                     reduced
@@ -109,8 +165,7 @@ export function Companion() {
                           : spring.gentle
                   }
                 >
-                  <PipBody look={look} />
-                  <Face face={face} nod={state.nod} reduced={reduced} tone={faceTone(look)} />
+                  <Face face={face} nod={state.nod} reduced={reduced} />
                 </motion.span>
               </button>
               <AnimatePresence>
@@ -151,7 +206,7 @@ export function Companion() {
             </div>
           </motion.div>
         )}
-        {visible && pref === "dot" && (
+        {visible && shown === "dot" && (
           <motion.button
             key="dot"
             type="button"

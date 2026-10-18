@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Copy, PanelRight, Share, X } from "lucide-react";
+import { Contrast, Copy, Moon, PanelRight, Share, Sun, X } from "lucide-react";
 import { useScreenStore } from "../store/screenStore";
 import { useWorkMode, type WorkMode } from "../store/modeStore";
 import { ActivePill } from "../ui/ActivePill";
 import { ChatMenu, type ChatProject } from "./ChatMenu";
-import { LOOKS, LOOK_LABEL, LOOK_SWATCH, useLook } from "../ui/look";
+import { THEME_LABEL, useThemeStore, type ThemePreference } from "./theme";
 import { ICON, STROKE, button, input, segmented, surface } from "../ui/styles";
 import { duration, ease, originFor, popover, useReducedMotionSafe } from "../ui/motion";
 
@@ -232,37 +232,29 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
   );
 }
 
-/** Header look switch: Paper | Luminous. Persisted by ui/look.ts; the look drives the `dark` class and tokens. */
-export function LookSwitch() {
-  const look = useLook((s) => s.look);
-  const setLook = useLook((s) => s.setLook);
-  const pillId = useId();
+const THEME_ICON: Record<ThemePreference, typeof Sun> = {
+  light: Sun,
+  dark: Moon,
+  system: Contrast,
+};
+
+/** Header control that cycles the shell theme light, dark, system. Persisted by theme.ts. */
+export function ThemeToggle() {
+  const theme = useThemeStore((s) => s.theme);
+  const cycleTheme = useThemeStore((s) => s.cycleTheme);
+  const Icon = THEME_ICON[theme];
+  const label = `Theme: ${THEME_LABEL[theme]}`;
+
   return (
-    <div role="group" aria-label="Look" data-testid="look-switch" data-part="look-switch" className={segmented.root}>
-      {LOOKS.map((l) => {
-        const active = look === l;
-        const [shell, , , accent] = LOOK_SWATCH[l];
-        return (
-          <button
-            key={l}
-            type="button"
-            aria-pressed={active}
-            data-testid={`look-${l}`}
-            title={`${LOOK_LABEL[l]} look`}
-            onClick={() => setLook(l)}
-            className={`${segmented.item} !px-2.5 @max-[720px]:!px-2 ${active ? segmented.active : ""}`}
-          >
-            {active && <ActivePill layoutId={pillId} />}
-            <span
-              aria-hidden="true"
-              className="size-3.5 shrink-0 rounded-full border border-line"
-              style={{ background: `linear-gradient(135deg, ${shell} 50%, ${accent} 50%)` }}
-            />
-            <span className="@max-[720px]:sr-only">{LOOK_LABEL[l]}</span>
-          </button>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      onClick={cycleTheme}
+      aria-label={label}
+      title={`${label}. Click to switch.`}
+      className={button.icon}
+    >
+      <Icon size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
+    </button>
   );
 }
 
@@ -306,13 +298,13 @@ export function Header({ pageTitle, chat, projects, outputOpen, actions, onShare
     // Three columns: the title takes what is left and truncates, Chat | Work stays centred, and the
     // actions column never shrinks below its content, so nothing overlaps.
     <header className="@container grid h-12 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(max-content,1fr)] items-center gap-4 px-4">
-      <h1 data-part="page-title" className="min-w-0 truncate font-display text-[16px] font-normal text-ink" title={pageTitle}>
+      <h1 data-part="page-title" className="min-w-0 truncate text-[14px] font-normal text-ink" title={pageTitle}>
         {pageTitle}
       </h1>
       <ModeToggle />
       <div className="flex shrink-0 items-center justify-self-end gap-1">
         <ShareButton onShare={onShare} />
-        <LookSwitch />
+        <ThemeToggle />
         <ChatMenu
           title={chat.title}
           archived={chat.archived}

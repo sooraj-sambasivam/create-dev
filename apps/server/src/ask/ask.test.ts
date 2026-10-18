@@ -177,3 +177,37 @@ describe("intent: ask wins over restyle", () => {
     expect(routeIntentFallback({ transcript: "can you make this blue?", candidates: [] }).action).toBe("restyle");
   });
 });
+
+describe("default model and Perceptron description", () => {
+  afterEach(() => {
+    delete process.env.TINKER_API_KEY;
+    delete process.env.PERCEPTRON_API_KEY;
+    vi.unstubAllGlobals();
+  });
+  it("uses Inkling by default when a Tinker key is set", async () => {
+    process.env.TINKER_API_KEY = "t";
+    const f = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: "inkling says hi" } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", f);
+    const r = await answerAsk(ask("what is this?"));
+    expect(r).toMatchObject({ answer: "inkling says hi", provider: "inkling" });
+  });
+  it("feeds a Perceptron visual description into the answer for image questions", async () => {
+    process.env.TINKER_API_KEY = "t";
+    process.env.PERCEPTRON_API_KEY = "p";
+    const bodies: string[] = [];
+    const f = vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes("perceptron")) {
+        if (u.endsWith("/models")) return new Response(JSON.stringify({ data: [{ id: "perceptron-mk1.5" }] }), { status: 200 });
+        return new Response(JSON.stringify({ choices: [{ message: { content: "a red bar chart" } }] }), { status: 200 });
+      }
+      bodies.push(String(init?.body));
+      return new Response(JSON.stringify({ choices: [{ message: { content: "It is a chart." } }] }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", f);
+    const img = "data:image/png;base64,AAAA";
+    const r = await answerAsk(ask("what is this?", { pointer: { targetId: null, image: img } }));
+    expect(r.answer).toBe("It is a chart.");
+    expect(bodies[0]).toContain("a red bar chart");
+  });
+});

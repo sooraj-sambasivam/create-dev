@@ -2,11 +2,11 @@ import type { ProfileIntent, ProfileLevel } from "./profile";
 import type { WorkMode } from "../store/modeStore";
 
 /** Pure step logic for first-run onboarding, kept apart from the UI so it can be tested. */
-export const STEP_COUNT = 6;
-export type StepIndex = 0 | 1 | 2 | 3 | 4 | 5;
-export const STEP = { welcome: 0, look: 1, you: 2, permissions: 3, tryIt: 4, done: 5 } as const;
+export const STEP_COUNT = 5;
+export type StepIndex = 0 | 1 | 2 | 3 | 4;
+export const STEP = { welcome: 0, you: 1, permissions: 2, tryIt: 3, done: 4 } as const;
 /** Bump when the flow gains a step that existing users should see. */
-export const ONBOARDING_VERSION = 3;
+export const ONBOARDING_VERSION = 2;
 
 export const INTENT_OPTIONS: { id: ProfileIntent; label: string; hint: string }[] = [
   { id: "build", label: "Build", hint: "Describe it and watch the page appear." },

@@ -21,6 +21,9 @@ import type { ImageCtx, LocateDeps, LocateProvider } from "./types";
 /** Network providers cannot meet the 300 ms locate budget alone; these are hard caps, and the grace window handles the rest. */
 export const PROVIDER_TIMEOUT_MS: Record<LocateSource, number> = { ax: 50, dom: 50, perceptron: 4000, jev: 2500, gemini: 3500, claude: 8000, fused: 0 };
 export const DEFAULT_GRACE_MS = 250;
+/** Commit mode lets Perceptron detect run to this cap and waits for it before fusing. */
+export const COMMIT_PERCEPTRON_TIMEOUT_MS = 8000;
+const HOVER_PIXEL: LocateSource[] = ["jev"];
 /** A structural hit at or above this skips the pixel providers entirely (fast path, stays inside the budget). */
 export const FAST_PATH_CONFIDENCE = 0.85;
 
@@ -35,7 +38,7 @@ interface Run {
 
 async function run(name: LocateSource, fn: LocateProvider, input: CaptureInput, image: ImageCtx | null, deps: LocateDeps): Promise<Run> {
   const t0 = performance.now();
-  const timeoutMs = deps.timeouts?.[name] ?? PROVIDER_TIMEOUT_MS[name];
+  const timeoutMs = deps.timeouts?.[name] ?? (deps.mode === "commit" && name === "perceptron" ? COMMIT_PERCEPTRON_TIMEOUT_MS : PROVIDER_TIMEOUT_MS[name]);
   try {
     const results = await fn({ input, image, deps, timeoutMs });
     return { name, results, timing: { stage: "locate", provider: name, ms: Math.round(performance.now() - t0), ok: true } };
@@ -98,13 +101,13 @@ export async function locate(input: CaptureInput, allow?: string[], deps: Locate
   const fast = !allow && all.some((r) => r.confidence >= FAST_PATH_CONFIDENCE);
 
   if (image && !fast) {
-    const names = PIXEL.filter(([n]) => allowed(n));
+    const names = PIXEL.filter(([n]) => allowed(n) && (allow || deps.mode !== "hover" || HOVER_PIXEL.includes(n)) && (allow || n !== "gemini" || deps.mode !== "commit" || !!process.env.GEMINI_API_KEY?.trim()));
     const runs = names.map(([n, f]) => run(n, f, input, image, deps));
-    for (const r of await settle(runs, names.map(([n]) => n), deps.graceMs ?? DEFAULT_GRACE_MS)) {
+    for (const r of await settle(runs, names.map(([n]) => n), deps.graceMs ?? (deps.mode === "commit" ? COMMIT_PERCEPTRON_TIMEOUT_MS + 500 : DEFAULT_GRACE_MS))) {
       stages.push(r.timing);
       all.push(...r.results);
     }
-    if (allowed("claude") && !all.some((r) => r.confidence >= 0.4)) {
+    if (allowed("claude") && deps.mode !== "hover" && !all.some((r) => r.confidence >= 0.4)) {
       const r = await run("claude", locateClaude, input, image, deps);
       stages.push(r.timing);
       all.push(...r.results);

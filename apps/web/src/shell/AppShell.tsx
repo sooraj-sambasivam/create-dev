@@ -13,7 +13,6 @@ import { card } from "../ui/styles";
 import { selectActiveChat, useWorkspaceStore } from "../store/workspaceStore";
 import { useScreenStore } from "../store/screenStore";
 import "./builder.css";
-import "./looks.css";
 
 /** Window inset and card-to-card gap (the card's mr-2, the panel's mr-2). */
 const GUTTER = 8;

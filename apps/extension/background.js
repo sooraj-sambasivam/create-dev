@@ -87,7 +87,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const t0 = Date.now();
       try {
         const input = { source: "extension", image: msg.image, ...(msg.imageSize ? { imageSize: msg.imageSize } : {}), ...(msg.cursor ? { cursor: msg.cursor } : {}), ...(msg.dom ? { dom: msg.dom } : {}), ...(msg.hint ? { hint: msg.hint } : {}), ...(msg.utterance ? { utterance: msg.utterance } : {}) };
-        const r = await post("/api/locate", { input });
+        const r = await post("/api/locate", { input, mode: msg.mode === "hover" ? "hover" : "commit" });
         keepTrace({ kind: "locate", ms: Date.now() - t0, ok: true, id: r.trace?.id, stages: r.trace?.stages?.length ?? 0, ask: r.ask || null });
         return { ok: true, result: r.result ?? null, ask: r.ask, traceId: r.trace?.id };
       } catch (err) {

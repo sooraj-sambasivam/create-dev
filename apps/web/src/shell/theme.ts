@@ -51,8 +51,6 @@ export function applyTheme(preference: ThemePreference): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.setAttribute("data-theme", preference);
-  // A look (ui/look.ts) owns the `dark` class and colour scheme: Paper light, Luminous dark.
-  if (root.hasAttribute("data-look")) return;
   root.classList.toggle("dark", resolveTheme(preference, systemPrefersDark()) === "dark");
 }
 

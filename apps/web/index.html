@@ -23,19 +23,6 @@
           root.setAttribute("data-theme", pref);
           root.classList.toggle("dark", dark);
           root.style.colorScheme = dark ? "dark" : "light";
-          /* Look ("paper" | "luminous", localStorage "create-look"); default follows the theme: light -> paper, dark -> luminous. */
-          var look = null;
-          var lraw = window.localStorage.getItem("create-look");
-          if (lraw) {
-            var lp;
-            try { lp = JSON.parse(lraw); } catch (e) { lp = lraw; }
-            var ls = lp && lp.state ? lp.state.look : lp;
-            if (ls === "paper" || ls === "luminous") look = ls;
-          }
-          if (!look) look = dark ? "luminous" : "paper";
-          root.setAttribute("data-look", look);
-          root.classList.toggle("dark", look === "luminous");
-          root.style.colorScheme = look === "luminous" ? "dark" : "light";
         } catch (e) {
           /* storage or matchMedia unavailable: the CSS defaults apply */
         }
@@ -43,7 +30,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,400;1,9..144,500&family=Figtree:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Nunito:wght@500;700;800&family=JetBrains+Mono:wght@500;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>

@@ -67,7 +67,7 @@ describe("result data", () => {
     const r = buildResult(null, screen([box("hero", [heading("a"), heading("b")]), heading("d")]), label);
     expect(r.title).toBe("Built page");
     expect(r.meta).toBe("4 elements");
-    expect(r.rows).toEqual([{ label: "hero", stat: "3 elements" }, { label: "d", stat: "1 element" }]);
+    expect(r.rows).toEqual([{ label: "a", stat: "3 elements" }, { label: "d", stat: "1 element" }]);
   });
   it("refinement: added, changed and removed sections", () => {
     const before = screen([heading("a", "one"), heading("b"), heading("c")]);
@@ -88,5 +88,25 @@ describe("result data", () => {
     expect(lift.meta).toBe("12 rows · 4 columns");
     expect(lift.rows).toHaveLength(5);
     expect(lift.rows[4]).toEqual({ label: "Imported from metro.example" });
+  });
+});
+
+describe("section names", () => {
+  const text = (id: string, t: string): Node => ({ id, type: "text", text: t }) as Node;
+  const input = (id: string): Node => ({ id, type: "textbox", label: "Email" }) as Node;
+  const button = (id: string): Node => ({ id, type: "button", label: "Go" }) as Node;
+  it("uses the heading text, else the inferred role", () => {
+    const s = screen([
+      box("c1", [heading("h", "Welcome to Ember"), button("b")]),
+      box("c2", [text("t1", "Starter $9/mo")]),
+      box("c3", [input("i")]),
+      box("c4", [box("x", []), box("y", []), box("z", [])]),
+      box("c5", [text("t2", "(c) 2026")]),
+    ]);
+    expect(buildResult(null, s, label).rows.map((r) => r.label)).toEqual(["Welcome to Ember", "Pricing", "Form", "Features", "Footer"]);
+  });
+  it("calls an unheaded first section with a button the Hero, and never Container", () => {
+    const rows = buildResult(null, screen([box("c1", [button("b")]), box("c2", [text("t", "hi")]), box("c3", [text("t3", "x")])]), label).rows;
+    expect(rows.map((r) => r.label)).toEqual(["Hero", "Section", "Footer"]);
   });
 });

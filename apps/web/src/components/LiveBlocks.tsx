@@ -4,7 +4,6 @@ import type { Leaf } from "@create/shared";
 import { useLiveRows } from "./useLiveRows";
 import { mapRows, mergeChart, parseNumber, type ChartData } from "./liveRows";
 import { duration, ease, spring, staggerDelay, useReducedMotionSafe } from "../ui/motion";
-import { useLook } from "../ui/look";
 
 /** Smallest text the chart may paint, in screen pixels (the canvas scales pages down to fit). */
 const MIN_LABEL_PX = 12.5;
@@ -44,36 +43,20 @@ type ChartNode = Extract<Leaf, { type: "chart" }>;
 
 const reduceMotion = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-/** New-row wash: Paper = a light highlighter swipe, Luminous = a magenta glow. Light enough for any page theme. */
-function freshTint(look: "paper" | "luminous"): string {
-  return look === "paper"
-    ? "color-mix(in srgb, var(--color-highlight) 38%, transparent)"
-    : "color-mix(in srgb, var(--color-accent) 18%, transparent)";
-}
+/** New-row wash: a light accent tint that fades out. Light enough for any page theme. */
+const FRESH_TINT = "color-mix(in srgb, var(--color-accent) 14%, transparent)";
 
-/**
- * "via phone" mark on a row that just arrived. Paper: an ink stamp that thumps down.
- * Luminous: a magenta chip with a pulsing ring. Self-contained colours so it reads on any page theme.
- */
-function ViaPhoneStamp({ look, reduce }: { look: "paper" | "luminous"; reduce: boolean }) {
-  const paper = look === "paper";
+/** "via phone" mark on a row that just arrived: a small accent chip. Self-contained colours so it reads on any page theme. */
+function ViaPhoneStamp({ reduce }: { reduce: boolean }) {
   return (
     <motion.span
       data-via-phone=""
-      initial={reduce ? { opacity: 0 } : paper ? { opacity: 0, scale: 1.7, rotate: -9 } : { opacity: 0, scale: 0.85 }}
-      animate={{ opacity: 1, scale: 1, rotate: paper ? -3 : 0 }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={reduce ? { duration: duration.fast } : spring.bouncy}
-      className={`mr-2 inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 align-middle leading-5 ${
-        paper ? "border-2 border-ink font-note text-[16px] text-ink" : "border border-accent font-ui text-[12px] font-semibold text-accent"
-      }`}
+      className="mr-2 inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-accent px-1.5 align-middle text-[12px] font-semibold leading-5 text-accent"
       style={{ background: "var(--color-surface)" }}
     >
-      {!paper && (
-        <span className="relative inline-flex size-2">
-          <span className={`absolute inset-0 rounded-full bg-accent ${reduce ? "" : "animate-ping"}`} />
-          <span className="relative size-2 rounded-full bg-accent" />
-        </span>
-      )}
       via phone
     </motion.span>
   );
@@ -84,7 +67,6 @@ export function TableBlock({ node, style }: { node: TableNode; style: CSSPropert
   const live = useMemo(() => mapRows(node.columns, subs), [node.columns, subs]);
   const rows = [...node.rows.map((cells, i) => ({ id: `s${i}`, cells })), ...live];
   const { reduce } = useReducedMotionSafe();
-  const look = useLook((st) => st.look);
   // Rows present at first paint stagger in (24ms apart); rows that arrive later spring in on their own.
   const first = useRef(true);
   useEffect(() => {
@@ -116,15 +98,15 @@ export function TableBlock({ node, style }: { node: TableNode; style: CSSPropert
               data-new={fresh.has(row.id) ? "true" : undefined}
               style={{
                 borderTop: "1px solid var(--border)",
-                background: fresh.has(row.id) ? freshTint(look) : "transparent",
-                boxShadow: fresh.has(row.id) ? `inset 3px 0 0 ${look === "paper" ? "var(--color-ink)" : "var(--color-accent)"}` : "none",
+                background: fresh.has(row.id) ? FRESH_TINT : "transparent",
+                boxShadow: fresh.has(row.id) ? "inset 3px 0 0 var(--color-accent)" : "none",
                 // Paint-only tint that fades out; the row's own entrance is transform and opacity.
                 transition: reduceMotion() ? "none" : "background-color 1.5s ease-out, box-shadow 1.5s ease-out",
               }}
             >
               {row.cells.map((cell, c) => (
                 <td key={c} className={`px-4 py-2.5 ${c === row.cells.length - 1 && row.cells.length > 1 ? "text-right tabular-nums" : ""}`}>
-                  {c === 0 && fresh.has(row.id) && <ViaPhoneStamp look={look} reduce={reduce} />}
+                  {c === 0 && fresh.has(row.id) && <ViaPhoneStamp reduce={reduce} />}
                   {cell}
                 </td>
               ))}

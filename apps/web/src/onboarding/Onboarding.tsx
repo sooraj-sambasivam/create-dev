@@ -10,8 +10,6 @@ import { useOnboarding } from "./onboardingStore";
 import { useMic } from "./useMic";
 import { MicBody } from "./MicBody";
 import { ChoiceGroup, KeyCap, SegmentedControl, StatusPill } from "./controls";
-import { LookPicker } from "./LookPicker";
-import { LOOK_LABEL, useLook } from "../ui/look";
 import { button, focusRing, ICON, input, STROKE, surface, text } from "../ui/styles";
 import {
   HEADING_SIZES,
@@ -34,20 +32,19 @@ import {
 
 const TITLES = [
   "Point at anything. Say what you want. Get software you own.",
-  "Choose your look",
   "Tell us how you’ll use it",
   "Set up your microphone",
   "Try it",
   "You’re set",
 ];
 const lg = { size: ICON.lg, strokeWidth: STROKE } as const;
-const card = "onb-card";
+const card = "rounded-xl border border-line bg-surface p-4";
 const optionOf = <T extends { id: string; label: string; hint: string }>(list: T[], id: string) => list.find((o) => o.id === id);
 
 /** The pointer chip, same look as the live one in the Narrate overlay (modes/narrate/overlay/PointerBubble.tsx). */
 function PointerChipView({ label, className = "" }: { label: string; className?: string }) {
   return (
-    <div className={`onb-chip pointer-events-none ${className}`}>
+    <div className={`pointer-events-none flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 text-[12px] leading-6 text-ink shadow-soft ${className}`}>
       <Crosshair size={12} strokeWidth={STROKE} className="shrink-0 text-ink-2" aria-hidden="true" />
       <span>{label}</span>
     </div>
@@ -95,17 +92,6 @@ function WelcomePreview({ reduce }: { reduce: boolean | null }) {
 
 function StepWelcome({ reduce }: { reduce: boolean | null }) {
   return <WelcomePreview reduce={reduce} />;
-}
-
-function StepLook() {
-  const look = useLook((s) => s.look);
-  return (
-    <div className="mt-6 flex flex-col gap-4 text-left">
-      <LookPicker />
-      <p role="status" aria-live="polite" className="sr-only">{LOOK_LABEL[look]} look applied.</p>
-      <p className="text-[14px] leading-5 text-ink-2">You can change this anytime in Settings.</p>
-    </div>
-  );
 }
 
 function StepYou({ intent, level, onIntent, onLevel }: { intent: ProfileIntent; level: ProfileLevel; onIntent: (v: ProfileIntent) => void; onLevel: (v: ProfileLevel) => void }) {
@@ -249,7 +235,7 @@ function StepTry({ intent, done, onDone }: { intent: ProfileIntent; done: boolea
   };
   const dictation = useDictation((t) => { setTyped(t); run(t); });
   const onPath = (p: WorkMode) => { setPath(p); setSizeIdx(0); setAnswer(null); setMiss(false); setTyped(""); };
-  const hoverCls = "onb-target relative w-fit rounded-md px-1";
+  const hoverCls = "relative w-fit rounded-md px-1 transition-colors duration-120 hover:bg-hover focus-visible:bg-hover";
   const enter = (h: "heading" | "rating") => () => setHover(h);
   const leave = () => setHover(null);
 
@@ -381,9 +367,6 @@ export function Onboarding() {
     profile.set({ level: l });
   };
   const finish = (skipped: boolean) => {
-    // Finishing keeps the look that was on screen, even if it was only the system default.
-    const lk = useLook.getState();
-    if (!skipped && !lk.chosen) lk.setLook(lk.look);
     const first = !useProfile.getState().onboarded;
     profile.set({ onboarded: true, onboardingVersion: ONBOARDING_VERSION, ...(first ? { onboardingSkipped: skipped } : {}) });
     close();
@@ -448,17 +431,17 @@ export function Onboarding() {
       aria-labelledby="onb-title"
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="onb-root fixed inset-0 z-[100] flex flex-col overflow-y-auto bg-shell outline-none"
+      className="fixed inset-0 z-[100] flex flex-col overflow-y-auto bg-shell outline-none"
       variants={fade}
       initial="hidden"
       animate="show"
       exit="exit"
     >
       <header className="flex h-14 shrink-0 items-center justify-between px-4 sm:px-6">
-        <span className="onb-title text-[18px] text-ink">Create</span>
+        <span className="text-[14px] text-ink-2">Create</span>
         <button type="button" onClick={() => finish(true)} aria-label="Skip setup" className={button.ghost}>Skip</button>
       </header>
-      <main className={`mx-auto flex w-full flex-1 flex-col justify-center px-4 pb-8 ${step === STEP.look ? "max-w-[720px]" : "max-w-[560px]"}`}>
+      <main className="mx-auto flex w-full max-w-[560px] flex-1 flex-col justify-center px-4 pb-8">
         <AnimatePresence mode="wait" initial={false} custom={dir}>
           <motion.div
             key={step}
@@ -469,13 +452,11 @@ export function Onboarding() {
             animate="center"
             exit="exit"
           >
-            <h2 id="onb-title" ref={titleRef} tabIndex={-1} className="onb-title text-[30px] font-normal leading-9 tracking-[-0.01em] text-ink outline-none">{TITLES[step]}</h2>
-            {step === STEP.look && <p className="mt-3 text-[16px] leading-6 text-ink-2">Same app, two moods. Hover a card to see how pointing looks. Your pick applies right away.</p>}
+            <h2 id="onb-title" ref={titleRef} tabIndex={-1} className="text-[28px] font-normal leading-9 tracking-[-0.01em] text-ink outline-none">{TITLES[step]}</h2>
             {step === STEP.you && <p className="mt-3 text-[16px] leading-6 text-ink-2">You can change this any time in Settings.</p>}
             {step === STEP.permissions && <p className="mt-3 text-[16px] leading-6 text-ink-2">Talking is optional. If you&rsquo;d rather type, skip this.</p>}
             {step === STEP.done && <p className="mt-3 text-[16px] leading-6 text-ink-2">Here is what we set up.</p>}
             {step === STEP.welcome && <StepWelcome reduce={reduce} />}
-            {step === STEP.look && <StepLook />}
             {step === STEP.you && <StepYou intent={intent} level={level} onIntent={pickIntent} onLevel={pickLevel} />}
             {step === STEP.permissions && <StepPermissions onBusy={setMicBusy} />}
             {step === STEP.tryIt && <StepTry intent={intent} done={tried} onDone={() => setTried(true)} />}

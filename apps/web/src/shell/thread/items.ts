@@ -1,4 +1,7 @@
-import type { HistoryEntry, Status } from "../../store/screenStore";
+import type { HistoryEntry as StoreEntry, Status } from "../../store/screenStore";
+
+/** The store entry plus the answering provider (recorded from AskResponse.provider). */
+type HistoryEntry = StoreEntry & { provider?: string };
 import { editResult, liftResult, type LiftEntry, type LiveRun, type ResultData, type RunKind, type StepRecord } from "./runs";
 
 /** Every item carries the turn it belongs to, so the thread can group a turn and space turns apart. */
@@ -12,7 +15,7 @@ export type ThreadItem =
   /** "Built in 12s ›": the finished run, expandable to its step log. */
   | (Base & { kind: "run"; run: RunKind; ms: number; steps: StepRecord[] })
   | (Base & { kind: "assistant"; text: string; element: boolean; label: string | null; nodeId: string | null })
-  | (Base & { kind: "answer"; text: string; label: string | null; suggestCode: boolean; routed: boolean; nodeId: string | null })
+  | (Base & { kind: "answer"; text: string; label: string | null; suggestCode: boolean; routed: boolean; nodeId: string | null; /** "Inkling · Thinking Machines", "Claude", "Perceptron + Claude"; null for mock or unknown. */ providerTag: string | null })
   /** One card per action. `undoable` only on the newest page or element change. */
   | (Base & { kind: "result"; result: ResultData; action: "page" | "app"; url: string | null; undoable: boolean })
   /** A staged change waiting for Apply / Discard (Approve for me is off). */
@@ -44,6 +47,22 @@ export interface ThreadInput {
   canUndo?: boolean;
 }
 
+/** The small tag under a Chat answer. Mock (and anything unknown) shows no tag. */
+export function providerTag(provider: string | null | undefined): string | null {
+  switch (provider) {
+    case "inkling":
+      return "Inkling · Thinking Machines";
+    case "claude":
+      return "Claude";
+    case "perceptron+claude":
+      return "Perceptron + Claude";
+    case "gemini":
+      return "Gemini";
+    default:
+      return null;
+  }
+}
+
 /** Prompt placeholder the store writes for edits made without a prompt (canvas, narrate). */
 export const EDITED_PROMPT = "(edited)";
 
@@ -70,7 +89,7 @@ export function deriveItems({ history, status, error, asking, lastAttempt, run, 
     if (hasPrompt) items.push({ kind: "user", key: `u${i}`, turn, text: h.prompt });
     if (h.ms !== undefined && h.kind) items.push({ kind: "run", key: `r${i}`, turn, run: RUN_OF[h.kind], ms: h.ms, steps: h.steps ?? [] });
     if (h.summary && h.kind === "answer") {
-      items.push({ kind: "answer", key: `a${i}`, turn, text: h.summary, label: h.label ?? null, suggestCode: h.suggestCode === true, routed: h.routed === true, nodeId: h.nodeId ?? null });
+      items.push({ kind: "answer", key: `a${i}`, turn, text: h.summary, label: h.label ?? null, suggestCode: h.suggestCode === true, routed: h.routed === true, nodeId: h.nodeId ?? null, providerTag: providerTag(h.provider) });
     } else if (h.summary) {
       items.push({ kind: "assistant", key: `a${i}`, turn, text: h.summary, element: h.kind === "element", label: h.label ?? null, nodeId: h.nodeId ?? null });
     }

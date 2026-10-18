@@ -123,6 +123,7 @@ export function scaleRect(r: Rect, from: { w: number; h: number }, to: { w: numb
 /** Request body for a "screen" locate: the user's box travels as cursor (its center) plus a hint. Never logged. */
 export function buildScreenLocateRequest(image: string, imageSize: { w: number; h: number }, box: Rect) {
   return {
+    mode: "commit" as const,
     input: {
       source: "screen" as const,
       image,

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
-  STEP, STEP_COUNT, browserFixCopy, classifyMicError, clampStep, defaultModeFor, detectBrowser, growHeading, isLastStep, isMacPlatform, levelFromBytes,
+  STEP_COUNT, browserFixCopy, classifyMicError, clampStep, defaultModeFor, detectBrowser, growHeading, isLastStep, isMacPlatform, levelFromBytes,
   micStatus, nextStep, openMic, pointingHint, prevStep, requestMic, sampleReply, setupSummary, shouldShowOnboarding,
 } from "./steps";
 import { resolveDeviceId } from "./permissions";
@@ -13,21 +13,14 @@ describe("onboarding steps", () => {
     expect(defaultModeFor("build")).toBe("code");
     expect(defaultModeFor("both")).toBe("code");
   });
-  it("clamps navigation across six steps", () => {
-    expect(STEP_COUNT).toBe(6);
+  it("clamps navigation across five steps", () => {
+    expect(STEP_COUNT).toBe(5);
     expect(prevStep(0)).toBe(0);
-    expect(nextStep(5)).toBe(5);
+    expect(nextStep(4)).toBe(4);
     expect(nextStep(0)).toBe(1);
-    expect(clampStep(9)).toBe(5);
-    expect(isLastStep(5)).toBe(true);
-    expect(isLastStep(4)).toBe(false);
-  });
-  it("orders the steps with the look choice right after Welcome", () => {
-    expect(STEP).toEqual({ welcome: 0, look: 1, you: 2, permissions: 3, tryIt: 4, done: 5 });
-    expect(nextStep(STEP.welcome)).toBe(STEP.look);
-    expect(nextStep(STEP.look)).toBe(STEP.you);
-    expect(prevStep(STEP.you)).toBe(STEP.look);
-    expect(Object.keys(STEP)).toHaveLength(STEP_COUNT);
+    expect(clampStep(9)).toBe(4);
+    expect(isLastStep(4)).toBe(true);
+    expect(isLastStep(3)).toBe(false);
   });
   it("shows on first run or ?onboarding=1, never on the shared viewer", () => {
     expect(shouldShowOnboarding(false, "", null)).toBe(true);

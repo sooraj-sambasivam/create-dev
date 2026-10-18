@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-10-18T08:34:31.470Z",
+  "api": ":3002 (MOCK_AI=0)",
+  "target": "t01-transit-timetable",
+  "totalMs": 16258,
+  "steps": [
+    {
+      "step": "locate(commit)",
+      "ms": 8029,
+      "status": 200,
+      "ok": true,
+      "detail": {
+        "hasAsk": true,
+        "cropUsed": {
+          "x": 25,
+          "y": 420,
+          "w": 1415,
+          "h": 60
+        }
+      }
+    },
+    {
+      "step": "extract",
+      "ms": 1408,
+      "status": 200,
+      "ok": true,
+      "detail": {
+        "provider": "perceptron",
+        "kind": "list",
+        "rows": 1,
+        "cols": 8
+      }
+    },
+    {
+      "step": "lift",
+      "ms": 1477,
+      "status": 200,
+      "ok": true,
+      "detail": {
+        "provider": "claude",
+        "url": "http://localhost:5175/?p=m0vtftcqio"
+      }
+    },
+    {
+      "step": "open app (GET prototype)",
+      "ms": 1,
+      "status": 200,
+      "ok": true
+    },
+    {
+      "step": "submit row",
+      "ms": 2,
+      "status": 200,
+      "ok": true
+    },
+    {
+      "step": "chat about the chart",
+      "ms": 3534,
+      "status": 200,
+      "ok": true,
+      "detail": {
+        "provider": "inkling",
+        "answerChars": 270
+      }
+    },
+    {
+      "step": "edit: make this bigger",
+      "ms": 1807,
+      "status": 200,
+      "ok": true,
+      "detail": {
+        "nodes": 1,
+        "summary": "I made the page title larger by setting it to the biggest heading size. The text and everything else on the page are unc"
+      }
+    }
+  ]
+}

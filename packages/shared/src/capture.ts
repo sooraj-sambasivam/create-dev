@@ -145,9 +145,15 @@ export const PipelineTraceSchema = z.object({
 });
 export type PipelineTrace = z.infer<typeof PipelineTraceSchema>;
 
+/** "hover": DOM/AX/Jev only, inside the 300 ms label budget. "commit": adds Perceptron detect (8 s cap) and Gemini when keyed. Omitted keeps the legacy all-provider chain. */
+export const LOCATE_MODES = ["hover", "commit"] as const;
+export const LocateModeSchema = z.enum(LOCATE_MODES);
+export type LocateMode = z.infer<typeof LocateModeSchema>;
+
 export const LocateRequestSchema = z.object({
   input: CaptureInputSchema,
   providers: z.array(Str(40)).max(10).optional(),
+  mode: LocateModeSchema.optional(),
 });
 export type LocateRequest = z.infer<typeof LocateRequestSchema>;
 

@@ -173,6 +173,52 @@ export function liftSteps(ms: number, readMs: number): StepRecord[] {
 
 type Labeler = (n: Node) => string;
 
+const clip = (t: string, n = 28) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+
+function firstHeading(nodes: Node[]): string | null {
+  let found: string | null = null;
+  walkNodes(nodes, (n) => {
+    if (found === null && n.type === "heading") {
+      const t = n.text.replace(/\s+/g, " ").trim();
+      if (t) found = t;
+    }
+  });
+  return found;
+}
+
+/** A role guess for a section with no heading: Form, Table, Chart, Pricing, Features, Hero or Footer. */
+export function inferSectionRole(node: Node, index: number, total: number): string | null {
+  if (node.type !== "container") return null;
+  let inputs = 0;
+  let tables = 0;
+  let charts = 0;
+  let buttons = 0;
+  let money = false;
+  walkNodes(node.children, (n) => {
+    if (n.type === "textbox" || n.type === "select" || n.type === "checkbox") inputs++;
+    else if (n.type === "table") tables++;
+    else if (n.type === "chart") charts++;
+    else if (n.type === "button") buttons++;
+    else if (n.type === "text" && /[$€£]\s?\d|\/\s?(mo|month|yr|year)/i.test(n.text)) money = true;
+  });
+  if (inputs > 0) return "Form";
+  if (tables > 0) return "Table";
+  if (charts > 0) return "Chart";
+  if (money) return "Pricing";
+  if (node.children.filter((c) => c.type === "container").length >= 3) return "Features";
+  if (total > 1 && index === total - 1) return "Footer";
+  if (index === 0 && buttons > 0) return "Hero";
+  return null;
+}
+
+/** The name a result row shows for a top-level section: its heading text, else its role, else the fallback label. */
+export function sectionName(node: Node, index: number, total: number, fallback: string): string {
+  if (node.type !== "container") return fallback;
+  const h = firstHeading(node.children);
+  if (h) return clip(h);
+  return inferSectionRole(node, index, total) ?? "Section";
+}
+
 function connectionRows(screen: Screen): ResultRow[] {
   const rows: ResultRow[] = [];
   walkNodes(screen.children, (n) => {
@@ -188,7 +234,8 @@ function connectionRows(screen: Screen): ResultRow[] {
 export function buildResult(before: Screen | null, after: Screen, label: Labeler): ResultData {
   const stats = analyzeScreen(after);
   if (!before || before.children.length === 0) {
-    const rows: ResultRow[] = after.children.map((n) => ({ label: label(n), stat: plural(subtreeSize(n), "element") }));
+    const total = after.children.length;
+    const rows: ResultRow[] = after.children.map((n, i) => ({ label: sectionName(n, i, total, label(n)), stat: plural(subtreeSize(n), "element") }));
     rows.push(...connectionRows(after));
     return { title: "Built page", meta: plural(stats.elements, "element"), rows };
   }
@@ -197,21 +244,23 @@ export function buildResult(before: Screen | null, after: Screen, label: Labeler
   const rows: ResultRow[] = [];
   let added = 0;
   let changed = 0;
-  for (const n of after.children) {
+  const total = after.children.length;
+  for (const [i, n] of after.children.entries()) {
     const prev = beforeById.get(n.id);
     if (!prev) {
       added++;
-      rows.push({ label: label(n), stat: "added" });
+      rows.push({ label: sectionName(n, i, total, label(n)), stat: "added" });
     } else if (JSON.stringify(prev) !== JSON.stringify(n)) {
       changed++;
-      rows.push({ label: label(n), stat: "changed" });
+      rows.push({ label: sectionName(n, i, total, label(n)), stat: "changed" });
     }
   }
   let removed = 0;
-  for (const n of before.children) {
+  const beforeTotal = before.children.length;
+  for (const [i, n] of before.children.entries()) {
     if (!afterIds.has(n.id)) {
       removed++;
-      rows.push({ label: label(n), stat: "removed" });
+      rows.push({ label: sectionName(n, i, beforeTotal, label(n)), stat: "removed" });
     }
   }
   const prevData = analyzeScreen(before).data;

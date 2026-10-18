@@ -134,3 +134,21 @@ describe("deriveItems", () => {
     expect(new Set(turns.map((t) => t.turn)).size).toBe(2);
   });
 });
+
+import { providerTag } from "./items";
+
+describe("providerTag", () => {
+  it("names each answering provider", () => {
+    expect(providerTag("inkling")).toBe("Inkling · Thinking Machines");
+    expect(providerTag("claude")).toBe("Claude");
+    expect(providerTag("perceptron+claude")).toBe("Perceptron + Claude");
+  });
+  it("shows nothing for mock or unknown", () => {
+    expect(providerTag("mock")).toBeNull();
+    expect(providerTag(undefined)).toBeNull();
+  });
+  it("rides on the answer item", () => {
+    const items = deriveItems({ history: [{ prompt: "q", summary: "a", kind: "answer", provider: "claude" } as never], status: "idle", error: null });
+    expect(items.find((i) => i.kind === "answer")).toMatchObject({ providerTag: "Claude" });
+  });
+});
