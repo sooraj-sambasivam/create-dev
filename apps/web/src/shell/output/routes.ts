@@ -24,13 +24,17 @@ export const ROUTES: RouteInfo[] = [
   { method: "GET", path: "/api/image", summary: "Redirect to a matching stock photo", model: "Openverse", streams: false, fallback: "404 placeholder", clients: ["editor"], providers: ["openverse"], owner: "core" },
   { method: "GET", path: "/api/image/resolve", summary: "Real photo URL for Publish", model: "Openverse", streams: false, fallback: "404 placeholder", clients: ["output"], providers: ["openverse"], owner: "core" },
   { method: "GET", path: "/api/icons/search", summary: "Search icons by style", model: "Iconify", streams: false, fallback: "Same", clients: ["editor"], providers: ["iconify"], owner: "core" },
+  { method: "GET", path: "/api/icons/svg", summary: "One icon as SVG, cached 24 h", model: "Iconify", streams: false, fallback: "Last cached copy, or 502 when offline", clients: ["editor", "canvas"], providers: ["iconify"], owner: "core" },
   { method: "GET", path: "/api/health", summary: "Which keys are present, and mock mode", model: "none", streams: false, fallback: "Same", clients: ["output"], providers: [], owner: "core" },
   { method: "POST", path: "/api/generate-sketch", summary: "Canvas PNG + shapes to a Screen", model: "Sonnet 5.5", streams: false, fallback: "Layout from shapes", clients: ["canvas"], providers: ["claude"], owner: "ours" },
+  { method: "POST", path: "/api/canvas-ops", summary: "Canvas drawing to edit ops on the current Screen", model: "Perceptron, Sonnet 5.5", streams: false, fallback: "Mock ops (MOCK_AI=1)", clients: ["canvas"], providers: ["perceptron", "claude"], owner: "ours" },
   { method: "POST", path: "/api/demo", summary: "Narration session to a clickable page, with progress steps", model: "Sonnet 5.5", streams: true, fallback: "Page from session text", clients: ["narrate"], providers: ["claude"], owner: "ours" },
   { method: "POST", path: "/api/route-intent", summary: "Spoken line to command, target and action", model: "Haiku 5.5", streams: false, fallback: "Keyword router", clients: ["narrate"], providers: ["claude"], owner: "ours" },
   { method: "GET", path: "/api/voice-token", summary: "Single-use realtime Scribe token; the key stays on the server", model: "ElevenLabs Scribe", streams: false, fallback: "Batch transcription", clients: ["narrate", "voice"], providers: ["elevenlabs"], owner: "ours" },
   { method: "POST", path: "/api/prototypes", summary: "Save a page and return a share link", model: "MongoDB or file store", streams: false, fallback: "File store", clients: ["output"], providers: ["store"], owner: "ours" },
   { method: "GET", path: "/api/prototypes/:id", summary: "Load a shared page", model: "MongoDB or file store", streams: false, fallback: "File store", clients: ["output"], providers: ["store"], owner: "ours" },
+  { method: "GET", path: "/api/live", summary: "Catalog of live sources and their params", model: "none", streams: false, fallback: "Same", clients: [], providers: [], owner: "ours" },
+  { method: "GET", path: "/api/live/:id", summary: "Live value: weather, GitHub stars, crypto, HN top, local time, YouTube views (60 s cache)", model: "Open-Meteo, GitHub, CoinGecko, HN, YouTube", streams: false, fallback: "No YouTube value without its key", clients: [], providers: ["live-apis"], owner: "ours" },
 ];
 
 export type DiagramNode = { id: string; label: string; col: 0 | 1 | 2 };
@@ -49,6 +53,8 @@ export const DIAGRAM_NODES: DiagramNode[] = [
   { id: "iconify", label: "Iconify", col: 2 },
   { id: "store", label: "MongoDB / file", col: 2 },
   { id: "files", label: "Local uploads", col: 2 },
+  { id: "perceptron", label: "Perceptron", col: 2 },
+  { id: "live-apis", label: "Live data APIs", col: 2 },
 ];
 
 /** Edges derived from the route table so the diagram cannot drift from it. */

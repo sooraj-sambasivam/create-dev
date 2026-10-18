@@ -409,7 +409,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
           />
         )}
 
-        <div className="@container pointer-events-none absolute inset-x-0 top-2 z-[500] flex justify-center px-2">
+        <div data-canvas-toolbar className="@container pointer-events-none absolute inset-x-0 top-2 z-[500] flex justify-center px-2">
           <CanvasToolbar
             busy={busy}
             narrating={narrating}

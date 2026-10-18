@@ -56,9 +56,24 @@ export function fitZoom(vpW: number): number {
   return Math.max(0.05, ((Number.isFinite(vpW) ? vpW : 0) - PAGE_PAD_X * 2) / PAGE_W);
 }
 
-/** TOP_INSET_PX expressed in page units at the fit-x zoom for this pane width. */
-export function topInsetUnits(vpW: number): number {
-  return Math.ceil(TOP_INSET_PX / fitZoom(vpW));
+/** Gap in screen px between the toolbar's bottom edge and the page frame top. */
+export const TOOLBAR_GAP_PX = 12;
+
+/** Screen px the page frame top sits below the host top: measured toolbar bottom + gap (fallback constant until measured). */
+export function topInsetPx(toolbarBottomPx: number | null | undefined): number {
+  return typeof toolbarBottomPx === "number" && Number.isFinite(toolbarBottomPx) && toolbarBottomPx > 0
+    ? Math.ceil(toolbarBottomPx + TOOLBAR_GAP_PX)
+    : TOP_INSET_PX;
+}
+
+/** Inset expressed in page units at the fit-x zoom for this pane width (px defaults to the constant fallback). */
+export function topInsetUnits(vpW: number, px: number = TOP_INSET_PX): number {
+  return Math.ceil(px / fitZoom(vpW));
+}
+
+/** Initial camera y: the top-most allowed position, identical to what scrolling up clamps to. */
+export function initialCameraY(topInset: number, pageH: number, viewH: number): number {
+  return clampCameraY(topInset, topInset, pageH, viewH);
 }
 
 /**

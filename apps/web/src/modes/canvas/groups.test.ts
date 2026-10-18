@@ -95,7 +95,7 @@ describe("popoverPosition", () => {
   });
 });
 
-import { clampCameraY, topInsetUnits, TOP_INSET_PX, fitZoom, penColorFor } from "./groups";
+import { clampCameraY, initialCameraY, topInsetPx, TOOLBAR_GAP_PX, topInsetUnits, TOP_INSET_PX, fitZoom, penColorFor } from "./groups";
 
 describe("page camera clamp", () => {
   it("stops scrolling up exactly at the initial top position", () => {
@@ -115,6 +115,17 @@ describe("page camera clamp", () => {
   it("converts the toolbar inset to page units", () => {
     expect(topInsetUnits(1200 + 48)).toBe(TOP_INSET_PX);
     expect(topInsetUnits(648)).toBe(Math.ceil(TOP_INSET_PX / fitZoom(648)));
+  });
+  it("initial camera y equals the clamped top (min) position", () => {
+    for (const [inset, pageH, viewH] of [[100, 1800, 700], [60, 600, 900], [0, 2400, 500]]) {
+      expect(initialCameraY(inset, pageH, viewH)).toBe(clampCameraY(1e9, inset, pageH, viewH));
+      expect(initialCameraY(inset, pageH, viewH)).toBe(inset);
+    }
+  });
+  it("derives the inset from the measured toolbar bottom plus 12px", () => {
+    expect(topInsetPx(58)).toBe(58 + TOOLBAR_GAP_PX);
+    expect(topInsetPx(null)).toBe(TOP_INSET_PX);
+    expect(topInsetUnits(1248, topInsetPx(60))).toBe(72);
   });
   it("uses a brighter pen in dark", () => {
     expect(penColorFor("light")).toBe("blue");

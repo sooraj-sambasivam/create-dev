@@ -5,7 +5,8 @@ import { useScreenStore } from "../../../store/screenStore";
 import { createRecorder } from "../../../narrate/session";
 import { createVoice, DRAIN_TIMEOUT_MS } from "../../../narrate/voice";
 import { Lasso, type LassoEvent } from "./Lasso";
-import { MicPill, type MicState } from "./MicPill";
+import type { MicState } from "./MicPill";
+import { NarrateBarView } from "./NarrateBarView";
 import { buildIntentRequest, resolvePageTargets, type LassoRect, type LassoTarget } from "./targets";
 
 export type NarrateOverlayProps = {
@@ -200,39 +201,17 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
 
       {recording && (
         <>
-          <motion.div
-            className="pointer-events-auto absolute flex max-w-[min(640px,calc(100vw-32px))] -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-surface p-1 pl-4 text-ink shadow-soft"
-            style={{ left: "50%", top: 52 }}
-            aria-busy={finishing}
-            initial={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: dur }}
-          >
-            <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full bg-bad ${reduce ? "" : "animate-pulse"}`} />
-            <span className="text-[14px] tabular-nums" aria-label="Elapsed time">{fmt(elapsed)}</span>
-            <MicPill state={mic} hint={micHint} />
-            <span className="min-w-0 max-w-[260px] truncate text-[14px] text-ink-2" aria-live="polite">
-              {finishing ? "Finishing…" : tail || "Listening…"}
-            </span>
-            <button
-              type="button"
-              aria-label="Finish narration"
-              onClick={() => void finish()}
-              disabled={finishing}
-              className={`h-8 rounded-full bg-accent px-3 text-[14px] text-white transition-opacity duration-150 dark:text-shell disabled:opacity-50 ${focusRing}`}
-            >
-              Done
-            </button>
-            <button
-              type="button"
-              aria-label="Cancel narration"
-              onClick={cancel}
-              disabled={finishing}
-              className={`h-8 rounded-full px-3 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover disabled:opacity-50 ${focusRing}`}
-            >
-              Cancel
-            </button>
-          </motion.div>
+          <NarrateBarView
+            reduce={reduce}
+            dur={dur}
+            elapsed={fmt(elapsed)}
+            mic={mic}
+            micHint={micHint}
+            text={finishing ? "Finishing…" : tail || "Listening…"}
+            finishing={finishing}
+            onFinish={() => void finish()}
+            onCancel={cancel}
+          />
           <Lasso resolve={resolve} onLasso={onLasso} />
         </>
       )}

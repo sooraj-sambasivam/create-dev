@@ -45,6 +45,6 @@ describe("diagram model", () => {
   it("lists routes per node", () => {
     expect(routesFor("scribe").map((r) => r.path)).toContain("/api/voice-token");
     expect(routesFor("jev").map((r) => r.path)).toEqual(["/api/route-intent"]);
-    expect(routesFor("canvas").map((r) => r.path)).toEqual(["/api/generate-sketch"]);
+    expect(routesFor("canvas").map((r) => r.path)).toEqual(["/api/icons/svg", "/api/generate-sketch", "/api/canvas-ops"]);
   });
 });
