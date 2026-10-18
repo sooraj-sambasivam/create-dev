@@ -187,6 +187,40 @@ export const SelectSchema = z.object({
   options: z.array(z.string()),
 });
 
+/** Where a data element reads from: a route on the project's backend sandbox. */
+export const DataSourceSchema = z.object({
+  route: z
+    .string()
+    .regex(/^\/[\w\-./:]*$/, "route must be an API path starting with '/', e.g. '/orders/today'")
+    .describe("Backend route path from the <routes> list, e.g. '/orders/today'"),
+  params: z.record(z.string(), z.string()).nullish().describe("Optional query parameters sent with the request"),
+});
+
+export const DATA_FORMATS = ["text", "number", "compact", "currency", "date"] as const;
+
+/** A value read live from the backend and shown on the page (a counter, price, status, date). */
+export const DataSchema = z.object({
+  ...common,
+  type: z.literal("data"),
+  source: DataSourceSchema,
+  field: z
+    .string()
+    .min(1)
+    .describe("Dot path into the JSON the route returns, e.g. 'total' or 'stats.count'"),
+  format: z
+    .enum(DATA_FORMATS)
+    .default("text")
+    .describe("number = 1,234; compact = 1.2K; currency = $1,234.50; date = a readable date; text = as is"),
+  label: z.string().nullish().describe("Small caption above the value, e.g. 'Orders today'"),
+  fallback: z.string().default("—").describe("Shown while the value is unavailable, or if the backend is down"),
+  refreshSec: z
+    .number()
+    .min(5)
+    .max(3600)
+    .nullish()
+    .describe("Re-fetch every N seconds (5-3600); omit to load once"),
+});
+
 export const DividerSchema = z.object({
   ...common,
   type: z.literal("divider"),
@@ -239,6 +273,7 @@ export const NodeSchema = z.discriminatedUnion("type", [
   TextboxSchema,
   CheckboxSchema,
   SelectSchema,
+  DataSchema,
   DividerSchema,
   SpacerSchema,
   ContainerSchema,
@@ -277,6 +312,8 @@ export const GenerateRequestSchema = z.object({
   history: z.array(z.string().max(4000)).max(20).optional(),
   /** Files the user uploaded; the model may place them by url. */
   assets: z.array(AssetSchema).max(50).optional(),
+  /** Backend routes that exist for this project (e.g. "/orders/today"); `data` elements may only use these. */
+  routes: z.array(z.string().max(200)).max(100).optional(),
 });
 
 /** Edit one element (and its children) instead of regenerating the whole page. */
@@ -285,6 +322,7 @@ export const EditNodeRequestSchema = z.object({
   screen: ScreenSchema,
   nodeId: z.string().min(1).max(200),
   assets: z.array(AssetSchema).max(50).optional(),
+  routes: z.array(z.string().max(200)).max(100).optional(),
 });
 
 export const EditNodeResponseSchema = z.object({
@@ -306,6 +344,8 @@ export type Link = z.infer<typeof LinkSchema>;
 export type Icon = z.infer<typeof IconSchema>;
 export type Image = z.infer<typeof ImageSchema>;
 export type Avatar = z.infer<typeof AvatarSchema>;
+export type DataNode = z.infer<typeof DataSchema>;
+export type DataFormat = (typeof DATA_FORMATS)[number];
 export type Container = z.infer<typeof ContainerSchema>;
 export type Node = z.infer<typeof NodeSchema>;
 export type NodeType = Node["type"];

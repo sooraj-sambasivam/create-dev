@@ -25,7 +25,14 @@ function fixIcon(value: unknown): string | null {
   return null;
 }
 
-export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new Set<string>()): Json[] {
+/** Normalised route key: no query string, no trailing slash. */
+const routeKey = (r: string) => r.split("?")[0].replace(/\/+$/, "") || "/";
+
+/**
+ * `routes` are the backend routes that exist; `data` elements pointing anywhere else are dropped.
+ * Without routes, every data element is dropped (there is nothing to read from).
+ */
+export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new Set<string>(), routes: readonly string[] = []): Json[] {
   if (!Array.isArray(input)) return [];
   const out: Json[] = [];
   for (const raw of input) {
@@ -35,6 +42,21 @@ export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new 
     if (typeof type !== "string" || !(NODE_TYPES as readonly string[]).includes(type)) {
       notes.push(`Skipped an unsupported element type "${String(type)}".`);
       continue;
+    }
+
+    if (type === "data") {
+      const route = isObj(node.source) && typeof node.source.route === "string" ? routeKey(node.source.route) : null;
+      if (!route || !routes.some((r) => routeKey(r) === route)) {
+        notes.push("Skipped a live-data element because no matching backend route exists.");
+        continue;
+      }
+      const src: Json = { ...(node.source as Json) };
+      if (isObj(src.params)) {
+        src.params = Object.fromEntries(Object.entries(src.params).map(([k, v]) => [k, String(v)]));
+      } else delete src.params;
+      node.source = src;
+      if (typeof node.refreshSec === "number") node.refreshSec = Math.min(3600, Math.max(5, Math.round(node.refreshSec)));
+      else delete node.refreshSec;
     }
 
     let nid = typeof node.id === "string" && node.id.trim() ? node.id.trim() : `${type}-${taken.size + 1}`;
@@ -78,16 +100,16 @@ export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new 
         return row.length >= cols ? row.slice(0, cols) : [...row, ...Array(cols - row.length).fill("")];
       });
     }
-    if (type === "container") node.children = sanitizeNodes(node.children, notes, taken);
+    if (type === "container") node.children = sanitizeNodes(node.children, notes, taken, routes);
     out.push(node);
   }
   return out;
 }
 
-export function sanitizeScreen(input: unknown, notes: string[] = []): unknown {
+export function sanitizeScreen(input: unknown, notes: string[] = [], routes: readonly string[] = []): unknown {
   if (!isObj(input)) return input;
   const screen: Json = { ...input };
   if (screen.accent != null && !(typeof screen.accent === "string" && COLOR_RE.test(screen.accent))) delete screen.accent;
-  screen.children = sanitizeNodes(screen.children, notes);
+  screen.children = sanitizeNodes(screen.children, notes, new Set<string>(), routes);
   return screen;
 }

@@ -60,6 +60,7 @@ export const TYPE_LABELS: Record<string, string> = {
   textbox: "Text box",
   checkbox: "Checkbox",
   select: "Dropdown",
+  data: "Live data",
   divider: "Divider",
   spacer: "Spacer",
 };
