@@ -30,6 +30,17 @@ export function buildMockOps(req: Pick<CanvasOpsRequest, "label" | "shapes" | "r
     const text = clean(button[1]);
     node = { id: `button-${slug(text, "action")}`, type: "button", label: text, variant: "primary" };
     summary = `Added a "${text}" button.`;
+  } else if (/\b(picture|photo|image|pic|illustration|logo)\b/.test(lower)) {
+    // "cat picture" becomes a photo of a cat, searched by the words that are not "picture".
+    const subject = clean(lower.replace(/\b(a|an|the|of|picture|photo|image|pic|illustration|logo|here|big|large|small)\b/g, " ")) || "abstract";
+    node = { id: `image-${slug(subject, "photo")}`, type: "image", alt: sentence(`A photo of ${subject}`), query: subject, size: "full", aspect: "video" };
+    summary = `Added a photo of ${subject}.`;
+  } else if (/^\s*(add\s+)?(a\s+)?(heading|title|headline)\b/.test(lower)) {
+    // "add a heading greeting users here" becomes the heading the user described, not the instruction.
+    const about = clean(lower.replace(/^\s*(add\s+)?(a\s+)?(heading|title|headline)\s*/, "").replace(/\b(here|that says|saying)\b/g, " "));
+    const text = /greet/.test(about) ? "Welcome back" : sentence(about || "Welcome");
+    node = { id: `heading-${slug(text, "title")}`, type: "heading", text, level: 1 };
+    summary = `Added the heading "${text}".`;
   } else if (/pricing|plans?\b/.test(lower)) {
     const tier = (name: string, price: string, perks: string[], accent: boolean): Json => ({
       id: `plan-${slug(name, "tier")}`,

@@ -10,7 +10,7 @@ export default defineConfig({
     // Tunnel hostnames (phone demo): cloudflared, ngrok, Vercel previews.
     allowedHosts: [".trycloudflare.com", ".ngrok-free.app", ".vercel.app"],
     proxy: {
-      "/api": { target: "http://localhost:3001", changeOrigin: true },
+      "/api": { target: process.env.API_TARGET || "http://localhost:3001", changeOrigin: true },
     },
   },
 });
