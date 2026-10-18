@@ -34,11 +34,13 @@ export type FanDir = "right" | "left";
 /** Horizontal room the arc needs beside Go's centre: radius, half a bubble, and a margin. */
 export const FAN_REACH = FAN_RADIUS + 16 + 8;
 
-/** `left` mirrors the arc across Go's vertical axis, for when the right side is clipped or covered. */
+/** The `left` arc stays above Go (top, then up-left, then left), so no bubble drops below the composer. */
+export const FAN_ANGLES_LEFT = [-75, -75 - FAN_STEP, -75 - 2 * FAN_STEP];
+
+/** `left` is for when the right side is clipped or covered. */
 export function fanOffset(index: number, dir: FanDir = "right"): { x: number; y: number } {
-  const rad = (FAN_ANGLES[index] * Math.PI) / 180;
-  const x = Math.round(Math.cos(rad) * FAN_RADIUS);
-  return { x: dir === "left" ? -x : x, y: Math.round(Math.sin(rad) * FAN_RADIUS) };
+  const rad = ((dir === "left" ? FAN_ANGLES_LEFT : FAN_ANGLES)[index] * Math.PI) / 180;
+  return { x: Math.round(Math.cos(rad) * FAN_RADIUS), y: Math.round(Math.sin(rad) * FAN_RADIUS) };
 }
 
 /** Prefer the right; mirror left when the right has less than FAN_REACH and the left has more. */

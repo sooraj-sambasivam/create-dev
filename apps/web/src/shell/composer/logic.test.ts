@@ -19,11 +19,10 @@ describe("mentions", () => {
 });
 
 describe("fan + placeholder", () => {
-  it("arcs to the right of Go, or mirrored to the left", () => {
+  it("arcs to the right of Go, or above it to the left", () => {
     for (let i = 0; i < 3; i++) {
       expect(fanOffset(i, "right").x).toBeGreaterThan(0);
-      expect(fanOffset(i, "left").x).toBe(-fanOffset(i, "right").x);
-      expect(fanOffset(i, "left").y).toBe(fanOffset(i, "right").y);
+      expect(fanOffset(i, "left").y).toBeLessThan(0);
     }
     expect(fanOffset(0, "right").y).toBeLessThan(0);
     expect(fanOffset(0, "left").y).toBeLessThan(0);
