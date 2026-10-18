@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, CircleAlert, Copy, Database, Download, FileText, Globe, MousePointerClick, RefreshCw, TextCursorInput, type LucideIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, CircleAlert, Copy, Database, Download, FileText, Globe, MousePointerClick, TextCursorInput, type LucideIcon } from "lucide-react";
 import type { StoredSubmission } from "@create/shared";
 import { listSubmissions, resolveAppId } from "../../components/forms";
 import { downloadFile, exportSite } from "../../lib/exportSite";
@@ -7,18 +7,20 @@ import { isTechnical, useProfile } from "../../onboarding/profile";
 import { useScreenStore } from "../../store/screenStore";
 import { curlExample, deriveAppBackend, sampleBody, type AppBackend, type BackendStatus } from "./appBackend";
 import { fetchHealth, lastSharedUrl } from "./shareApi";
+import { liveColumns, newIds, submissionsFor } from "./liveRows";
+import { button, chip, dot } from "../../ui/styles";
 
 const PILL: Record<BackendStatus, { label: string; cls: string }> = {
   connected: { label: "Connected", cls: "bg-ok" },
   sample: { label: "Sample data", cls: "bg-warn" },
-  setup: { label: "Needs setup", cls: "bg-bad" },
+  setup: { label: "Needs setup", cls: "bg-warn" },
 };
 
 function Pill({ status }: { status: BackendStatus }) {
   const p = PILL[status];
   return (
-    <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full bg-tray px-2 text-[12px] text-ink-2">
-      <span className={`size-2 rounded-full ${p.cls}`} aria-hidden />
+    <span className={`${chip.status} shrink-0`}>
+      <span className={`size-1.5 rounded-full ${p.cls}`} aria-hidden />
       {p.label}
     </span>
   );
@@ -37,7 +39,7 @@ function Section({ icon: Icon, title, children }: { icon: LucideIcon; title: str
 }
 
 const card = "flex flex-col gap-2 rounded-lg border border-line bg-surface p-3";
-const btn = "flex h-8 items-center justify-center gap-1.5 rounded-lg border border-line px-3 text-[14px] text-ink transition-colors duration-150 hover:bg-hover disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const btn = `${button.secondary} w-full`;
 
 function Code({ children }: { children: string }) {
   const [copied, setCopied] = useState(false);
@@ -56,41 +58,85 @@ function Code({ children }: { children: string }) {
   );
 }
 
-function Responses({ appId, formId, dev }: { appId: string; formId: string; dev: boolean }) {
+const POLL_MS = 3000;
+
+/** Newest 5 responses as a table, polled every 3s while the tab is visible. New rows flash once. */
+function Responses({ appId, formId, fields, dev }: { appId: string; formId: string; fields: { name: string; label: string }[]; dev: boolean }) {
   const [rows, setRows] = useState<StoredSubmission[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [visible, setVisible] = useState(() => typeof document === "undefined" || document.visibilityState !== "hidden");
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
+  const known = useRef<Set<string> | null>(null);
 
-  const load = useCallback((signal?: AbortSignal) => {
-    setBusy(true);
-    listSubmissions(appId, signal).then(
-      (r) => { setRows(r); setFailed(false); setBusy(false); },
-      () => { if (!signal?.aborted) { setFailed(true); setBusy(false); } },
-    );
-  }, [appId]);
   useEffect(() => {
-    const ctl = new AbortController();
-    load(ctl.signal);
-    return () => ctl.abort();
-  }, [load]);
+    const onVis = () => setVisible(document.visibilityState !== "hidden");
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
-  const mine = (rows ?? []).filter((r) => r.formId === formId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  useEffect(() => {
+    if (!visible) return;
+    const ctl = new AbortController();
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const tick = () =>
+      listSubmissions(appId, ctl.signal).then(
+        (all) => {
+          if (ctl.signal.aborted) return;
+          const mine = submissionsFor(all, formId);
+          const added = newIds(known.current, mine);
+          known.current = new Set(mine.map((r) => r.id));
+          setRows(mine);
+          setFailed(false);
+          if (added.length) {
+            setFresh((p) => new Set([...p, ...added]));
+            timers.push(setTimeout(() => setFresh((p) => new Set([...p].filter((id) => !added.includes(id)))), 2200));
+          }
+        },
+        () => { if (!ctl.signal.aborted) setFailed(true); },
+      );
+    void tick();
+    const iv = setInterval(tick, POLL_MS);
+    return () => {
+      ctl.abort();
+      clearInterval(iv);
+      timers.forEach(clearTimeout);
+    };
+  }, [appId, formId, visible]);
+
+  const cols = liveColumns(fields, rows ?? []);
+  const count = rows?.length ?? 0;
+  const live = visible && !failed && rows !== null;
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex h-8 items-center justify-between">
-        <span className="text-[14px] text-ink-2">{failed ? "Couldn't load responses" : rows === null ? "Loading…" : `${mine.length} ${mine.length === 1 ? "response" : "responses"}`}</span>
-        <button aria-label="Refresh responses" title="Refresh" disabled={busy} className="grid size-8 place-items-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => load()}>
-          <RefreshCw size={16} strokeWidth={1.75} className={busy ? "animate-spin" : ""} />
-        </button>
+      <div className="flex h-8 items-center justify-between gap-2">
+        <span className="text-[14px] text-ink">{failed && rows === null ? "Couldn't load responses" : rows === null ? "Loading…" : `${count} ${count === 1 ? "response" : "responses"}`}</span>
+        <span className={chip.status} role="status">
+          <span className={failed ? dot.bad : live ? dot.ok : dot.idle} aria-hidden />
+          {failed ? "Offline" : live ? "Live" : visible ? "Connecting…" : "Paused"}
+        </span>
       </div>
-      {mine.slice(0, 5).map((r) => (
-        <div key={r.id} className="flex gap-2 border-t border-line py-1.5 text-[12px]">
-          <time className="shrink-0 font-mono text-ink-2" title={r.createdAt}>{r.createdAt.slice(11, 19)}</time>
-          <span className={`min-w-0 break-all text-ink ${dev ? "font-mono" : ""}`}>
-            {dev ? JSON.stringify(r.fields) : Object.values(r.fields).filter(Boolean).join(" · ")}
-          </span>
+      {count > 0 && (
+        <div className="overflow-x-auto rounded-lg border border-line">
+          <table className="w-full border-collapse text-left text-[12px]">
+            <thead>
+              <tr className="bg-tray text-ink-2">
+                <th scope="col" className="h-6 px-2 font-normal">Time</th>
+                {cols.map((c) => <th key={c.key} scope="col" className="h-6 px-2 font-normal">{c.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {rows!.slice(0, 5).map((r) => (
+                <tr key={r.id} className={`border-t border-line transition-colors duration-700 ${fresh.has(r.id) ? "bg-hover" : "bg-surface"}`}>
+                  <td className="whitespace-nowrap px-2 py-1.5 font-mono text-ink-2" title={r.createdAt}>{r.createdAt.slice(11, 19)}</td>
+                  {cols.map((c) => (
+                    <td key={c.key} className={`max-w-[160px] truncate px-2 py-1.5 text-ink ${dev ? "font-mono" : ""}`} title={r.fields[c.key]}>{r.fields[c.key] ?? ""}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -167,7 +213,7 @@ export function BackendTab() {
             ) : (
               <p className="text-[14px] text-ink-2">Saves to Create. Asks for: {f.fields.map((x) => x.label).join(", ")}.</p>
             )}
-            <Responses appId={appId} formId={f.id} dev={dev} />
+            <Responses appId={appId} formId={f.id} fields={f.fields} dev={dev} />
           </div>
         ))}
       </Section>

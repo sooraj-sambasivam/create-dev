@@ -16,6 +16,7 @@ export function estimateHeight(n: Node): number {
     case "list": return 28 * Math.max(1, n.items.length) + 16;
     case "rating": return 32;
     case "table": return 48 * (n.rows.length + 1);
+    case "chart": return 360;
     case "accordion": return 64 * Math.max(1, n.items.length);
     case "divider": return 24;
     case "spacer": return { sm: 16, md: 32, lg: 64, xl: 96 }[n.size];

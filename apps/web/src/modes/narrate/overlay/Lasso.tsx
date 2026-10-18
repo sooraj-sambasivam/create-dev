@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { LassoHit, LassoRect, LassoResolver, LassoTarget } from "./targets";
+import { surface } from "../../../ui/styles";
 
 export type LassoEvent = { rect: LassoRect; targets: LassoTarget[]; /** Visible box area by target id, for picking the smallest leaf. */ areas: Record<string, number> };
 
@@ -82,13 +83,13 @@ export function Lasso({ resolve, onLasso, disabled }: { resolve: LassoResolver; 
       {hits.map(({ box }, i) => (
         <div
           key={i}
-          className="absolute rounded-md"
+          className="absolute rounded-lg"
           style={{ left: box.x - 2, top: box.y - 2, width: box.w + 4, height: box.h + 4, boxShadow: "0 0 0 2px var(--color-accent)" }}
         />
       ))}
       {!dragging && rect && hits.length > 0 && (
         <div
-          className="absolute rounded-full border border-line bg-surface px-3 text-[12px] leading-6 text-ink shadow-soft"
+          className={`absolute ${surface.pill} px-3 text-[12px] leading-6 text-ink`}
           style={{ left: rect.x, top: Math.max(8, rect.y - 32) }}
         >
           {hits.length} selected

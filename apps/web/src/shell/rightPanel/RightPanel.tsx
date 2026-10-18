@@ -6,6 +6,7 @@ import { useScreenStore } from "../../store/screenStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { BackendTab } from "../output/BackendTab";
 import { OutputTab } from "../output/OutputTab";
+import { ICON, STROKE, button, segmented } from "../../ui/styles";
 import { ResizeHandle } from "./ResizeHandle";
 import { RIGHT_PANEL_TABS, useRightPanel, type RightPanelTab } from "./rightPanelStore";
 
@@ -64,7 +65,7 @@ export function RightPanel() {
 
   // With nothing selected, Inspect shows the page settings (title, theme, colour, font, files).
   const canInspect = editMode && hasScreen;
-  const inspectHint = !hasScreen ? "Nothing to inspect yet" : "Turn on Edit to inspect";
+  const inspectHint = !hasScreen ? "Nothing to inspect yet" : "Switch to Edit to inspect";
   // A stored "inspect" tab with nothing to inspect shows Output instead.
   const active: RightPanelTab = tab === "inspect" && !canInspect ? "output" : tab;
   const enabled = RIGHT_PANEL_TABS.filter((t) => t !== "inspect" || canInspect);
@@ -117,7 +118,7 @@ export function RightPanel() {
     >
       <ResizeHandle />
       <header className="flex h-12 shrink-0 items-center gap-2 pl-4 pr-3">
-        <div role="tablist" aria-label="Side panel view" className="flex rounded-full bg-tray p-0.5 dark:bg-hover">
+        <div role="tablist" aria-label="Side panel view" className={segmented.root}>
           {RIGHT_PANEL_TABS.map((t) => {
             const disabled = t === "inspect" && !canInspect;
             const selected = active === t;
@@ -136,9 +137,7 @@ export function RightPanel() {
                   disabled={disabled}
                   onClick={() => setTab(t)}
                   onKeyDown={onTabKeyDown}
-                  className={`rounded-full px-3 py-1 text-[14px] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-ink-3 ${
-                    selected ? "bg-surface text-ink shadow-soft" : disabled ? "" : "text-ink-2 hover:text-ink"
-                  }`}
+                  className={`${segmented.item} ${selected ? segmented.active : ""}`}
                 >
                   {LABELS[t]}
                   {t === "inspect" && canInspect && hasSelection && !selected && <span aria-label="Element selected" className="ml-1.5 inline-block size-1.5 rounded-full bg-accent align-middle" />}
@@ -150,17 +149,17 @@ export function RightPanel() {
         <div className="flex-1" />
         <button
           type="button"
-          aria-label="Close panel"
-          title="Close"
+          aria-label="Close side panel"
+          title="Close side panel"
           onClick={close}
-          className="grid size-8 place-items-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className={button.icon}
         >
-          <X size={18} strokeWidth={1.75} />
+          <X size={ICON.lg} strokeWidth={STROKE} />
         </button>
       </header>
 
       <div id="rp-body" role="tabpanel" aria-labelledby={`rp-tab-${active}`} className="flex min-h-0 flex-1 flex-col">
-        {/* Output stays mounted behind the other tabs so the page keeps its state and Export HTML works from Backend. */}
+        {/* Output stays mounted behind the other tabs so the page keeps its state and Export works from Backend. */}
         <div className={active === "output" ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "hidden"}>
           <OutputTab />
         </div>

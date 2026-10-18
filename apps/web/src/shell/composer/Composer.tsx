@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState, type KeyboardEvent } from "react";
 import { ArrowUp, AtSign, AudioWaveform, Crosshair, Loader2, Mic, PanelsTopLeft, Square } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useScreenStore } from "../../store/screenStore";
@@ -21,31 +21,14 @@ import {
   voiceReducer,
 } from "./voice";
 import { FilesMenu, ProjectMenu } from "./menus";
-import { menuItemClass } from "./Popover";
-import { MAX_FIELD_PX, applyMention, filterMentions, pickFanDir, type FanDir, mentionQuery, isStoreBusy, placeholderFor, routeFor, defaultModeFor, routesToSelection, type WorkMode } from "./logic";
+import { ICON, STROKE, chip, focusRing, menuItem, segmented, surface, text } from "../../ui/styles";
+import { MAX_FIELD_PX, applyMention, fanRise, filterMentions, mentionQuery, isStoreBusy, placeholderFor, routeFor, defaultModeFor, routesToSelection, type WorkMode } from "./logic";
 import { selectedLabel } from "./selection";
 
-/** Composer-local aliases of the shell theme tokens (index.css), so both themes apply. */
-const TOKENS = {
-  "--c-surface": "var(--color-surface)",
-  "--c-tray": "var(--color-tray)",
-  "--c-hover": "var(--color-hover)",
-  "--c-line": "var(--color-line)",
-  "--c-ink": "var(--color-ink)",
-  "--c-ink-2": "var(--color-ink-2)",
-  "--c-ink-3": "var(--color-ink-3)",
-  "--c-accent": "var(--color-accent)",
-  "--c-ok": "var(--color-ok)",
-  "--c-bad": "var(--color-bad)",
-  /* Glyph on a filled Go: the surface colour is light in light mode and dark in dark mode, so it stays legible on both fills. */
-  "--c-on-fill": "var(--color-surface)",
-  "--c-shadow": "0 4px 24px color-mix(in srgb, var(--color-ink) 8%, transparent)",
-} as CSSProperties;
-
-/** Chat answers and never edits; Code builds and edits. Styled like the Output tab's Edit/Preview toggle. */
+/** Chat answers and never edits; Code builds and edits. Same segmented control as Output | Inspect | Backend. */
 function WorkModeToggle({ mode, onChange }: { mode: WorkMode; onChange: (m: WorkMode) => void }) {
   return (
-    <div role="group" aria-label="Work mode" data-testid="work-mode" className="mb-3 flex h-8 w-fit items-center rounded-full bg-[var(--c-tray)] p-0.5 text-[14px]">
+    <div role="group" aria-label="Chat or Code" data-testid="work-mode" className={segmented.root}>
       {(["chat", "code"] as const).map((m) => {
         const active = mode === m;
         return (
@@ -54,10 +37,9 @@ function WorkModeToggle({ mode, onChange }: { mode: WorkMode; onChange: (m: Work
             type="button"
             aria-pressed={active}
             data-testid={`work-mode-${m}`}
+            title={m === "chat" ? "Chat: ask questions" : "Code: build and edit"}
             onClick={() => onChange(m)}
-            className={`h-7 rounded-full px-3 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-accent)] ${
-              active ? "bg-[var(--c-surface)] text-[var(--c-ink)] shadow-sm" : "text-[var(--c-ink-2)] hover:text-[var(--c-ink)]"
-            }`}
+            className={`${segmented.item} ${active ? segmented.active : ""}`}
           >
             {m === "chat" ? "Chat" : "Code"}
           </button>
@@ -70,7 +52,7 @@ function WorkModeToggle({ mode, onChange }: { mode: WorkMode; onChange: (m: Work
 export function Composer() {
   const [value, setValue] = useState("");
   const [fanOpen, setFanOpen] = useState(false);
-  const [fanDir, setFanDir] = useState<FanDir>("right");
+  const [fanRisePx, setFanRisePx] = useState(0);
   const [mentionDismissed, setMentionDismissed] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -78,6 +60,7 @@ export function Composer() {
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const goRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const closeTimer = useRef<number | undefined>(undefined);
   const skipFocusOpen = useRef(false);
   const reduce = useReducedMotion();
@@ -168,16 +151,11 @@ export function Composer() {
 
   const openFan = () => {
     window.clearTimeout(closeTimer.current);
-    // Measure once per open (not while open) so the arc never flips under the pointer.
+    // Measure once per open: the bubbles sit in a row above the composer, never over its text.
     if (!fanOpen) {
       const go = goRef.current?.getBoundingClientRect();
-      // The arc may leave the composer; only the right panel (when open) or the window edge clips it.
-      const panel = document.querySelector("[data-right-panel]")?.getBoundingClientRect();
-      if (go) {
-        const cx = go.left + go.width / 2;
-        const right = panel && panel.width > 0 && panel.left > cx ? panel.left : window.innerWidth;
-        setFanDir(pickFanDir(cx, right, 0));
-      }
+      const form = formRef.current?.getBoundingClientRect();
+      if (go && form) setFanRisePx(fanRise(go.top, form.top));
     }
     setFanOpen(true);
   };
@@ -243,7 +221,7 @@ export function Composer() {
       send(text);
     } catch (err) {
       setStatus("idle");
-      dispatch({ type: "fail", message: err instanceof Error ? err.message : "Transcription failed." });
+      dispatch({ type: "fail", message: err instanceof Error ? err.message : "Couldn't understand that. Try again, or type." });
     }
   }
 
@@ -368,34 +346,34 @@ export function Composer() {
   };
 
   const micUnsupported = voice.blocked !== null && isUnsupported(voice.blocked);
-  const goLabel = recording ? "Stop recording" : loading ? "Working" : transcribing ? "Transcribing" : "Go";
+  const goLabel = recording ? "Stop recording" : loading ? "Working" : transcribing ? "Turning your voice into text" : "Go";
   const goDisabled = !recording && (busy || empty || barOn);
 
   return (
-    <div style={TOKENS} className={`relative ${fanOpen ? "z-50" : "z-20"} mx-auto w-full max-w-[740px]`}>
+    <div className={`relative ${fanOpen ? "z-50" : "z-20"} mx-auto w-full max-w-[740px]`}>
       {mentionOpen ? (
         <div
           role="menu"
           aria-label="Mention a file"
-          className="absolute bottom-full left-4 z-40 mb-2 max-h-60 w-[300px] overflow-auto rounded-xl border border-[var(--c-line)] bg-[var(--c-surface)] p-1.5 shadow-[var(--c-shadow)]"
+          className={`${surface.menu} absolute bottom-full left-4 z-40 mb-2 max-h-60 w-[300px] overflow-auto`}
         >
-          <p className="px-2 pt-1.5 pb-1 text-[12px] text-[var(--c-ink-3)]">Mention a file</p>
+          <p className={`${text.meta} px-2 pt-1.5 pb-1`}>Mention a file</p>
           {mentionOptions.length === 0 ? (
-            <p className="px-2 py-2 text-[14px] text-[var(--c-ink-2)]">No files yet</p>
+            <p className="px-2 py-2 text-[14px] text-ink-2">No files yet</p>
           ) : (
             mentionOptions.map((name) => (
               <button
                 key={name}
                 type="button"
                 role="menuitem"
-                className={menuItemClass}
+                className={menuItem}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   setValue(applyMention(value, name));
                   fieldRef.current?.focus();
                 }}
               >
-                <AtSign size={16} strokeWidth={1.75} className="shrink-0 text-[var(--c-ink-2)]" />
+                <AtSign size={ICON.lg} strokeWidth={STROKE} className="shrink-0 text-ink-2" />
                 <span className="min-w-0 flex-1 truncate">{name}</span>
               </button>
             ))
@@ -404,19 +382,19 @@ export function Composer() {
       ) : null}
 
       <form
+        ref={formRef}
         aria-label="Composer"
         data-testid="composer"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
-        className="relative z-10 overflow-visible rounded-3xl border border-[var(--c-line)] bg-[var(--c-surface)] px-4 pt-4 pb-3 shadow-[var(--c-shadow)]"
+        className="relative z-10 overflow-visible rounded-3xl border border-line bg-surface px-4 pt-4 pb-3 shadow-soft"
       >
-        <WorkModeToggle mode={workMode} onChange={(m) => useWorkMode.getState().setMode(m)} />
         {selLabel ? (
           <div className="mb-2 flex" data-testid="selection-chip">
-            <span className="inline-flex h-6 max-w-full items-center gap-1 rounded-md bg-[var(--c-tray)] px-2 text-[12px] text-[var(--c-ink-2)]" title={workMode === "chat" ? "Questions are about this element" : "Typing this/that/it edits this element"}>
-              <Crosshair size={12} strokeWidth={1.75} aria-hidden />
+            <span className={chip.tag} title={workMode === "chat" ? "Your question is about this element" : "Your next message changes this element"}>
+              <Crosshair size={ICON.sm} strokeWidth={STROKE} aria-hidden />
               <span className="truncate">{selLabel}</span>
             </span>
           </div>
@@ -430,11 +408,11 @@ export function Composer() {
           placeholder={placeholderFor(hasScreen, workMode)}
           aria-label="Message"
           data-testid="message-input"
-          className="block max-h-48 min-h-6 w-full resize-none bg-transparent text-[16px] leading-6 text-[var(--c-ink)] outline-none placeholder:text-[var(--c-ink-3)]"
+          className={`block max-h-48 min-h-6 w-full resize-none bg-transparent ${text.body} placeholder:text-ink-3 outline-none`}
         />
-        <div className="relative mt-11 flex h-8 items-center gap-1">
+        <div className="relative mt-4 flex h-8 items-center gap-1">
           <div className={`flex min-w-0 flex-1 items-center gap-1 ${barOn ? "invisible" : ""}`} aria-hidden={barOn || undefined}>
-            <div className="min-w-0 flex-1" />
+            <WorkModeToggle mode={workMode} onChange={(m) => useWorkMode.getState().setMode(m)} />
           </div>
           <AnimatePresence>
             {barOn ? (
@@ -457,7 +435,7 @@ export function Composer() {
             ) : null}
           </AnimatePresence>
           <div
-            className="relative ml-1 h-8 w-8"
+            className="relative ml-1 size-8"
             onPointerEnter={openFan}
             onPointerLeave={() => closeFan()}
             onFocus={() => {
@@ -489,31 +467,29 @@ export function Composer() {
               data-testid="go"
               whileHover={reduce || goDisabled ? undefined : { scale: 1.06 }}
               transition={{ duration: 0.15 }}
-              className={`relative z-40 grid h-8 w-8 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-accent)] ${
-                goDisabled
-                  ? "cursor-default bg-[var(--c-hover)] text-[var(--c-ink-3)]"
-                  : `text-[var(--c-on-fill)] ${recording ? "bg-[var(--c-bad)]" : "bg-[var(--c-accent)]"}`
+              className={`relative z-40 grid size-8 place-items-center rounded-full ${focusRing} ${
+                goDisabled ? "cursor-default bg-hover text-ink-3" : `text-on-accent ${recording ? "bg-bad" : "bg-accent"}`
               }`}
             >
               {recording ? (
                 <>
                   <motion.span
                     aria-hidden="true"
-                    className="absolute inset-0 rounded-full bg-[var(--c-bad)]/40"
+                    className="absolute inset-0 rounded-full bg-bad/40"
                     animate={{ scale: 1 + recorder.level * 0.6 }}
                     transition={{ duration: 0.08 }}
                   />
-                  <Square size={12} strokeWidth={0} fill="currentColor" className="relative" />
+                  <Square size={ICON.sm} strokeWidth={0} fill="currentColor" className="relative" />
                 </>
               ) : busy ? (
-                <Loader2 size={16} strokeWidth={1.75} className="animate-spin" />
+                <Loader2 size={ICON.md} strokeWidth={STROKE} className="animate-spin" />
               ) : (
-                <ArrowUp size={16} strokeWidth={1.75} />
+                <ArrowUp size={ICON.md} strokeWidth={STROKE} />
               )}
             </motion.button>
             <GoFan
               open={fanOpen}
-              dir={fanDir}
+              rise={fanRisePx}
               items={[
                 {
                   key: "mic",
@@ -528,14 +504,14 @@ export function Composer() {
                   testId: "mic-button",
                 },
                 { key: "canvas", label: "Sketch", icon: PanelsTopLeft, active: mode === "canvas", onClick: () => pickMode("canvas"), testId: "canvas-button" },
-                { key: "narrate", label: "Point", icon: AudioWaveform, active: mode === "narrate", onClick: () => pickMode("narrate"), testId: "narrate-button" },
+                { key: "narrate", label: "Narrate", icon: AudioWaveform, active: mode === "narrate", onClick: () => pickMode("narrate"), testId: "narrate-button" },
               ]}
             />
           </div>
         </div>
       </form>
 
-      <div className="relative mx-4 -mt-3 flex items-center rounded-b-[20px] bg-[var(--c-tray)] pt-5 pr-5 pb-3 pl-6">
+      <div className="relative mx-4 -mt-3 flex items-center rounded-b-3xl bg-tray px-4 pt-5 pb-3">
         <input
           ref={fileRef}
           type="file"
@@ -548,7 +524,7 @@ export function Composer() {
             if (file) void attach(file);
           }}
         />
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <ProjectMenu />
           <FilesMenu assets={assets} inputRef={fileRef} uploading={uploading} error={uploadError} />
         </div>

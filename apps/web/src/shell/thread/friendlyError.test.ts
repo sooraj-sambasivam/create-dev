@@ -3,7 +3,7 @@ import { friendlyError } from "./friendlyError";
 
 describe("friendlyError", () => {
   it("explains network failures", () => {
-    expect(friendlyError(new TypeError("Failed to fetch"))).toMatch(/check your connection/);
+    expect(friendlyError(new TypeError("Failed to fetch"))).toMatch(/Check your connection/);
     expect(friendlyError(new Error("Load failed"))).toMatch(/Couldn't reach the server/);
   });
   it("explains 429 and 5xx", () => {

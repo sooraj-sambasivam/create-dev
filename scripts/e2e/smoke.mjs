@@ -103,10 +103,13 @@ try {
     await send("Page.navigate", { url: BASE });
     if (!(await waitFor(dialog, 15000))) return "onboarding dialog not shown";
     const radios = async (label) => ev(`(()=>{const r=[...document.querySelectorAll('[role="radio"]')].find(e=>e.textContent.includes(${JSON.stringify(label)}));if(!r)return false;r.click();return true})()`);
+    if (!(await clickText("Get started"))) { await shot("00b-no-get-started"); return "no Get started on the welcome step"; }
+    await sleep(400);
     if (!(await radios("Ask"))) return "no Ask choice";
-    await clickText("Next"); await sleep(400);
     if (!(await radios("developer"))) { await shot("00b-no-dev"); return "no developer choice"; }
-    await clickText("Next"); await sleep(500); await shot("00b-onboarding-step3");
+    await clickText("Next"); await sleep(400);   // permissions
+    await clickText("Next"); await sleep(400);   // try it
+    await clickText("Next"); await sleep(500); await shot("00b-onboarding-done");
     if (!(await clickText("Start creating"))) return "no Start creating on the last step";
     if (!(await waitFor(`!(${dialog})`, 5000))) return "dialog still open after finishing";
     const p = await ev(profileOf);
@@ -273,6 +276,44 @@ try {
     const ok = await waitFor(`/[1-9]\\d* responses?/.test(document.querySelector('#rp-body')?.textContent||'')`, 8000);
     await sleep(400); await shot("08-backend-responses");
     if (!ok) return "Backend shows no response count: " + (await ev(`(document.querySelector('#rp-body')?.textContent||'').slice(0,200)`));
+  });
+
+  // (9) lift: entity -> live app; a row added through the page form shows up live in the table and in the stored responses
+  await step("9. /api/lift entity -> app renders table + chart; form row appears live and is stored", async () => {
+    const entity = { kind: "schedule", title: "Smoke route schedule", columns: [{ key: "day", label: "Day", type: "text" }, { key: "riders", label: "Riders", type: "number" }],
+      rows: [{ day: "Mon", riders: "120" }, { day: "Tue", riders: "150" }, { day: "Wed", riders: "90" }], source: { title: "Sample page" } };
+    const lift = await fetch("http://localhost:3001/api/lift", { method: "POST", headers: { "content-type": "application/json", Origin: new URL(BASE).origin }, body: JSON.stringify({ entity, instruction: "turn this into something I can track" }) }).then((r) => r.json());
+    if (!lift?.url || !lift?.id || !lift?.formId) return "bad lift response: " + JSON.stringify(lift);
+    const url = new URL(lift.url); url.protocol = new URL(BASE).protocol; url.host = new URL(BASE).host;
+    await send("Page.navigate", { url: url.toString() });
+    const rows = `document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length`;
+    if (!(await waitFor(`${rows}>=3`, 15000))) { await shot("09-no-table"); return "table did not render 3 rows at " + url + " (rows=" + (await ev(rows)) + ")"; }
+    if (!(await waitFor(`!!document.querySelector('[data-screen-root] figure svg[role=img]')`, 5000))) { await shot("09-no-chart"); return "chart did not render"; }
+    await shot("09a-lift-rendered");
+    await ev(`document.querySelectorAll('input').forEach(e=>e.scrollIntoView({block:'center'}))`);
+    const inputs = await ev(`[...document.querySelectorAll('[data-screen-root] input:not([type=hidden]), [data-screen-root] textarea')].map((e,i)=>{e.setAttribute('data-e2e-i',i);return e.getAttribute('aria-label')||e.placeholder||e.name||''})`);
+    if (inputs.length < 2) return "expected 2 form inputs, found " + inputs.length;
+    for (const [i, text] of ["Thu", "777"].entries()) {
+      await ev(`document.querySelector('[data-e2e-i="${i}"]').scrollIntoView({block:'center'})`);
+      await sleep(150);
+      const c = await center(`[data-e2e-i="${i}"]`);
+      await clickAt(c.x, c.y);
+      await send("Input.insertText", { text });
+    }
+    const clicked = await ev(`(()=>{const b=[...document.querySelectorAll('[data-screen-root] button')].find(e=>/add row/i.test(e.textContent));if(!b)return false;b.scrollIntoView({block:'center'});return true})()`);
+    if (!clicked) return "no Add row button";
+    await sleep(200);
+    const bc = await center(`[data-screen-root] button`).then(async () => ev(`(()=>{const b=[...document.querySelectorAll('[data-screen-root] button')].find(e=>/add row/i.test(e.textContent));const r=b.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`));
+    await clickAt(bc.x, bc.y);
+    const t0 = Date.now();
+    const appeared = await waitFor(`${rows}>=4 && /777/.test(document.querySelector('[data-screen-root] table:not(.sr-only) tbody').textContent)`, 5000);
+    await shot("09b-lift-row-added");
+    if (!appeared) return "new row not visible in the table within 5s (rows=" + (await ev(rows)) + ")";
+    console.log(`  row visible after ${Date.now() - t0}ms`);
+    const formsUrl = `http://localhost:3001/api/forms/${encodeURIComponent(lift.id)}`;
+    const { token } = await fetch(`${formsUrl}/token`, { method: "POST", headers: { Origin: new URL(BASE).origin } }).then((r) => r.json()).catch(() => ({}));
+    const stored = await fetch(formsUrl, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).catch(() => []);
+    if (!Array.isArray(stored) || !stored.some((r) => JSON.stringify(r.fields).includes("777"))) return "row not stored (Backend responses): " + JSON.stringify(stored).slice(0, 200);
   });
   await sleep(500);
 } catch (e) {

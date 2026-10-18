@@ -1,11 +1,11 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { MicPill, type MicState } from "./MicPill";
+import { button, dot, surface } from "../../../ui/styles";
 import { narrateBarPlacement, type NarrateBarPlacement, type Rect } from "./narrateBar";
 
 const COMPOSER_SELECTOR = "[data-testid='composer']";
 const FALLBACK_BAR = { w: 240, h: 32 };
-const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 const toRect = (el: Element | null | undefined): Rect | null => {
   if (!el) return null;
@@ -103,7 +103,7 @@ export function NarrateBarView({
     <motion.div
       ref={ref}
       data-narrate-bar
-      className="pointer-events-auto fixed z-[60] flex items-center gap-2 whitespace-nowrap rounded-full border border-line bg-surface p-1 pl-4 text-ink shadow-soft"
+      className={`pointer-events-auto fixed z-[60] flex items-center gap-2 whitespace-nowrap h-10 ${surface.card} p-1 pl-4 text-ink`}
       style={{
         left: placement?.left ?? 0,
         top: placement?.top ?? 0,
@@ -116,11 +116,11 @@ export function NarrateBarView({
       transition={{ duration: dur }}
     >
       {hint && (
-        <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-full border border-line bg-surface px-3 text-[12px] leading-6 text-ink-2">
+        <span className={`pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 ${surface.pill} px-3 text-[12px] leading-6 text-ink-2`}>
           {hint}
         </span>
       )}
-      <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full bg-bad ${reduce ? "" : "animate-pulse"}`} />
+      <span aria-hidden="true" className={`${dot.bad} shrink-0 ${reduce ? "" : "animate-pulse"}`} />
       <span className="shrink-0 text-[14px] tabular-nums" aria-label="Elapsed time">{elapsed}</span>
       <MicPill state={mic} hint={micHint} />
       <span className="min-w-0 flex-1 truncate text-[14px] text-ink-2" aria-live="polite">
@@ -131,7 +131,7 @@ export function NarrateBarView({
         aria-label="Finish narration"
         onClick={onFinish}
         disabled={finishing}
-        className={`h-8 shrink-0 rounded-full bg-accent px-3 text-[14px] text-on-accent transition-opacity duration-150 disabled:opacity-50 ${focusRing}`}
+        className={`${button.primary} shrink-0`}
       >
         Done
       </button>
@@ -140,7 +140,7 @@ export function NarrateBarView({
         aria-label="Cancel narration"
         onClick={onCancel}
         disabled={finishing}
-        className={`h-8 shrink-0 rounded-full px-3 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover disabled:opacity-50 ${focusRing}`}
+        className={`${button.ghost} shrink-0`}
       >
         Cancel
       </button>

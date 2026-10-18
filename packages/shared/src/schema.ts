@@ -145,6 +145,25 @@ export const TableSchema = z.object({
   type: z.literal("table"),
   columns: z.array(z.string()),
   rows: z.array(z.array(z.string())).describe("Each row has one cell per column"),
+  liveFormId: z
+    .string()
+    .max(200)
+    .nullish()
+    .describe("When set, rows submitted through the page's form with this formId are appended live, newest last"),
+});
+
+export const ChartSchema = z.object({
+  ...common,
+  type: z.literal("chart"),
+  kind: z.enum(["bar", "line"]).default("bar"),
+  title: z.string().nullish(),
+  labels: z.array(z.string()).max(200).describe("X-axis labels, one per value"),
+  series: z
+    .array(z.object({ name: z.string(), values: z.array(z.number()).max(200) }))
+    .min(1)
+    .max(4)
+    .describe("Each series has one value per label"),
+  liveFormId: z.string().max(200).nullish().describe("When set, submitted rows with this formId update the chart live"),
 });
 
 export const AccordionSchema = z.object({
@@ -256,6 +275,7 @@ export const ContainerSchema = z.object({
 });
 
 export const NodeSchema = z.discriminatedUnion("type", [
+  ChartSchema,
   HeadingSchema,
   TextSchema,
   ButtonSchema,

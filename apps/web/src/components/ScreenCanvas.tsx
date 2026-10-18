@@ -4,6 +4,7 @@ import { ScreenRenderer } from "./ScreenRenderer";
 import { AddMenu } from "../editor/AddMenu";
 import { PublishMenu } from "../editor/PublishMenu";
 import { RedoIcon, UndoIcon } from "../editor/icons";
+import { button, segmented } from "../ui/styles";
 
 function EditorToolbar() {
   const editMode = useScreenStore((s) => s.editMode);
@@ -12,15 +13,12 @@ function EditorToolbar() {
   const canRedo = useScreenStore((s) => s.future.length > 0);
   const undo = useScreenStore((s) => s.undo);
   const redo = useScreenStore((s) => s.redo);
-  const iconBtn =
-    "inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent";
-  // Restyle the Add / Publish triggers from here: Add = ghost secondary, Publish = the one accent primary.
+  const iconBtn = button.icon;
+  // Restyle the Add trigger from here (ghost). Export HTML styles itself with button.secondary.
   const addSlot =
-    "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!gap-1.5 [&>div>button]:!rounded-lg [&>div>button]:!bg-transparent [&>div>button]:!px-2.5 [&>div>button]:!text-sm [&>div>button]:!font-medium [&>div>button]:!text-ink-2 [&>div>button:hover]:!bg-hover [&_.absolute]:!max-h-[min(70vh,22rem)] [&_.absolute]:!w-64";
-  const publishSlot =
-    "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!rounded-lg [&>div>button]:!bg-accent [&>div>button]:!px-3 [&>div>button]:!text-sm [&>div>button]:!font-medium [&>div>button]:!text-on-accent [&>div>button:hover]:!opacity-90 [&>div>button]:!transition-opacity";
+    "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!gap-1.5 [&>div>button]:!rounded-lg [&>div>button]:!bg-transparent [&>div>button]:!px-2.5 [&>div>button]:!text-[14px] [&>div>button]:!font-normal [&>div>button]:!text-ink-2 [&>div>button:hover]:!bg-hover [&_.absolute]:!max-h-[min(70vh,22rem)] [&_.absolute]:!w-64";
   return (
-    <div className="ml-auto flex items-center gap-1">
+    <div className="ml-auto flex shrink-0 items-center gap-1">
       {editMode && (
         <>
           <button type="button" title="Undo (⌘Z)" aria-label="Undo" className={iconBtn} disabled={!canUndo} onClick={undo}>
@@ -34,10 +32,8 @@ function EditorToolbar() {
           </div>
         </>
       )}
-      <div className={publishSlot}>
-        <PublishMenu />
-      </div>
-      <div className="ml-1 flex h-8 items-center rounded-full bg-tray p-0.5 text-sm">
+      <PublishMenu />
+      <div className={`${segmented.root} ml-1`}>
         {(["edit", "preview"] as const).map((m) => {
           const active = (m === "edit") === editMode;
           return (
@@ -45,7 +41,7 @@ function EditorToolbar() {
               key={m}
               type="button"
               onClick={() => setEditMode(m === "edit")}
-              className={`h-7 rounded-full px-3 transition-colors duration-150 ${active ? "bg-surface text-ink shadow-soft" : "text-ink-2 hover:text-ink"}`}
+              className={`${segmented.item} ${active ? segmented.active : ""}`}
             >
               {m === "edit" ? "Edit" : "Preview"}
             </button>
@@ -94,8 +90,8 @@ export function ScreenCanvas() {
       className="relative flex min-h-[420px] flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface"
     >
       <div className="flex h-11 shrink-0 items-center gap-2 bg-surface px-3">
-        <span className="truncate text-sm text-ink-2">{screen?.title ?? "Generating…"}</span>
-        <span className="flex w-24 shrink-0 items-center gap-2 text-xs text-ink-3" aria-live="polite">
+        <span className="min-w-0 truncate text-[14px] text-ink-2">{screen?.title ?? "Generating…"}</span>
+        <span className="flex shrink-0 items-center gap-2 text-[12px] text-ink-3" aria-live="polite">
           <AnimatePresence>
             {loading && screen && (
               <motion.span

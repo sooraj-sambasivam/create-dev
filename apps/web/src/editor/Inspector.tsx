@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+import { segmented } from "../ui/styles";
 import {
   FONTS,
   childrenOf,
@@ -16,6 +17,7 @@ import { useScreenStore } from "../store/screenStore";
 import { TYPE_LABELS } from "./EditorContext";
 import { ArrowDownIcon, ArrowUpIcon, CopyIcon, ParentIcon, TrashIcon } from "./icons";
 import { FONT_FAMILY, IconGlyph } from "../components/elements";
+import { parseNumber } from "../components/liveRows";
 
 // ---- live editing: one undo step per focus session, not per keystroke ----
 
@@ -36,6 +38,32 @@ const livePatch = (id: string, patch: Partial<Node>) => liveApply((screen) => up
 const liveStyle = (id: string, patch: Partial<Style>) => liveApply((screen) => updateStyle(screen, id, patch));
 const patch = (id: string, p: Partial<Node>) => useScreenStore.getState().patchNode(id, p);
 const patchStyle = (id: string, p: Partial<Style>) => useScreenStore.getState().patchStyle(id, p);
+
+// ---- chart text editing ----
+
+const splitBar = (v: string) => v.split("|").map((c) => c.trim());
+
+/** "Name | 1, 2, 3" lines to chart series; 1 to 4 kept, blank and non-numeric values dropped. */
+export function parseSeries(lines: string[]): { name: string; values: number[] }[] {
+  const out = lines
+    .filter((l) => l.trim())
+    .slice(0, 4)
+    .map((l, i) => {
+      const [name, ...rest] = l.split("|");
+      const values = rest.join("|").split(",").map((c) => parseNumber(c)).filter((n): n is number => n !== null);
+      return { name: name.trim() || `Series ${i + 1}`, values };
+    });
+  return out.length ? out : [{ name: "Series 1", values: [] }];
+}
+
+function LiveFormField({ id }: { id?: string | null }) {
+  if (!id) return null;
+  return (
+    <Field label="Updates live from form">
+      <input readOnly value={id} aria-readonly className={inputCls} />
+    </Field>
+  );
+}
 
 // ---- primitives ----
 
@@ -104,16 +132,15 @@ function Segmented<T extends string | number>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className={`${segmented.root} w-full`}>
       {options.map((o) => (
         <button
           key={String(o.value)}
           type="button"
           title={o.title}
+          aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
-          className={`h-8 min-w-10 flex-1 rounded-md px-2.5 text-xs transition-colors duration-150 ${
-            o.value === value ? "bg-hover font-medium text-ink" : "text-ink-2 hover:bg-tray hover:text-ink"
-          }`}
+          className={`${segmented.item} min-w-0 flex-1 ${o.value === value ? segmented.active : ""}`}
         >
           {o.label}
         </button>
@@ -572,6 +599,29 @@ function ContentFields({ node, screen }: { node: Node; screen: Screen }) {
             items={node.rows.map((r) => r.join(" | "))}
             onChange={(lines) => livePatch(node.id, { rows: lines.map((l) => l.split("|").map((c) => c.trim())) })}
           />
+          <LiveFormField id={node.liveFormId} />
+        </>
+      );
+    case "chart":
+      return (
+        <>
+          <Field label="Type">
+            <Segmented
+              value={node.kind}
+              options={[{ value: "bar", label: "Bars" }, { value: "line", label: "Line" }]}
+              onChange={(kind) => patch(node.id, { kind })}
+            />
+          </Field>
+          <Field label="Title"><Prop node={node} field="title" placeholder="Weekly orders" /></Field>
+          <Field label="Labels (separate with |)">
+            <TextInput value={node.labels.join(" | ")} onChange={(v) => livePatch(node.id, { labels: splitBar(v) })} />
+          </Field>
+          <LinesField
+            label="Series (one per line: name | values separated with commas)"
+            items={node.series.map((s) => `${s.name} | ${s.values.join(", ")}`)}
+            onChange={(lines) => livePatch(node.id, { series: parseSeries(lines) })}
+          />
+          <LiveFormField id={node.liveFormId} />
         </>
       );
     case "accordion":
@@ -687,7 +737,7 @@ function LayoutFields({ node }: { node: Container }) {
   );
 }
 
-const TEXTY = ["heading", "text", "button", "link", "badge", "list", "checkbox", "textbox", "select", "table", "accordion", "rating", "data"];
+const TEXTY = ["heading", "text", "button", "link", "badge", "list", "checkbox", "textbox", "select", "table", "chart", "accordion", "rating", "data"];
 const PHOTOGRAPHIC = ["image", "avatar", "icon", "container"];
 
 function StyleFields({ node }: { node: Node }) {
@@ -878,7 +928,7 @@ function PagePanel({ screen }: { screen: Screen }) {
                 key={f}
                 type="button"
                 onClick={() => setScreen({ ...screen, font: f })}
-                className={`h-8 rounded-lg border px-1 text-sm transition-colors duration-150 ${screen.font === f ? "border-ink bg-ink text-surface" : "border-line text-ink hover:bg-hover"}`}
+                className={`h-8 rounded-lg border px-1 text-sm transition-colors duration-150 ${screen.font === f ? "border-ink bg-tray text-ink" : "border-line text-ink hover:bg-hover"}`}
                 style={{ fontFamily: FONT_FAMILY[f] }}
               >
                 {FONT_LABELS[f]}

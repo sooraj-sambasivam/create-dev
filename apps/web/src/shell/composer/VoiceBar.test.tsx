@@ -15,4 +15,11 @@ describe("VoiceBar notice", () => {
     expect(html).toContain("truncate");
     expect(html).not.toContain("<button");
   });
+
+  it("says which microphone problem it is, in plain words", () => {
+    const txt = (state: VoiceState) => render(state).replaceAll("&#x27;", "'");
+    expect(txt({ phase: "unavailable", message: "Microphone access was denied.", blocked: "x" })).toContain("Microphone blocked. Allow it in your browser settings, or type.");
+    expect(txt({ phase: "unavailable", message: "This browser can't record audio.", blocked: "x" })).toContain("This browser can't use the microphone. Type instead.");
+    expect(txt({ phase: "transcribing", message: null, blocked: null })).toContain("Turning your voice into text");
+  });
 });

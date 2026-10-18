@@ -1,153 +1,158 @@
 # Create
 
-**Tagline:** Point at it. Say it. It changes.
+**Tagline:** Pixels become software you own.
 
-Repository: `create-dev`. The product is called **Create** in the UI.
+Repository: `create-dev`. The product is called **Create** in the UI. OWNER: final name decision
+(Create or Lift) before pasting this into Devpost.
 
 **Tracks:** DubHacks NEXT · Perceptron · SideShift · MongoDB Atlas (MLH)
 **Video:** OWNER: paste the 2-minute video link here. **Repo:** OWNER: confirm the repo is public.
-**Live site:** OWNER: paste the domain / Vercel URL here once deployed (CLI auth must be refreshed first).
+**Live site:** OWNER: paste the domain / Vercel URL here if deployed. The demo runs locally with a phone tunnel, so this can stay empty.
+**Atlas screenshot:** OWNER: add the collection screenshot (see MongoDB Atlas below).
 
-Status key: items marked **(verify before submit)** are built but not yet confirmed in a real
-browser. Delete the mark when confirmed, or delete the claim.
+Status key: items marked **(verify before submit)** are built and covered by headless tests but not
+yet confirmed by hand in a real browser or on a phone. Delete the mark when confirmed, or delete the claim.
 
 ## Inspiration
 
-Describing a change in words is slow. You say "the third card, no, the one on the left, make it
-bigger" and the tool still guesses. People already do this with each other: they point and say
-"fix this". Google DeepMind's AI pointer idea is the same move for software: the pointer supplies
-the "this" and the "that", the voice supplies the change, and the edit happens in place.
+The web is full of useful data that you can only read. A bus schedule, a dining hall's hours, a
+pricing table, a chart in a report. You can't add to it, sort it your way, chart it, or let a
+friend add a row. Today the choices are copy it into a spreadsheet by hand or give up.
 
-We built that for websites and small apps. A shop owner needs a page with opening hours and a menu.
-The fastest way to change it is to hover on the part you mean and say what you want.
+Google DeepMind's AI pointer showed that the pointer can supply "this" and your voice can supply
+the intent. The pointer in Google's version answers questions. We wanted it to hand you something
+you keep: software you own, with a backend.
 
 ## What it does
 
-**Point at it. Say it. It changes.** Hover any element and talk: "make this bigger", "swap this
-photo for a cupcake". A bubble follows the pointer and shows what Create understood, the words it
-heard, then Editing, then Done. If two elements are equally close it asks "Which one?" instead of
-guessing. Undo is one key.
+**Point at it, say "turn this into something I can track", and get a live app.**
 
-- **Four ways in:** type, speak (live ElevenLabs transcription), draw (tldraw canvas), or point and
-  narrate. All produce the same editable page.
-- **Chat | Code modes (verify before submit):** **Chat** answers questions about anything,
-  including a figure or chart you point at. **Code** builds and edits the page.
-- **AI pointer (verify before submit):** click to pin a target, or hold Option to talk to whatever
-  is under the pointer.
-- **Per-app Backend (verify before submit):** each app gets a Backend panel. Form submissions on a
-  published page are real and are stored in MongoDB, then listed back in the panel.
-- **Onboarding (verify before submit):** a short first-run path for technical users (keys, local
-  run) and non-technical users (start from a prompt, no setup words).
-- **Chrome extension (verify before submit):** point at any website, say or type a change, and open
-  it in Create as an editable prototype.
-- **Editor, share, publish:** click to select, drag, resize, type in place, a per-element AI box.
-  Publish one self-contained HTML file, or share a read-only link that opens on a phone.
+1. In Chrome, hold Option over a table, list, pricing cards or a chart image. It outlines the
+   thing and names it ("Table · 12 rows × 4 cols").
+2. Release, and say or type what you want. The default is "something I can track".
+3. A new tab opens with your app: an editable table, a chart, and an "Add row" form. The rows are
+   stored for real, in MongoDB when `MONGODB_URI` is set.
+4. Show the QR code, and someone scans it. They add a row from their phone, and it appears in your
+   app's Backend tab within seconds (the tab polls every 3 seconds). (verify before submit: scan from a physical phone on venue wifi)
+
+It does not stop there. Inside the app, the same pointer works:
+
+- **Make this bigger.** Hover an element, hold Option, say it. A bubble shows what Create
+  understood, and undo is one key. If two elements are equally close it asks "Which one?".
+- **Ask about it.** In Chat mode, point at the chart and ask "why does week 3 spike?". The answer
+  uses the row data and a crop of what you pointed at. (verify before submit with real keys; mock mode returns a canned answer)
+- **Four ways in:** Type, Speak, Sketch, Narrate. All produce the same editable app.
+
+Where the source is a chart that is only an image, with no data in the page, we crop it and read
+it with Perceptron (`/api/extract`), then build the same app. Values read from an image are
+approximate, and we say so. Exact numbers come from DOM tables.
 
 ## Track evidence
 
-**DubHacks NEXT.** The hackathon asks what comes next for how people use software. Our answer is
-that the pointer and the voice replace the prompt box. Concrete: hover plus Option plus a spoken
-sentence edits the exact element under the pointer, in place, with the understanding shown first.
-It works with no API keys (mock mode runs every feature), published pages are one self-contained
-HTML file, and share links open on a phone. Nothing in the demo needs a developer.
+**DubHacks NEXT.** The next step for software is that read-only things become yours. Hold Option
+and speak one sentence; a schedule becomes an app with a backend, with no prompt box and no setup.
+Concrete and checkable: `scripts/e2e/smoke.mjs` lifts a 3-row schedule, checks the table and chart
+render, submits a row through the Add-row form and sees it appear in the table and in
+`/api/forms/:id` (14 of 14 checks pass; the extension test passes 12 of 12). Everything runs with
+no keys in mock mode.
 
-**Perceptron.** Perceptron is the vision step for the canvas. You sketch a wide header box, two
-cards and a button; `POST /api/canvas-ops` sends the shapes plus a PNG of the selection to
-Perceptron, which says what each shape is and where it sits. Claude then writes typed edit
-operations from that reading, and the server validates them before they reach the page. Replay
-tests match canvas-ops requests exactly (`apps/server/src/routes/canvasOps.test.ts`). Without a
-Perceptron key, Claude reads the sketch alone.
+**Perceptron.** Perceptron is the eyes of the lift. `POST /api/extract` takes a PNG or JPEG crop
+(up to 4 MB) of a chart or image and returns a typed entity: kind, title, columns and rows. It
+falls back to Claude vision and then to a mock, and reports which one answered (`provider`). The
+same Perceptron step reads canvas sketches for edit ops. (verify before submit: a live Perceptron
+call with the real key; our tests stub the network.) OWNER: confirm with the Perceptron table
+that a non-robot entry is eligible.
 
-**SideShift.** SideShift is about tools that let a side project become real fast. Create takes a
-non-coder from an idea to a page that works: a Backend per app, real form submissions stored in a
-database, a Chrome extension that turns any site into an editable starting point, and a published
-HTML file or share link at the end. (verify before submit: Backend panel, form storage and extension
-in the browser.) OWNER: confirm the SideShift track brief wording and trim this paragraph to match.
+**SideShift.** A side project needs a place to put its data. A lifted app arrives with a form, a
+store and a Backend tab, so the person who has a schedule, a roster or a price list can have
+something that works today and share it with a QR code. One-line business: Every portal, PDF and
+screenshot is read-only. Create is the free pointer, and a $9 to $19 per month hosted backend is
+the business, with a "remix in Create" button on every shared app. We have no users or revenue yet.
+OWNER: confirm the SideShift brief wording and trim this to match.
 
-**MongoDB Atlas (MLH).** Atlas holds two things: share links (`apps/server/src/store/prototypes.ts`)
-and per-app form submissions (`apps/server/src/forms/store.ts`, newest first, capped at 200 per
-app, app ids validated against `^[A-Za-z0-9_-]{1,40}$` before any query). Both stores have tests
-and fall back to local JSON files when `MONGODB_URI` is unset, so the app runs without a database.
-(verify before submit: a real submission appears in the Atlas collection.) OWNER: add the cluster
-screenshot and collection name.
+**MongoDB Atlas (MLH).** Every row a person adds is a document: per-app submissions are stored in
+Atlas (`apps/server/src/forms/store.ts`, newest first, capped at 200 per app, app ids validated
+against `^[A-Za-z0-9_-]{1,40}$` before any query). Lifted apps and share links live in the same
+database (`apps/server/src/store/prototypes.ts`). Both stores have tests and fall back to local
+JSON files when `MONGODB_URI` is unset. (verify before submit: a real submission appears in the
+Atlas collection.) OWNER: add the cluster screenshot and collection name.
 
 ## How we built it
 
-- **Pointer layer:** a passive tracker resolves the element under the pointer at the moment you
-  start speaking, not when you finish. Every element has a stable id and label, so a pixel
-  position becomes a typed target. Edits go through the same store actions as manual edits, so
-  undo works.
-- **TypeSafe Jev:** routes each spoken command (restyle, resize, move, delete, add, replace text or
-  media, regenerate) and decides which element "this" means, in about 60 to 200 ms. Falls back to
-  Claude Haiku 5.5, then keyword rules. The server re-checks the target is one of the candidates.
-- **Perceptron:** reads canvas sketches; Claude writes validated edit ops from that.
-- **Claude:** Sonnet 5.5 generates pages (streamed as NDJSON partials). Haiku 5.5 does fast
-  single-element edits and the intent fallback. The model returns the tree through a tool call.
-- **Page format:** a JSON component tree defined with Zod in a shared package. The same schemas
-  validate AI output, user edits and saved shares. No raw model HTML.
-- **Backend and Chat:** `/api` form routes store submissions per app id; an `ask` route answers
-  Chat-mode questions. (verify before submit)
-- **Chrome extension:** plain-JS Manifest V3. It sends a sanitized snapshot of the clicked element
-  to `/api/import-element`; the server never fetches the source site.
-- **ElevenLabs Scribe:** realtime transcription with a single-use server-minted token; browser
-  speech recognition as fallback.
-- **Live data, icons, photos:** a live-data element with route-gated generation, an icons proxy
-  with a 24 h disk cache, Openverse photos scored against titles and tags.
-- **App:** Vite, React 19, Tailwind 4, zustand, motion; Express server (3001), web (5173). Vercel
-  config is in the repo and untested. OWNER: deploy a preview.
+- **Typed entity.** The extension reads the pointed-at element into
+  `{kind: table|chart|list|schedule, title, columns[{key,label,type}], rows[≤500], source}`. Column
+  types (text, number, money, date, time, percent) come from the cells. This is the Zod
+  `EntitySchema` in `packages/shared/src/integration.ts`; the server never fetches the source page.
+- **Lift.** `POST /api/lift` validates the entity, asks Claude Haiku only to polish the title and
+  a one-line summary (never the rows), converts the entity to a Screen (`entityToScreen`), saves it
+  and returns a link. Without a key the copy comes from the entity itself.
+- **One page format.** A JSON component tree defined with Zod in a shared package; table and chart
+  nodes carry a `liveFormId` that binds them to a form's stored rows. No raw model HTML.
+- **Storage.** `POST /api/forms/:appId` stores a row; reads need a token from
+  `POST /api/forms/:appId/token`. MongoDB when configured, files otherwise.
+- **Pointer layer.** A passive tracker resolves the element under the pointer when you start
+  speaking, not when you finish. TypeSafe Jev routes the line to an action and a target in about
+  60 to 200 ms, falling back to Claude Haiku, then keywords. Edits use the same store actions as
+  manual edits, so undo works.
+- **Chat.** `POST /api/ask` answers with the app's data and, if you pointed, an image crop.
+- **Chrome extension.** Plain-JS Manifest V3; the background worker makes the API calls and
+  captures chart crops from a tab screenshot.
+- **Voice.** ElevenLabs Scribe realtime with a server-minted single-use token; browser speech as fallback.
+- **App.** Vite, React 19, Tailwind 4, zustand, motion; Express server; a shared design-token file
+  (`apps/web/src/ui/styles.ts`) for all UI.
 
 ## Team
 
 - **Sooraj Sambasivam:** integration and product: composer shell, pointer and Narrate, Jev intent
-  routing with Perceptron canvas ops, Chat and Backend panels, extension import route, share and
-  publish, onboarding, replay mode.
-- **Abel Anand:** the page engine: Screen schema, renderer, visual editor and server, streaming
-  page generation, the icons proxy and the live-data element.
-- **pentaswan:** the drawing canvas and Inkframe ideas, the sketch vision route prototype, and the
-  sandboxed backend-functions prototype that shaped the Backend idea.
+  routing, Chat and Backend, the lift flow and extension, share and QR, onboarding, replay mode.
+- **Abel Anand:** the page engine: Screen schema, renderer, visual editor, streaming generation,
+  the icons proxy and the live-data element.
+- **pentaswan:** the drawing canvas, the sketch vision route prototype, and the sandboxed
+  backend-functions prototype that shaped the Backend idea.
 
 ## Challenges
 
+- **Exact data from a screen.** Images lose precision. We use DOM tables where they exist, use
+  vision only for chart images, and never claim exact values from an image.
 - **Resolving "this".** The hand moves before the sentence ends and elements overlap. We resolve at
   utterance start, prefer the smallest element, and ask "Which one?" when still ambiguous.
-- **Trust in AI output.** Models invent photos, links and icon names. The server checks every photo
-  search, corrects icon names, and tells the user when nothing matched.
-- **One format for many inputs.** Sketches, speech, pointing, typing and extension imports all land
-  on the same tree; the schema is the single source of truth.
-- **Real submissions from a generated page.** A form must post somewhere safe: per-app ids are
-  validated, bodies size-limited, and storage has a file fallback.
-- **Live demo risk.** Model calls take seconds. Keys stay on the server. We record a full run and
-  keep a replay mode (Ctrl+Shift+R) that answers the same endpoints from it.
+- **A real backend from a generated page.** Per-app ids are validated, bodies size-limited, reads
+  need a token, and storage has a file fallback.
+- **Phone links.** A link built on localhost is useless on a phone. Links use `PUBLIC_URL`, so the
+  demo runs behind a tunnel, and the QR code is dark on white in both themes so scanners accept it.
+- **Live demo risk.** Model calls take seconds and keys stay on the server. We record a full run and
+  keep a replay mode (Ctrl+Shift+R).
 
 ## Accomplishments
 
-- Hover plus voice edits the exact element you mean, with the understanding shown first.
-- Sketch, speech, pointing and typing all produce the same editable page.
-- Forms on a built page store real submissions in MongoDB (verify before submit).
-- Runs end to end with no keys in mock mode; self-contained published pages; phone share links.
+- A web table becomes an app with a chart, a form and a store in one spoken sentence.
+- The headless smoke test covers lift, chart render, add row and storage (14 of 14 pass); server
+  (253), web (500) and shared (23) unit tests pass; the extension test passes 12 of 12.
+- The pointer works in two places: on the web page you lift from, and inside the app you get.
+- Runs end to end with no keys in mock mode.
 
 ## What we learned
 
-- The pointer is the missing half of a voice command: "this" is worth more than any adjective.
+- Pointing is more useful when it ends in something you keep, not an answer you read once.
 - Showing what the system understood before acting makes people trust it enough to try again.
-- A strict shared schema lets four different inputs and three teammates' work meet without glue.
+- A strict shared schema let three teammates' work and several inputs meet without glue.
 - Every AI step needs a deterministic fallback, or the demo is hostage to the network.
 
 ## What's next
 
-- Click to point with no modifier key, and pointing inside the canvas.
-- Pointing at things outside the page, such as a photo on the desktop.
-- Multi-page sites and collaborative editing.
+- Rehearsed on our sample pages today; broader coverage of real sites, PDFs and screenshots.
+- Hosted backend with accounts, and the "remix in Create" button on shared apps.
+- Click to point with no modifier key, and pointing at things outside the browser.
 - A tldraw SDK license key for production (trial key until then).
 
 ## Built with
 
-Claude (Sonnet 5.5, Haiku 5.5) · TypeSafe Jev · Perceptron · ElevenLabs Scribe · MongoDB Atlas ·
-tldraw · React 19 · Vite · Tailwind CSS 4 · zustand · motion · Zod · Express · Vercel · Openverse ·
+Claude (Sonnet 5.5, Haiku 5.5) · Perceptron · TypeSafe Jev · ElevenLabs Scribe · MongoDB Atlas ·
+tldraw · React 19 · Vite · Tailwind CSS 4 · zustand · motion · Zod · Express · Openverse ·
 Iconify · Chrome extension (Manifest V3) · TypeScript · pnpm
 
 ## Demo
 
-The video follows `docs/demo-script.md`: type a prompt, point and say, swap a photo, sketch, then a
-Chat question and a form submission landing in the Backend panel, with replay (Ctrl+Shift+R) as the
-fallback for any live step.
+The video follows `docs/demo-script.md`: lift a schedule, the live app, a row added from a phone via
+QR, a Chat question about the chart, "make this bigger" with undo, then the startup line. Replay
+(Ctrl+Shift+R) is the fallback for any flaky model call.

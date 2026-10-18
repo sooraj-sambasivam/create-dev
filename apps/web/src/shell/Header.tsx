@@ -3,6 +3,7 @@ import { Contrast, Copy, Moon, PanelRight, Share, Sun, X } from "lucide-react";
 import { useScreenStore } from "../store/screenStore";
 import { ChatMenu, type ChatProject } from "./ChatMenu";
 import { THEME_LABEL, useThemeStore, type ThemePreference } from "./theme";
+import { ICON, STROKE, button, input, surface } from "../ui/styles";
 
 export type { ChatProject };
 
@@ -52,8 +53,8 @@ export interface HeaderProps {
   onShare?: () => ShareOutcome | Promise<ShareOutcome>;
 }
 
-const ghostButton =
-  "inline-flex h-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+/** Toggle state of an icon button: ink on hover fill (DESIGN.md). */
+const iconActive = button.icon.replace("text-ink-2", "bg-hover text-ink");
 
 const COPIED_MS = 1600;
 const FAILED_MS = 3000;
@@ -152,7 +153,7 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
   }
 
   const label =
-    state.kind === "copied" ? "Copied" : state.kind === "failed" ? "Share failed" : "Share";
+    state.kind === "copied" ? "Copied" : state.kind === "failed" ? "Couldn't share" : "Share";
 
   return (
     <div className="relative">
@@ -163,11 +164,11 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
         }}
         disabled={busy}
         aria-busy={busy}
-        title="Copy share link"
-        aria-label={state.kind === "idle" ? "Copy share link" : undefined}
-        className={`${ghostButton} gap-1.5 px-2 text-[14px]`}
+        title="Copy link"
+        aria-label={state.kind === "idle" ? "Copy link" : undefined}
+        className={button.ghost}
       >
-        <Share size={18} strokeWidth={1.75} aria-hidden="true" />
+        <Share size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
         <span role="status" aria-live="polite">
           {label}
         </span>
@@ -176,7 +177,7 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
         <div
           role="group"
           aria-label="Share link"
-          className="absolute right-0 top-full z-40 mt-1 w-96 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-surface p-2 shadow-soft"
+          className={`${surface.card} absolute right-0 top-full z-40 mt-1 w-96 max-w-[calc(100vw-2rem)] p-1.5`}
         >
           <p className="px-1 pb-1.5 text-[12px] text-ink-3">
             {state.copyFailed
@@ -190,27 +191,27 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
               value={state.url}
               aria-label="Share link"
               onFocus={(event) => event.currentTarget.select()}
-              className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none focus:border-accent"
+              className={`${input} min-w-0 flex-1`}
             />
             <button
               type="button"
-              aria-label="Copy share link"
-              title="Copy"
+              aria-label="Copy link"
+              title="Copy link"
               onClick={() => {
                 void copyManual(state.url);
               }}
-              className={`${ghostButton} w-8`}
+              className={button.icon}
             >
-              <Copy size={16} strokeWidth={1.75} aria-hidden="true" />
+              <Copy size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
             </button>
             <button
               type="button"
               aria-label="Dismiss share link"
               title="Dismiss"
               onClick={() => setState({ kind: "idle" })}
-              className={`${ghostButton} w-8`}
+              className={button.icon}
             >
-              <X size={16} strokeWidth={1.75} aria-hidden="true" />
+              <X size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -237,11 +238,10 @@ export function ThemeToggle() {
       type="button"
       onClick={cycleTheme}
       aria-label={label}
-      title={`${label}. Click to switch`}
-      className={`${ghostButton} gap-1.5 px-2 text-[14px]`}
+      title={`${label}. Click to switch.`}
+      className={button.icon}
     >
-      <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
-      <span className="hidden sm:inline">{THEME_LABEL[theme]}</span>
+      <Icon size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
     </button>
   );
 }
@@ -272,12 +272,12 @@ export function Header({ pageTitle, chat, projects, outputOpen, actions, onShare
         <button
           type="button"
           onClick={actions.toggleOutput}
-          aria-label={outputOpen ? "Hide output panel" : "Show output panel"}
+          aria-label={outputOpen ? "Hide side panel" : "Show side panel"}
           aria-pressed={outputOpen}
-          title={outputOpen ? "Hide output panel" : "Show output panel"}
-          className={`${ghostButton} w-8 ${outputOpen ? "bg-hover text-ink" : ""}`}
+          title={outputOpen ? "Hide side panel" : "Show side panel"}
+          className={outputOpen ? iconActive : button.icon}
         >
-          <PanelRight size={18} strokeWidth={1.75} aria-hidden="true" />
+          <PanelRight size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
         </button>
       </div>
     </header>

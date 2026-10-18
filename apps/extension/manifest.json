@@ -1,12 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Create: Point at any website",
-  "version": "0.1.0",
-  "description": "Point at any element on a page, say what you want, and open it as an editable Create prototype.",
+  "version": "0.2.0",
+  "description": "Point at a table, list, cards or chart on any page and turn it into a live app you own.",
   "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["http://localhost:3001/*", "http://127.0.0.1:3001/*"],
+  "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_title": "Point at this page (Alt+Shift+P)" },
+  "content_scripts": [
+    { "matches": ["http://*/*", "https://*/*", "file:///*"], "js": ["content.js"], "run_at": "document_idle", "all_frames": false }
+  ],
+  "action": { "default_title": "Point at a table or chart (hold Option, or Alt+Shift+P)" },
   "options_page": "options.html",
   "commands": {
     "_execute_action": {

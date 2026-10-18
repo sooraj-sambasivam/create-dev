@@ -45,7 +45,7 @@ export function IconThumb({ name, px = 24, onSettled }: { name: string; px?: num
   }, [url, attempt]);
 
   if (state === "failed") {
-    return <span aria-hidden data-icon-missing className="inline-block rounded-[4px] border border-dashed border-ink-3 opacity-50" style={{ width: px, height: px }} />;
+    return <span aria-hidden data-icon-missing className="inline-block rounded-md border border-dashed border-ink-3 opacity-50" style={{ width: px, height: px }} />;
   }
   if (colorful) {
     return <img src={url} alt="" width={px} height={px} style={{ opacity: state === "ok" ? 1 : 0.3 }} />;

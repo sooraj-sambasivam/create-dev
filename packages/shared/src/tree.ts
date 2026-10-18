@@ -153,6 +153,7 @@ export function defaultNode(screen: Screen, type: Node["type"]): Node {
     list: { items: ["First point", "Second point", "Third point"], marker: "check" },
     rating: { value: 4.8, label: "120 reviews" },
     table: { columns: ["Item", "Price"], rows: [["Espresso", "$3.50"], ["Latte", "$4.75"]] },
+    chart: { kind: "bar", title: "Weekly orders", labels: ["Mon", "Tue", "Wed", "Thu", "Fri"], series: [{ name: "Orders", values: [12, 18, 9, 22, 16] }] },
     accordion: { items: [{ question: "A common question?", answer: "A clear, friendly answer." }] },
     video: { url: "" },
     map: { address: "Pike Place Market, Seattle" },

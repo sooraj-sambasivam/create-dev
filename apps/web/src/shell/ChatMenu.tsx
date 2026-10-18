@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Asset } from "@create/shared";
+import { ICON, STROKE, button, input, menuItem, surface } from "../ui/styles";
 
 export interface ChatProject {
   id: string;
@@ -40,12 +41,6 @@ export interface ChatMenuProps {
 type View = "menu" | "rename" | "files" | "delete" | "project";
 
 const ease = [0.22, 1, 0.36, 1] as const;
-
-const ghostButton =
-  "inline-flex h-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-
-const menuItem =
-  "flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[14px] text-ink transition-colors duration-150 hover:bg-tray focus-visible:bg-tray focus-visible:outline-none";
 
 const separator = "my-1 h-px bg-line";
 
@@ -240,7 +235,7 @@ export function ChatMenu({
             <button
               type="button"
               data-menu-item
-              className={`${menuItem} w-auto`}
+              className={button.ghost}
               onClick={() => setView("menu")}
             >
               Cancel
@@ -248,7 +243,7 @@ export function ChatMenu({
             <button
               type="button"
               data-menu-item
-              className={`${menuItem} w-auto font-medium`}
+              className={button.danger}
               onClick={() => {
                 onDelete();
                 close(true);
@@ -277,12 +272,12 @@ export function ChatMenu({
             value={name}
             onChange={(event) => setName(event.target.value)}
             aria-label="Chat name"
-            className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none focus:border-accent"
+            className={`${input} min-w-0 flex-1`}
           />
           <button
             type="submit"
             data-menu-item
-            className="h-8 rounded-lg bg-ink px-3 text-[14px] text-surface transition-colors duration-150 hover:opacity-90"
+            className={button.primary}
           >
             Save
           </button>
@@ -294,7 +289,7 @@ export function ChatMenu({
       return (
         <div>
           <button type="button" data-menu-item className={menuItem} onClick={() => setView("menu")}>
-            <ChevronLeft size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+            <ChevronLeft size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
             <span>Back</span>
           </button>
           <div className={separator} />
@@ -304,7 +299,7 @@ export function ChatMenu({
             <ul role="list" aria-label="Files" className="max-h-56 overflow-auto">
               {assets.map((asset, index) => (
                 <li key={`${asset.url}-${index}`} className="flex h-8 items-center gap-2 px-2 text-[14px] text-ink">
-                  <Library size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+                  <Library size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
                   <span className="min-w-0 flex-1 truncate" title={assetLabel(asset, index)}>
                     {assetLabel(asset, index)}
                   </span>
@@ -330,7 +325,7 @@ export function ChatMenu({
               setView("menu");
             }}
           >
-            <ChevronLeft size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+            <ChevronLeft size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
             <span>Back</span>
           </button>
           <div className={separator} />
@@ -348,7 +343,7 @@ export function ChatMenu({
             <span aria-hidden="true" className="size-[18px] shrink-0" />
             <span className="flex-1">No project</span>
             {projectId === null ? (
-              <Check size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+              <Check size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
             ) : null}
           </button>
           {projects.map((project) => (
@@ -364,10 +359,10 @@ export function ChatMenu({
                 close(true);
               }}
             >
-              <Folder size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+              <Folder size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
               <span className="flex-1 truncate">{project.name}</span>
               {project.id === projectId ? (
-                <Check size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+                <Check size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
               ) : null}
             </button>
           ))}
@@ -393,12 +388,12 @@ export function ChatMenu({
                   }
                 }}
                 aria-label="New project name"
-                className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none focus:border-accent"
+                className={`${input} min-w-0 flex-1`}
               />
               <button
                 type="submit"
                 disabled={!newName.trim()}
-                className="h-8 rounded-lg bg-ink px-3 text-[14px] text-surface transition-colors duration-150 hover:opacity-90 disabled:opacity-40"
+                className={button.primary}
               >
                 Create
               </button>
@@ -414,8 +409,8 @@ export function ChatMenu({
                 setCreating(true);
               }}
             >
-              <Plus size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
-              <span>Create new project…</span>
+              <Plus size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
+              <span>New project…</span>
             </button>
           )}
         </div>
@@ -434,7 +429,7 @@ export function ChatMenu({
             setView("rename");
           }}
         >
-          <Pencil size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+          <Pencil size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
           Rename
         </button>
         <button
@@ -445,9 +440,9 @@ export function ChatMenu({
           className={menuItem}
           onClick={() => setView("files")}
         >
-          <Library size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+          <Library size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
           <span className="flex-1">View files</span>
-          <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true" className="text-ink-3" />
+          <ChevronRight size={ICON.sm} strokeWidth={STROKE} aria-hidden="true" className="text-ink-3" />
         </button>
         <button
           type="button"
@@ -460,9 +455,9 @@ export function ChatMenu({
           }}
         >
           {archived ? (
-            <ArchiveRestore size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+            <ArchiveRestore size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
           ) : (
-            <Archive size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+            <Archive size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
           )}
           {archiveLabel(archived)}
         </button>
@@ -474,9 +469,9 @@ export function ChatMenu({
           className={menuItem}
           onClick={() => setView("project")}
         >
-          <Folder size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+          <Folder size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
           <span className="flex-1">Move to project</span>
-          <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true" className="text-ink-3" />
+          <ChevronRight size={ICON.sm} strokeWidth={STROKE} aria-hidden="true" className="text-ink-3" />
         </button>
         <div className={separator} />
         <button
@@ -486,7 +481,7 @@ export function ChatMenu({
           className={menuItem}
           onClick={() => setView("delete")}
         >
-          <Trash2 size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
+          <Trash2 size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" className={iconClass} />
           <span>Delete</span>
         </button>
       </div>
@@ -512,9 +507,9 @@ export function ChatMenu({
           setCreating(false);
           setOpen((current) => !current);
         }}
-        className={`${ghostButton} w-8`}
+        className={button.icon}
       >
-        <Ellipsis size={18} strokeWidth={1.75} aria-hidden="true" />
+        <Ellipsis size={ICON.lg} strokeWidth={STROKE} aria-hidden="true" />
       </button>
       <AnimatePresence>
         {open ? (
@@ -528,7 +523,7 @@ export function ChatMenu({
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -3 }}
             transition={{ duration: reduceMotion ? 0 : 0.2, ease }}
-            className="absolute right-0 top-full z-40 mt-2 max-h-[min(420px,70vh)] min-w-56 overflow-auto rounded-xl border border-line bg-surface p-1.5 shadow-soft"
+            className={`${surface.menu} absolute right-0 top-full z-40 mt-2 max-h-[min(420px,70vh)] overflow-auto`}
           >
             {panel}
           </motion.div>

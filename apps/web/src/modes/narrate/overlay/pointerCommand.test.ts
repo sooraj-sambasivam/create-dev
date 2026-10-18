@@ -32,8 +32,8 @@ describe("phaseText", () => {
     expect(phaseText({ kind: "answer", targetId: null, label: null, question: "q", answer: "a" })).toBe("");
   });
 
-  it("says Cancelled", () => {
-    expect(phaseText({ kind: "cancelled" })).toBe("Cancelled");
+  it("says Canceled", () => {
+    expect(phaseText({ kind: "cancelled" })).toBe("Canceled");
   });
   it("says Still working after the slow threshold, only while working", () => {
     expect(SLOW_MS).toBe(1000);
@@ -50,7 +50,7 @@ describe("phaseAnnouncement", () => {
     expect(phaseAnnouncement({ kind: "listening", targetId: "h1", label: "Welcome" }, "Heading · Welcome")).toBe("Heading · Welcome. Listening");
     expect(phaseAnnouncement({ kind: "listening", targetId: null, label: null }, null)).toBe("Listening");
     expect(phaseAnnouncement({ kind: "done", targetId: "h1", label: "Welcome", message: "Made it bigger" }, "Heading")).toBe("Heading. Done · Made it bigger");
-    expect(phaseAnnouncement({ kind: "cancelled" }, null)).toBe("Cancelled");
+    expect(phaseAnnouncement({ kind: "cancelled" }, null)).toBe("Canceled");
     expect(phaseAnnouncement({ kind: "answer", targetId: null, label: null, question: "q", answer: "It is a hero." }, null)).toBe("It is a hero.");
   });
 });

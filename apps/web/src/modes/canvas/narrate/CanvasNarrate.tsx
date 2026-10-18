@@ -9,6 +9,7 @@ import { alignUtterances, createSpeechTracker } from "./align";
 import { clientToPage, createPathRecorder, placeBubble, rectFromPoints, rectsIntersect, SAMPLE_HZ, type Rect } from "./geometry";
 import { attachPointerTracker } from "./pointerTracker";
 import { buildPrompt, type TargetInfo } from "./prompt";
+import { button, dot, ICON, STROKE, surface } from "../../../ui/styles";
 
 type Phase = "countdown" | "recording" | "finishing" | "building";
 
@@ -278,7 +279,7 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
     tracker.current.flush(endT);
     const spans = tracker.current.spans.filter((s) => s.text.trim());
     if (!spans.length) {
-      onError("I didn't catch any words. Talk while you point, then press Done.");
+      onError("I didn't catch anything. Speak while you point, then press Done.");
       setPhase("recording");
       voice.current?.lock();
       return;
@@ -308,9 +309,7 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
   const micOff = voiceState === "unavailable";
   const kbd = "inline-flex h-6 items-center rounded-md border border-line bg-tray px-1.5 align-middle font-sans text-[12px] leading-none text-ink";
   const ghostBtn =
-    "inline-flex h-8 items-center gap-2 rounded-lg px-3 text-sm text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-  const btn =
-    "inline-flex h-8 items-center gap-2 rounded-full px-3 text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60";
+    `${button.ghost} gap-2`;
 
   return (
     <div ref={rootRef} data-canvas-narrate className="pointer-events-none absolute inset-0 z-[400] overflow-hidden text-ink">
@@ -336,15 +335,15 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
             role="status"
             aria-live="polite"
             data-narrate-ui
-            className="pointer-events-auto w-[340px] max-w-[90%] rounded-xl border border-line bg-surface p-5 text-center shadow-soft"
+            className={`pointer-events-auto w-[340px] max-w-[90%] ${surface.card} p-5 text-center`}
           >
-            <div className="text-[28px] font-semibold tabular-nums leading-none text-ink">{count}</div>
-            <p className="mt-3 text-sm font-medium text-ink">Talk while you point</p>
-            <p className="mt-2 text-sm text-ink-2">
-              Hold <kbd className={kbd}>Shift</kbd> and drag to lasso shapes
+            <div className="text-[28px] font-normal tabular-nums leading-none text-ink">{count}</div>
+            <p className="mt-3 text-[14px] text-ink">Narrate while you point</p>
+            <p className="mt-2 text-[14px] text-ink-2">
+              Hold <kbd className={kbd}>Shift</kbd> and drag to select several shapes
             </p>
-            <p className="mt-1 text-sm text-ink-2">
-              Hold <kbd className={kbd}>Option</kbd> to talk, double-tap to lock
+            <p className="mt-1 text-[14px] text-ink-2">
+              Hold <kbd className={kbd}>Option</kbd> and speak, double-tap to keep listening
             </p>
             <button type="button" onClick={cancel} className={`${ghostBtn} mt-4`}>
               Cancel
@@ -360,22 +359,22 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
             role="status"
             aria-live="polite"
             data-narrate-ui
-            className="pointer-events-auto flex h-10 w-full max-w-[560px] items-center gap-2 rounded-full border border-line bg-surface p-1 text-sm shadow-soft"
+            className={`pointer-events-auto flex h-10 w-full max-w-[560px] items-center gap-2 ${surface.card} p-1 text-[14px]`}
           >
             {phase === "recording" ? (
               <>
-                <span aria-hidden className="ml-3 h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-bad motion-reduce:animate-none" />
+                <span aria-hidden className={`ml-3 ${dot.bad} shrink-0 animate-pulse motion-reduce:animate-none`} />
                 <span className="w-10 shrink-0 tabular-nums text-ink-2">{fmt(elapsed)}</span>
                 <span className="flex min-w-0 flex-1 items-center gap-2 truncate text-ink-2">
                   {micOff ? (
-                    <span className="truncate text-ink-2">Mic unavailable. Pointing only.</span>
+                    <span className="truncate text-ink-2">Microphone unavailable. You can still point.</span>
                   ) : bubbleVisible ? (
                     <span className="truncate text-ink-2">Speaking…</span>
                   ) : live ? (
                     <span className="truncate text-ink">{live}</span>
                   ) : (
                     <>
-                      <Mic size={18} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden />
+                      <Mic size={ICON.lg} strokeWidth={STROKE} className="shrink-0 text-ink-2" aria-hidden />
                       <span className="truncate text-ink-2">Listening…</span>
                     </>
                   )}
@@ -383,7 +382,7 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
               </>
             ) : (
               <>
-                <Loader2 size={18} strokeWidth={1.75} className="ml-3 shrink-0 animate-spin text-ink-2 motion-reduce:animate-none" aria-hidden />
+                <Loader2 size={ICON.lg} strokeWidth={STROKE} className="ml-3 shrink-0 animate-spin text-ink-2 motion-reduce:animate-none" aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-ink">
                   {phase === "building" ? "Building from your narration…" : "Finishing…"}
                 </span>
@@ -392,15 +391,15 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
             {/* Fixed slots so Done / Cancel never shift between recording and building. */}
             <span className="flex w-[84px] shrink-0 justify-end">
               {phase === "recording" && (
-                <button type="button" onClick={done} className={`${btn} w-full justify-center bg-accent font-medium text-on-accent hover:opacity-90`} aria-label="Done">
-                  <Check size={18} strokeWidth={1.75} aria-hidden />
+                <button type="button" onClick={done} className={`${button.primary} w-full`} aria-label="Done">
+                  <Check size={ICON.lg} strokeWidth={STROKE} aria-hidden />
                   Done
                 </button>
               )}
             </span>
             <span className="flex w-[92px] shrink-0 justify-end">
-              <button type="button" onClick={cancel} className={`${btn} w-full justify-center text-ink-2 hover:bg-hover hover:text-ink`} aria-label="Cancel">
-                <X size={18} strokeWidth={1.75} aria-hidden />
+              <button type="button" onClick={cancel} className={`${button.ghost} w-full`} aria-label="Cancel">
+                <X size={ICON.lg} strokeWidth={STROKE} aria-hidden />
                 Cancel
               </button>
             </span>
@@ -411,7 +410,7 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
       <div
         ref={bubbleRef}
         aria-hidden
-        className={`absolute left-0 top-0 max-w-[260px] rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink shadow-soft transition-opacity duration-200 ${
+        className={`absolute left-0 top-0 max-w-[260px] ${surface.card} px-3 py-2 text-[12px] text-ink transition-opacity duration-200 ${
           bubbleVisible ? "opacity-100" : "opacity-0"
         }`}
         style={{ transform: "translate(-9999px, -9999px)", visibility: "hidden" }}

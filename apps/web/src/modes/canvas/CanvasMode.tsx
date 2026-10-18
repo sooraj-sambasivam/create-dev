@@ -22,6 +22,7 @@ import { BuiltBadges, GroupOutline, StrokePopover } from "./StrokeOverlay";
 import { useStrokeGroups } from "./useStrokeGroups";
 import { regionFromBounds } from "./groups";
 import { requestCanvasOps } from "./canvasOpsApi";
+import { button, ICON, STROKE, surface } from "../../ui/styles";
 
 /**
  * tldraw chrome we replace: the studio toolbar takes the top of the canvas, so the main/page menus and helper
@@ -441,19 +442,19 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
           <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[500] flex justify-center px-3">
             <div
               role={toast.kind === "error" ? "alert" : "status"}
-              className="canvas-rise-in pointer-events-auto flex w-max max-w-[min(480px,100%)] items-start gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink shadow-soft"
+              className={`canvas-rise-in pointer-events-auto flex w-max max-w-[min(480px,100%)] items-start gap-2 ${surface.card} px-3 py-2 text-[14px] text-ink`}
             >
-              {toast.kind === "ok" && <Check size={18} strokeWidth={1.75} className="mt-px shrink-0 text-ok" aria-hidden />}
-              {toast.kind === "info" && <Info size={18} strokeWidth={1.75} className="mt-px shrink-0 text-ink-2" aria-hidden />}
-              {toast.kind === "error" && <X size={18} strokeWidth={1.75} className="mt-px shrink-0 text-bad" aria-hidden />}
+              {toast.kind === "ok" && <Check size={ICON.lg} strokeWidth={STROKE} className="mt-px shrink-0 text-ok" aria-hidden />}
+              {toast.kind === "info" && <Info size={ICON.lg} strokeWidth={STROKE} className="mt-px shrink-0 text-ink-2" aria-hidden />}
+              {toast.kind === "error" && <X size={ICON.lg} strokeWidth={STROKE} className="mt-px shrink-0 text-bad" aria-hidden />}
               <span className="min-w-0 break-words">{toast.text}</span>
               <button
                 type="button"
                 aria-label="Dismiss"
                 onClick={() => setToast(null)}
-                className="ml-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className={`${button.iconSm} ml-1 shrink-0`}
               >
-                <X size={16} strokeWidth={1.75} />
+                <X size={ICON.md} strokeWidth={STROKE} />
               </button>
             </div>
           </div>
@@ -466,9 +467,9 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Show preview"
-          className="canvas-fade-in absolute right-2 top-1/2 z-[500] inline-flex h-8 -translate-y-1/2 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-sm text-ink shadow-soft transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className={`${button.secondary} canvas-fade-in absolute right-2 top-1/2 z-[500] -translate-y-1/2 gap-2 shadow-soft`}
         >
-          <PanelRight size={16} strokeWidth={1.75} aria-hidden />
+          <PanelRight size={ICON.md} strokeWidth={STROKE} aria-hidden />
           Preview · {count}
         </button>
       )}
@@ -488,12 +489,12 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
           >
             <span className="absolute left-1/2 top-1/2 h-8 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-line transition-colors duration-150 group-hover:bg-accent group-active:bg-accent" />
           </div>
-          <div className="flex h-full overflow-hidden rounded-xl border border-line bg-surface shadow-soft">
+          <div className={`flex h-full overflow-hidden ${surface.card}`}>
           <div className="flex min-w-0 flex-1 flex-col">
             <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-3">
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-ink">{screen?.title || "Untitled page"}</div>
-                <div className="text-xs text-ink-3">
+                <div className="truncate text-[14px] text-ink">{screen?.title || "Untitled page"}</div>
+                <div className="text-[12px] text-ink-3">
                   {count} {count === 1 ? "element" : "elements"}
                 </div>
               </div>
@@ -502,9 +503,9 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
                 onClick={() => setOpen(false)}
                 aria-label="Close preview"
                 title="Close preview"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className={button.icon}
               >
-                <X size={16} strokeWidth={1.75} />
+                <X size={ICON.md} strokeWidth={STROKE} />
               </button>
             </header>
             <div className="canvas-preview relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-tray">
@@ -520,7 +521,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
               ) : (
                 busy ? (
                   <div role="status" aria-live="polite" className="flex h-full flex-col gap-3 p-3">
-                    <p className="text-sm text-ink-2">Building…</p>
+                    <p className="text-[14px] text-ink-2">Building…</p>
                     {[96, 56, 72, 56].map((h, i) => (
                       <div key={i} className="shimmer rounded-xl bg-hover motion-reduce:animate-none" style={{ height: h }} />
                     ))}
@@ -528,10 +529,10 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
                 ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
                   <div className="grid h-12 w-12 place-items-center rounded-xl bg-hover">
-                    <PanelRight size={24} strokeWidth={1.75} className="text-ink-3" aria-hidden />
+                    <PanelRight size={ICON.lg} strokeWidth={STROKE} className="text-ink-3" aria-hidden />
                   </div>
-                  <p className="text-base text-ink-2">Nothing here yet</p>
-                  <p className="text-sm text-ink-3">Sketch something, then press Make it.</p>
+                  <p className="text-[16px] text-ink">Nothing here yet</p>
+                  <p className="text-[14px] text-ink-3">Sketch something, then press Make it.</p>
                 </div>
                 )
               )}

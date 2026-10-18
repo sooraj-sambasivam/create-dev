@@ -1,4 +1,5 @@
 import { Lock, Mic, MicOff } from "lucide-react";
+import { ICON, STROKE } from "../../../ui/styles";
 
 export type MicState = "idle" | "listening" | "locked" | "unavailable";
 
@@ -8,10 +9,10 @@ export function micLabel(state: MicState, hint?: string): string {
     state === "unavailable"
       ? "Speech recognition isn't available in this browser"
       : state === "locked"
-        ? "Mic locked on"
+        ? "Listening (locked)"
         : state === "listening"
           ? "Listening"
-          : "Mic idle";
+          : "Mic off";
   return hint ? `${label} · ${hint}` : label;
 }
 
@@ -33,7 +34,7 @@ export function MicPill({ state, hint }: { state: MicState; hint?: string }) {
       data-mic-pill
       className={`inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 text-[12px] ${active ? "bg-accent/12 text-accent" : "bg-tray text-ink-2"}`}
     >
-      <Icon size={16} strokeWidth={1.75} className={state === "listening" ? "animate-pulse" : ""} />
+      <Icon size={ICON.md} strokeWidth={STROKE} className={state === "listening" ? "animate-pulse" : ""} />
       {text}
     </span>
   );

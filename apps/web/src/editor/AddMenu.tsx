@@ -17,6 +17,7 @@ const ITEMS: { type: NodeType; hint: string }[] = [
   { type: "list", hint: "Bullets or checkmarks" },
   { type: "rating", hint: "Star reviews" },
   { type: "table", hint: "Menu, prices, hours" },
+  { type: "chart", hint: "Bars or a line" },
   { type: "accordion", hint: "FAQ questions" },
   { type: "video", hint: "YouTube or Vimeo" },
   { type: "map", hint: "Your address on a map" },

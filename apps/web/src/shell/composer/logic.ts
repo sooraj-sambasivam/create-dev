@@ -21,40 +21,30 @@ export function applyMention(value: string, name: string): string {
 }
 
 /**
- * Arc around Go: three 32px bubbles at an even 45° step on a 76px radius, so every neighbouring pair
- * sits ~58px apart centre to centre (~26px gap). The arc sweeps from above Go out past the
- * composer's right edge, ending just below Go's centre.
+ * The fan is one row of 32px bubbles with 8px gaps, floating 12px above the composer's top edge and
+ * right-aligned over Go, so it never covers the text field. Item 0 sits directly above Go; the rest
+ * extend to its left.
  */
-export const FAN_RADIUS = 76;
-export const FAN_STEP = 45;
-export const FAN_ANGLES = [-75, -75 + FAN_STEP, -75 + 2 * FAN_STEP];
+export const FAN_BUBBLE = 32;
+export const FAN_GAP = 8;
+export const FAN_CLEARANCE = 12;
+export const FAN_PITCH = FAN_BUBBLE + FAN_GAP;
 
-export type FanDir = "right" | "left";
-
-/** Horizontal room the arc needs beside Go's centre: radius, half a bubble, and a margin. */
-export const FAN_REACH = FAN_RADIUS + 16 + 8;
-
-/** The `left` arc stays above Go (top, then up-left, then left), so no bubble drops below the composer. */
-export const FAN_ANGLES_LEFT = [-75, -75 - FAN_STEP, -75 - 2 * FAN_STEP];
-
-/** `left` is for when the right side is clipped or covered. */
-export function fanOffset(index: number, dir: FanDir = "right"): { x: number; y: number } {
-  const rad = ((dir === "left" ? FAN_ANGLES_LEFT : FAN_ANGLES)[index] * Math.PI) / 180;
-  return { x: Math.round(Math.cos(rad) * FAN_RADIUS), y: Math.round(Math.sin(rad) * FAN_RADIUS) };
+/** How far above Go's centre the row's centre sits, given Go's and the composer's viewport tops. */
+export function fanRise(goTop: number, composerTop: number): number {
+  return Math.round(goTop - composerTop + FAN_CLEARANCE + FAN_BUBBLE);
 }
 
-/** Prefer the right; mirror left when the right has less than FAN_REACH and the left has more. */
-export function pickFanDir(goCenterX: number, rightEdge: number, leftEdge: number): FanDir {
-  const right = rightEdge - goCenterX;
-  const left = goCenterX - leftEdge;
-  return right >= FAN_REACH || right >= left ? "right" : "left";
+/** Offset of bubble `index` from Go's centre. */
+export function fanOffset(index: number, rise: number): { x: number; y: number } {
+  return { x: index === 0 ? 0 : -index * FAN_PITCH, y: -rise };
 }
 
 export type WorkMode = "chat" | "code";
 
 export function placeholderFor(hasScreen: boolean, mode: WorkMode = "code"): string {
-  if (mode === "chat") return "Ask anything — or point and ask";
-  return hasScreen ? "Describe a change…" : "Describe what to build";
+  if (mode === "chat") return "Ask anything, or point and ask";
+  return hasScreen ? "Describe a change" : "Describe what to build";
 }
 
 const QUESTION_RE = /^\s*(what|why|how|explain|where|when|who|which|is|are|does|do|did|can|could|should|will|would|whats|what's|how's)\b/i;

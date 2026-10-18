@@ -67,7 +67,7 @@ describe("voice reducer", () => {
     expect(run(listening, { type: "notice", message: "x" })).toBe(listening);
   });
   it("notice copy names the browser limit and the fallback", () => {
-    expect(MIC_UNSUPPORTED_NOTICE).toBe("This browser can't use the microphone — type instead");
+    expect(MIC_UNSUPPORTED_NOTICE).toBe("This browser can't use the microphone. Type instead.");
     expect(isUnsupported(unsupportedReason({}) ?? "")).toBe(true);
   });
   it("helpers", () => {

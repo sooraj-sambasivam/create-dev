@@ -63,16 +63,16 @@
   border-radius: 12px;
 }
 
-/* Small controls: radius 8, selected tool in the accent. */
+/* Small controls: radius 8, selected tool on the hover tint (accent fill is reserved for Go). */
 [data-canvas-host] .tlui-button__tool::after,
 [data-canvas-host] .tlui-button::after {
   border-radius: 8px;
 }
 [data-canvas-host] .tlui-button__tool[aria-pressed="true"]:not(:disabled, [data-disabled])::after {
-  background: var(--color-accent);
+  background: var(--color-hover);
 }
 [data-canvas-host] .tlui-button__tool[aria-pressed="true"] {
-  color: #fff;
+  color: var(--color-ink);
 }
 [data-canvas-host] .tlui-button:focus-visible::after {
   outline: 2px solid var(--color-accent);

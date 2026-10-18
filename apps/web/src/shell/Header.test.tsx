@@ -98,11 +98,11 @@ describe("Header markup", () => {
     expect(html).toContain("Coffee shop");
     expect(html).toContain(">Share<");
     expect(html).toContain('aria-label="Chat options"');
-    expect(html).toContain('aria-label="Show output panel"');
+    expect(html).toContain('aria-label="Show side panel"');
     expect(html).toContain('aria-pressed="false"');
   });
 
-  it("reflects the open output panel in aria-pressed", () => {
+  it("reflects the open side panel in aria-pressed", () => {
     const html = renderToStaticMarkup(<Header {...baseProps} outputOpen />);
     expect(html).toContain('aria-pressed="true"');
   });

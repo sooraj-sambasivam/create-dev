@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useValue, type Editor, type TLShapeId } from "tldraw";
 import { Check, Loader2 } from "lucide-react";
+import { button, ICON, input, STROKE, surface } from "../../ui/styles";
 import { popoverPosition, unionBounds, type BuiltGroup, type Box } from "./groups";
 
 /** Screen-space (tldraw container) box around shapes, or null if none exist. Reactive to camera and shape changes. */
@@ -61,7 +62,7 @@ export function StrokePopover({
     <div
       role="dialog"
       aria-label="Describe what this drawing is"
-      className="canvas-rise-in absolute z-[500] w-[296px] rounded-xl border border-line bg-surface p-3 shadow-soft"
+      className={`canvas-rise-in absolute z-[500] w-[296px] ${surface.card} p-3`}
       style={{ left: pos.left, top: pos.top }}
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
@@ -69,7 +70,7 @@ export function StrokePopover({
         if (e.key === "Escape") onEscape();
       }}
     >
-      <label htmlFor="stroke-label" className="mb-1 block text-xs text-ink-2">
+      <label htmlFor="stroke-label" className="mb-1 block text-[12px] text-ink-2">
         What is this?
       </label>
       <textarea
@@ -87,14 +88,14 @@ export function StrokePopover({
           }
         }}
         placeholder="e.g. hero headline, pricing cards, delete this section"
-        className="w-full resize-none rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-ink-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className={`${input} h-auto resize-none py-1.5`}
       />
       <div className="mt-2 flex justify-end gap-2">
         <button
           type="button"
           onClick={onDiscard}
           disabled={busy}
-          className="h-8 rounded-lg px-3 text-sm text-ink-2 transition-colors duration-150 hover:bg-hover disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className={button.ghost}
         >
           Discard
         </button>
@@ -102,9 +103,9 @@ export function StrokePopover({
           type="button"
           onClick={submit}
           disabled={!can}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm text-on-accent transition-opacity duration-150 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className={button.primary}
         >
-          {busy && <Loader2 size={16} strokeWidth={1.75} className="animate-spin motion-reduce:animate-none" aria-hidden />}
+          {busy && <Loader2 size={ICON.md} strokeWidth={STROKE} className="animate-spin motion-reduce:animate-none" aria-hidden />}
           {busy ? "Building" : "Confirm"}
         </button>
       </div>
@@ -132,11 +133,11 @@ function Badge({ editor, group }: { editor: Editor; group: BuiltGroup }) {
   if (!box) return null;
   return (
     <div
-      className="pointer-events-none absolute z-[400] inline-flex max-w-[200px] items-center gap-1 rounded-md border border-line bg-surface px-1.5 py-0.5 text-xs text-ink-2"
+      className="pointer-events-none absolute z-[400] inline-flex h-6 max-w-[200px] items-center gap-1 rounded-md border border-line bg-surface px-1.5 text-[12px] text-ink-2"
       style={{ left: box.x + box.w, top: box.y, transform: "translate(-100%, -100%)" }}
       title={group.label}
     >
-      <Check size={14} strokeWidth={1.75} className="shrink-0 text-ok" aria-hidden />
+      <Check size={ICON.md} strokeWidth={STROKE} className="shrink-0 text-ok" aria-hidden />
       <span className="truncate">{group.label || "Built"}</span>
     </div>
   );

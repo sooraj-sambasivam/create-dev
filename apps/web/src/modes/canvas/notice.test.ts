@@ -10,6 +10,6 @@ describe("classifyNarrateNotice", () => {
     expect(classifyNarrateNotice("Transcription failed: timeout")).toBe("error");
     expect(classifyNarrateNotice("Browser speech recognition: not-allowed")).toBe("error");
     expect(classifyNarrateNotice("Transcription is unavailable and this browser has no speech recognition")).toBe("error");
-    expect(classifyNarrateNotice("I didn't catch any words. Talk while you point, then press Done.")).toBe("error");
+    expect(classifyNarrateNotice("I didn't catch anything. Speak while you point, then press Done.")).toBe("error");
   });
 });

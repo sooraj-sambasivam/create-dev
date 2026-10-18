@@ -11,6 +11,7 @@ import { MOTION_PRESET_IDS, PRESETS } from "../../../motion/presets";
 import { useMotionStore } from "../../../motion/motionStore";
 import { useScreenStore } from "../../../store/screenStore";
 import { useWorkspaceStore } from "../../../store/workspaceStore";
+import { ICON, STROKE } from "../../../ui/styles";
 
 type Tab = "icons" | "photos" | "sections" | "motion";
 const TABS: { id: Tab; label: string }[] = [
@@ -23,7 +24,7 @@ const STYLES = ["line", "solid", "cartoon", "3d", "brand"] as const;
 const PHOTO_SUGGESTIONS = ["modern office", "coffee shop", "mountain landscape", "team meeting", "abstract gradient", "city skyline"];
 
 const chip = (on: boolean) =>
-  `h-6 shrink-0 rounded-[6px] px-2 text-[12px] ${on ? "bg-hover text-ink" : "text-ink-2 hover:bg-hover"}`;
+  `h-6 shrink-0 rounded-md px-2 text-[12px] ${on ? "bg-hover text-ink" : "text-ink-2 hover:bg-hover"}`;
 
 function useDebounced<T>(value: T, ms: number): T {
   const [v, setV] = useState(value);
@@ -36,8 +37,8 @@ function useDebounced<T>(value: T, ms: number): T {
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
-    <label className="flex h-8 items-center gap-2 rounded-[8px] border border-line bg-surface px-2 text-ink-2 focus-within:border-accent">
-      <Search size={14} strokeWidth={1.75} />
+    <label className="flex h-8 items-center gap-2 rounded-lg border border-line bg-surface px-2 text-ink-2 focus-within:border-accent">
+      <Search size={ICON.md} strokeWidth={STROKE} />
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-3" />
     </label>
   );
@@ -91,17 +92,17 @@ function IconsTab() {
             onDragStart={(e) => setLibraryDrag(e, { libraryKind: "icon", value: name, label: name })}
             onClick={() => insertIntoPage([iconNode(name)], `Added icon ${name}`)}
             onDoubleClick={() => onCanvasAdd({ libraryKind: "icon", value: name, label: name })}
-            className="flex aspect-square items-center justify-center rounded-[8px] text-ink-2 hover:bg-hover"
+            className="flex aspect-square items-center justify-center rounded-lg text-ink-2 hover:bg-hover"
           >
             <IconThumb name={name} px={24} onSettled={settle} />
           </button>
         ))}
       </div>
       {broken && (
-        <div role="alert" className="flex items-center justify-between gap-2 rounded-[8px] border border-line bg-tray px-2 py-1.5 text-[12px] text-ink-2">
+        <div role="alert" className="flex items-center justify-between gap-2 rounded-lg border border-line bg-tray px-2 py-1.5 text-[12px] text-ink-2">
           <span>Couldn't load icons.</span>
-          <button type="button" onClick={() => setRound((r) => r + 1)} className="inline-flex h-6 items-center gap-1 rounded-[6px] px-2 text-ink hover:bg-hover">
-            <RotateCw size={14} strokeWidth={1.75} aria-hidden /> Retry
+          <button type="button" onClick={() => setRound((r) => r + 1)} className="inline-flex h-6 items-center gap-1 rounded-md px-2 text-ink hover:bg-hover">
+            <RotateCw size={ICON.md} strokeWidth={STROKE} aria-hidden /> Retry
           </button>
         </div>
       )}
@@ -170,7 +171,7 @@ function PhotosTab() {
       </form>
       <div className="flex flex-wrap gap-1">
         {PHOTO_SUGGESTIONS.map((s) => (
-          <button key={s} type="button" className="h-6 rounded-[6px] border border-line px-2 text-[12px] text-ink-2 hover:bg-hover" onClick={() => { setQ(s); now(s); }}>{s}</button>
+          <button key={s} type="button" className="h-6 rounded-md border border-line px-2 text-[12px] text-ink-2 hover:bg-hover" onClick={() => { setQ(s); now(s); }}>{s}</button>
         ))}
       </div>
       <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-2 overflow-y-auto">
@@ -182,7 +183,7 @@ function PhotosTab() {
             onDragStart={(e) => setLibraryDrag(e, { libraryKind: "photo", value: r.url, label: r.q })}
             onClick={() => insertIntoPage([photoNode(r.url, r.q)], "Added photo")}
             onDoubleClick={() => onCanvasAdd({ libraryKind: "photo", value: r.url, label: r.q })}
-            className="overflow-hidden rounded-[8px] border border-line"
+            className="overflow-hidden rounded-lg border border-line"
           >
             <img src={r.url} alt={r.q} loading="lazy" className="aspect-video w-full object-cover" />
           </button>
@@ -190,7 +191,7 @@ function PhotosTab() {
       </div>
       {busy && (
         <p role="status" className="flex items-center gap-1.5 text-[12px] text-ink-3">
-          <Loader2 size={14} strokeWidth={1.75} className="animate-spin motion-reduce:animate-none" aria-hidden /> Searching…
+          <Loader2 size={ICON.md} strokeWidth={STROKE} className="animate-spin motion-reduce:animate-none" aria-hidden /> Searching…
         </p>
       )}
       {!busy && searched && results.length === 0 && <p className="text-[12px] text-ink-3">No photos found for "{searched}".</p>}
@@ -204,7 +205,7 @@ function SectionsTab() {
     <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
       {SECTION_TEMPLATES.map((t) => (
         <li key={t.id}>
-          <button type="button" draggable onDragStart={(e) => setLibraryDrag(e, { libraryKind: "section", value: t.id, label: t.label })} onClick={() => insertIntoPage(structuredClone(t.nodes), `Added ${t.label} section`)} className="flex w-full flex-col rounded-[8px] px-2 py-2 text-left hover:bg-hover">
+          <button type="button" draggable onDragStart={(e) => setLibraryDrag(e, { libraryKind: "section", value: t.id, label: t.label })} onClick={() => insertIntoPage(structuredClone(t.nodes), `Added ${t.label} section`)} className="flex w-full flex-col rounded-lg px-2 py-2 text-left hover:bg-hover">
             <span className="text-[14px] text-ink">{t.label}</span>
             <span className="text-[12px] text-ink-3">{t.description}</span>
           </button>
@@ -230,7 +231,7 @@ function MotionTab() {
             onDragStart={(e) => setLibraryDrag(e, { libraryKind: "motion", value: p, label: PRESETS[p].label })}
             disabled={!selectedId || !chatId}
             onClick={() => selectedId && chatId && setPreset(chatId, selectedId, p)}
-            className="flex flex-col items-center gap-2 rounded-[8px] border border-line p-2 text-[12px] text-ink-2 hover:bg-hover disabled:opacity-60"
+            className="flex flex-col items-center gap-2 rounded-lg border border-line p-2 text-[12px] text-ink-2 hover:bg-hover disabled:opacity-50"
           >
             <MotionPreview preset={p} />
             {PRESETS[p].label}
@@ -246,23 +247,23 @@ export function LibraryPanel() {
   const [tab, setTab] = useState<Tab>("icons");
   if (!open) {
     return (
-      <button type="button" aria-label="Open library" onClick={() => setOpen(true)} className="flex h-8 w-8 items-center justify-center self-start rounded-[8px] text-ink-2 hover:bg-hover">
-        <ChevronRight size={18} strokeWidth={1.75} />
+      <button type="button" aria-label="Open library" onClick={() => setOpen(true)} className="flex h-8 w-8 items-center justify-center self-start rounded-lg text-ink-2 hover:bg-hover">
+        <ChevronRight size={ICON.lg} strokeWidth={STROKE} />
       </button>
     );
   }
   return (
     <aside aria-label="Library" className="flex h-full w-[260px] shrink-0 flex-col border-r border-line bg-surface">
-      <div className="flex items-center justify-between border-b border-line px-2 py-1">
-        <div role="tablist" className="flex gap-0.5">
+      <div className="flex items-center justify-between gap-1 border-b border-line px-1.5 py-1">
+        <div role="tablist" className="flex min-w-0 gap-0">
           {TABS.map((t) => (
-            <button key={t.id} role="tab" aria-selected={tab === t.id} type="button" onClick={() => setTab(t.id)} className={`h-8 rounded-[8px] px-2 text-[14px] ${tab === t.id ? "text-ink" : "text-ink-3 hover:bg-hover"}`}>
+            <button key={t.id} role="tab" aria-selected={tab === t.id} type="button" onClick={() => setTab(t.id)} className={`h-8 rounded-lg px-1 text-[14px] ${tab === t.id ? "bg-hover text-ink" : "text-ink-2 hover:bg-hover"}`}>
               {t.label}
             </button>
           ))}
         </div>
-        <button type="button" aria-label="Collapse library" onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-[8px] text-ink-2 hover:bg-hover">
-          <ChevronLeft size={18} strokeWidth={1.75} />
+        <button type="button" aria-label="Collapse library" onClick={() => setOpen(false)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-2 hover:bg-hover">
+          <ChevronLeft size={ICON.lg} strokeWidth={STROKE} />
         </button>
       </div>
       {tab === "icons" && <IconsTab />}

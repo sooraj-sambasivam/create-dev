@@ -36,15 +36,15 @@
 @layer base {
   :root {
     color-scheme: light;
-    /* Menus (role="menu" panels) read raised: a surface fill and a shadow the dark theme can override. */
+    /* Menus (role="menu" panels) read raised in dark: a lighter fill, and a hover one step above it. */
     --menu-surface: var(--color-surface);
-    --menu-shadow: 0 4px 24px color-mix(in srgb, var(--color-ink) 8%, transparent);
+    --menu-hover: var(--color-tray);
   }
 
-  /* Menu panels repoint the surface and the composer shadow alias to the menu tokens. */
+  /* Menu panels repoint surface and tray, so bg-surface and the menu-item hover (bg-tray) work in both themes. */
   [role="menu"] {
     --color-surface: var(--menu-surface);
-    --c-shadow: var(--menu-shadow);
+    --color-tray: var(--menu-hover);
   }
 
   body {
@@ -61,6 +61,9 @@
 }
 
 /*
+ * The two dark blocks below must stay identical (CSS cannot share one declaration list between a
+ * media query and an attribute selector). Change both together.
+ *
  * Dark app shell. The light values above stay the default. These blocks redefine
  * the same --color-* tokens (Tailwind emits them on :root) for dark mode:
  * - explicit dark: html[data-theme="dark"]
@@ -85,7 +88,7 @@
     --color-bad: #f2706b;
     --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.45);
     --menu-surface: var(--color-tray);
-    --menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --menu-hover: var(--color-hover);
     color-scheme: dark;
   }
 }
@@ -106,7 +109,7 @@ html[data-theme="dark"] {
   --color-bad: #f2706b;
   --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.45);
   --menu-surface: var(--color-tray);
-  --menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --menu-hover: var(--color-hover);
   color-scheme: dark;
 }
 

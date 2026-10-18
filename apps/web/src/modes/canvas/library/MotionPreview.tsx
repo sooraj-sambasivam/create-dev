@@ -8,7 +8,7 @@ export function MotionPreview({ preset }: { preset: MotionPreset }) {
   return (
     <div className="flex h-10 w-full items-center justify-center overflow-hidden" onMouseEnter={() => setN((v) => v + 1)}>
       <style>{`@media (prefers-reduced-motion: no-preference){${keyframesCss([preset])}.${cls}{animation:${PRESETS[preset].animation}}}`}</style>
-      <div key={n} className={`${cls} h-5 w-8 rounded-[6px] bg-accent`} />
+      <div key={n} className={`${cls} h-5 w-8 rounded-md bg-accent`} />
     </div>
   );
 }

@@ -9,10 +9,7 @@
  * generated page keeps its own palette. Selectors stay more specific than the utilities they override.
  */
 [data-builder] {
-  --builder-on-accent: #ffffff;
-}
-html.dark [data-builder] {
-  --builder-on-accent: #0d0d0d;
+  --builder-on-accent: var(--color-on-accent);
 }
 
 [data-builder] section.rounded-2xl {

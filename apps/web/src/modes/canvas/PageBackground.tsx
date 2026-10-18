@@ -27,7 +27,7 @@ export function PageBackground() {
       >
         {sectionLines(box.h).map((y) => (
           <div key={y} className="absolute inset-x-0 border-t border-dashed border-line" style={{ top: y * box.z }}>
-            <span className="absolute right-2 top-1 text-xs text-ink-3">{y}</span>
+            <span className="absolute right-2 top-1 text-[12px] text-ink-3">{y}</span>
           </div>
         ))}
       </div>

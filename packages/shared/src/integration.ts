@@ -153,3 +153,33 @@ export const FormSubmissionSchema = z.object({
 });
 export type FormSubmission = z.infer<typeof FormSubmissionSchema>;
 export type StoredSubmission = FormSubmission & { id: string; appId: string; createdAt: string };
+
+/** A pointed-at table, chart, list or schedule turned into typed data. Source of a "lift" into a live app. */
+export const EntityColumnSchema = z.object({
+  key: z.string().max(60),
+  label: z.string().max(120),
+  type: z.enum(["text", "number", "money", "date", "time", "percent"]),
+});
+export const EntitySchema = z.object({
+  kind: z.enum(["table", "chart", "list", "schedule"]),
+  title: z.string().max(200),
+  columns: z.array(EntityColumnSchema).min(1).max(20),
+  rows: z.array(z.record(z.string(), z.string().max(500))).max(500),
+  source: z.object({ url: z.string().max(2000).optional(), title: z.string().max(300).optional() }).default({}),
+});
+export type Entity = z.infer<typeof EntitySchema>;
+
+/** POST /api/lift: an entity (plus an optional spoken/typed instruction) becomes a live app; returns a share link. */
+export const LiftRequestSchema = z.object({
+  entity: EntitySchema,
+  instruction: z.string().max(1000).optional(),
+});
+export type LiftRequest = z.infer<typeof LiftRequestSchema>;
+export type LiftResponse = { id: string; url: string; formId: string; provider: "claude" | "mock" };
+
+/** POST /api/extract: a pixel crop (chart or screenshot) becomes an entity, read by Perceptron or Claude vision. */
+export const ExtractRequestSchema = z.object({
+  image: z.string().min(1).max(4_000_000),
+  hint: z.string().max(500).optional(),
+});
+export type ExtractResponse = { entity: Entity; provider: "perceptron" | "claude" | "mock" };

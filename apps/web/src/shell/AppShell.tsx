@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       log("share", url);
       return copied ? true : { url };
     } catch (err) {
-      useScreenStore.setState({ error: err instanceof Error ? err.message : "Could not create a share link." });
+      useScreenStore.setState({ error: err instanceof Error ? err.message : "Couldn't create a share link." });
       return false;
     }
   }, [log]);

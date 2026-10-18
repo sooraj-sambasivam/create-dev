@@ -6,6 +6,7 @@ import { useCardRect } from "../../../narrate/useCardRect";
 import { generateDemo, type DemoOutcome } from "./demoApi";
 import { formatElapsed, progressPct } from "./demoFormat";
 import { getDemoWorkspaceBridge } from "./workspaceBridge";
+import { button, ICON, STROKE, surface } from "../../../ui/styles";
 
 export type GeneratingDemoProps = {
   session: NarrationSession;
@@ -24,11 +25,7 @@ const FALLBACK_STEPS = [
   { at: 14, label: "Polishing the details", pct: 75 },
 ];
 
-const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-
-const accentBtn = "bg-accent text-on-accent";
-const sectionCls = "relative w-full max-w-[520px] rounded-xl border border-line bg-surface p-8";
+const sectionCls = `relative w-full max-w-[520px] ${surface.card} p-8`;
 
 function Frame({ children }: { children: React.ReactNode }) {
   const card = useCardRect();
@@ -85,7 +82,7 @@ export function GeneratingDemo({ session, onDone, onClose }: GeneratingDemoProps
       })
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
-        setError(e instanceof Error && e.message ? e.message : "Something went wrong");
+        setError(e instanceof Error && e.message ? e.message : "Something went wrong. Try again.");
         setStatus("error");
       });
 
@@ -137,9 +134,9 @@ export function GeneratingDemo({ session, onDone, onClose }: GeneratingDemoProps
             onClick={onClose}
             aria-label="Close"
             title="Close"
-            className={`absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+            className={`${button.icon} absolute right-6 top-6`}
           >
-            <X size={18} strokeWidth={1.75} />
+            <X size={ICON.lg} strokeWidth={STROKE} />
           </button>
 
           <h1
@@ -150,21 +147,21 @@ export function GeneratingDemo({ session, onDone, onClose }: GeneratingDemoProps
           </h1>
           <p className="mt-2 text-[14px] text-ink-2">{outcome.summary}</p>
           {outcome.mock ? (
-            <p className="mt-2 text-[12px] text-ink-2">Built without a model key (mock mode)</p>
+            <p className="mt-2 text-[12px] text-ink-2">Built with sample content</p>
           ) : null}
 
           <div className="mt-6 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={openInOutput}
-              className={`h-8 rounded-lg px-3 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+              className={button.ghost}
             >
               Open in Output
             </button>
             <button
               type="button"
               onClick={openPage}
-              className={`h-8 rounded-full ${accentBtn} px-4 text-[14px] transition-colors duration-150 hover:opacity-90 ${focusRing}`}
+              className={button.primary}
             >
               Open page
             </button>
@@ -188,9 +185,9 @@ export function GeneratingDemo({ session, onDone, onClose }: GeneratingDemoProps
           onClick={onClose}
           aria-label="Close"
           title="Close"
-          className={`absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+          className={`${button.icon} absolute right-6 top-6`}
         >
-          <X size={18} strokeWidth={1.75} />
+          <X size={ICON.lg} strokeWidth={STROKE} />
         </button>
 
         <h1
@@ -210,7 +207,7 @@ export function GeneratingDemo({ session, onDone, onClose }: GeneratingDemoProps
           className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-hover"
         >
           <div
-            className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out motion-reduce:transition-none"
+            className="h-full rounded-full bg-ink transition-[width] duration-500 ease-out motion-reduce:transition-none"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -233,7 +230,7 @@ export function GeneratingDemo({ session, onDone, onClose }: GeneratingDemoProps
                     aria-hidden="true"
                   />
                 ) : (
-                  <Check size={16} strokeWidth={1.75} className="mt-0.5 shrink-0 text-ok" aria-hidden="true" />
+                  <Check size={ICON.md} strokeWidth={STROKE} className="mt-0.5 shrink-0 text-ok" aria-hidden="true" />
                 )}
                 <span className={isCurrent ? "text-ink" : undefined}>{step.label}</span>
               </li>
@@ -255,16 +252,16 @@ export function GeneratingDemo({ session, onDone, onClose }: GeneratingDemoProps
         {status === "error" ? (
           <div className="mt-6 flex flex-col gap-3 rounded-lg bg-tray p-4">
             <p className="flex items-start gap-2 text-[14px] text-ink">
-              <CircleAlert size={16} strokeWidth={1.75} className="mt-0.5 shrink-0 text-bad" aria-hidden="true" />
-              <span>{error ?? "Something went wrong while building the demo."}</span>
+              <CircleAlert size={ICON.md} strokeWidth={STROKE} className="mt-0.5 shrink-0 text-bad" aria-hidden="true" />
+              <span>{error ?? "Something went wrong. Try again."}</span>
             </p>
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={retry}
-                className={`flex h-8 items-center gap-2 rounded-full ${accentBtn} px-4 text-[14px] transition-colors duration-150 hover:opacity-90 ${focusRing}`}
+                className={button.primary}
               >
-                <RotateCw size={16} strokeWidth={1.75} aria-hidden="true" />
+                <RotateCw size={ICON.md} strokeWidth={STROKE} aria-hidden="true" />
                 Retry
               </button>
             </div>

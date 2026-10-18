@@ -1,48 +1,68 @@
-# Create: point at it, say it, it changes
+# Create: pixels become software you own
 
-A website builder where the input is natural: type a prompt, speak it, draw shapes, or **point at
-an element and talk** ("make this bigger", "swap this photo"). Every mode produces the same
-**JSON component tree**, which one React renderer turns into a live page. DubHacks '26.
+Point at a table, chart, list or schedule on the web, say or type "turn this into something I can
+track", and Create hands you a live app: an editable table, a chart and an add-row form backed by
+real storage. Scan the QR code on your phone, add a row, and it shows up on the laptop. DubHacks '26.
 
-Inspired by the Google DeepMind AI pointer: the pointer supplies "this" and "that", the voice
-supplies the change, and the edit happens in place. A bubble shows what Create understood.
+Google's pointer answers questions. Create hands you software you own, with a backend.
+
+The same pointer works inside the app: hover an element, hold Option and say "make this bigger".
+A bubble shows what Create understood, and undo is one key. Chat mode answers questions about
+what you point at ("why does week 3 spike?").
 
 See [docs/screenshots](docs/screenshots/README.md).
-<!-- OWNER: add screenshots to docs/screenshots/ (pointer bubble, canvas sketch, phone share) and link them here. -->
+<!-- OWNER: add screenshots to docs/screenshots/ (lifted schedule app, QR card, Backend tab with a new row, pointer bubble) and link them here. -->
+<!-- OWNER: product name decision (Create vs Lift) before submit; copy currently says Create. -->
 
 ## Features
 
-- **Point and talk (Narrate):** hover an element, hold Option, say "make this bigger" or "swap this
-  photo". A bubble shows the target label, the words heard, then Editing and Done. Ambiguous
-  targets ask "Which one?". Shift+drag selects several elements. Edits are queued and undoable.
-- **Chat | Code modes (verify before submit):** Chat answers questions about anything, including a figure you point at; Code builds and edits the page.
-- **AI pointer (verify before submit):** click to pin a target, or hold Option to talk.
-- **Per-app Backend (verify before submit):** form submissions on a built page are stored in MongoDB (file fallback) and listed in the app's Backend panel.
-- **Onboarding (verify before submit):** first-run paths for technical and non-technical users.
-- **Type, speak, draw:** prompt composer, live voice (ElevenLabs Scribe, browser speech fallback),
-  and a tldraw canvas whose sketch (plus dropped sections, icons and photos) becomes edits.
+- **Lift (Chrome extension):** hold Option over a table, list, pricing cards or a chart image on any
+  page. The extension reads the pointed-at data into a typed entity (columns and up to 500 rows),
+  and `POST /api/lift` turns it into a Create app. Charts that are only an image are cropped and
+  read through `POST /api/extract` (Perceptron, then Claude vision, then a mock). Details in
+  `apps/extension/README.md`.
+- **The app you get:** an editable table, a bar or line chart, and an "Add row" form. Rows go to
+  the forms store (`/api/forms/:appId`), which uses MongoDB when `MONGODB_URI` is set and local
+  files otherwise. The table and chart carry a `liveFormId` that binds them to that form.
+- **QR to a phone:** the Output tab and shared view have a "Scan to open" card with a QR code. A
+  row added from the phone lands in the app's **Backend** tab, which polls every 3 seconds and
+  flashes new rows.
+- **Point and talk (Narrate):** hover an element, hold Option, say "make this bigger" or "swap
+  this photo". A bubble shows the target label, the words heard, then Editing and Done. Ambiguous
+  targets ask "Which one?". Edits are queued and undoable.
+- **Chat | Code modes:** Chat answers questions about anything, including a figure you point at (the
+  server sends a crop of it to vision). Code builds and edits the app.
+- **Type, speak, sketch, narrate:** prompt composer, live voice (ElevenLabs Scribe, browser speech
+  fallback) and a tldraw canvas whose sketch becomes edits.
 - **Editor:** click to select, drag, resize, type in place, inspector, per-element AI box.
-- **Chrome extension:** point at any website, optionally say or type a change, and open it in
-  Create as an editable prototype (`apps/extension/README.md`).
-- **Share:** read-only links; `pnpm share:tunnel` exposes the dev server for a phone.
-- **Publish:** one self-contained HTML file.
+- **Onboarding:** a first-run path for people who ask and for developers.
+- **Share and publish:** read-only links, `pnpm share:tunnel` for a phone, and one self-contained
+  HTML export.
 - **Replay mode:** Ctrl+Shift+R answers model calls from a recorded run. Intent and canvas-ops
   calls replay only on an exact request match.
 
+Everything above was exercised by the headless smoke test (`node scripts/e2e/smoke.mjs`, lift,
+chart and add-row included) and the extension test (`scripts/e2e/extension.mjs`). Not exercised in
+a real browser session: Chrome speech and the mic button in the extension, real Perceptron and
+Claude extract calls (no keys in test), and the QR scan from a physical phone. Verify before submit.
+
 ## Sponsor tech
 
-- **TypeSafe Jev:** routes each spoken line to an action and a target. Pointer deixis: when the
-  pointer's element is one of the candidates and Jev judges the words are deictic ("this", "that"),
-  the pointed element wins; otherwise the words choose. Falls back to Claude Haiku, then keywords.
-- **Perceptron:** reads canvas sketches (what each shape is and where) before Claude writes edit ops.
+- **Perceptron:** reads chart and image crops into a typed entity (`apps/server/src/extract/`), and
+  reads canvas sketches before Claude writes edit ops. Without a key, Claude vision, then a mock.
+- **MongoDB Atlas (MLH):** per-app form submissions (the rows people add) and share links
+  (`MONGODB_URI`). Local files without it.
+- **TypeSafe Jev:** routes each spoken line to an action and a target. When the words are deictic
+  ("this", "that"), the pointed element wins; otherwise the words choose. Falls back to Claude
+  Haiku, then keywords.
 - **ElevenLabs Scribe:** realtime transcription with a single-use token minted by the server.
-- **MongoDB Atlas (MLH):** share links and per-app form submissions (`MONGODB_URI`); local files without it.
+- **Claude:** builds and edits apps, polishes the title and summary of a lifted app, answers Chat.
 
 Hackathon tracks: DubHacks NEXT, Perceptron, SideShift, MongoDB Atlas. Team: Sooraj Sambasivam, Abel Anand, pentaswan. Per-track evidence: `docs/devpost.md`.
 
 ## Quickstart (judges)
 
-Requirements: Node 22+, pnpm 9+.
+Requirements: Node 22+, pnpm 9+, Chrome for the extension.
 
 ```bash
 pnpm install
@@ -50,14 +70,35 @@ cp apps/server/.env.example apps/server/.env   # fill in keys, or keep MOCK_AI=1
 pnpm dev                                        # API :3001 + web :5173 (next free port if taken)
 ```
 
-Open http://localhost:5173 (default web port; Vite picks the next free port if it is taken).
+Open http://localhost:5173 (Vite picks the next free port if it is taken, for example 5175).
 With `MOCK_AI=1` no model is called and the whole UI works with canned pages. For real output,
 set `ANTHROPIC_API_KEY`, remove `MOCK_AI`, and restart the server (`.env` is read at startup).
 Check `http://localhost:3001/api/health` to see which keys are present.
 
-Try it: pick **Narrate** from the radial fan, hover the page title, hold Option and say
-"make this bigger". `pnpm onboard` checks your setup. Demo flow: `docs/demo-script.md`.
-If a live step fails, press Ctrl+Shift+R for replay mode.
+### Try the lift in two minutes
+
+1. Open `chrome://extensions`, turn on Developer mode, click Load unpacked, choose `apps/extension`.
+   Open the extension's options and set the web origin to the port Vite printed.
+2. Open a fixture page from `apps/extension/demo/`: `route-44-schedule.html`, `dubhacks-schedule.html`,
+   `dining-hours.html`, `pricing.html` or `chart.html`. For `file://` pages, enable "Allow access to
+   file URLs" on the extension. Or serve the folder: `python3 -m http.server -d apps/extension/demo 8080`.
+3. Hold Option over the table until it outlines, release, keep "something I can track" (or type or
+   say your own), press Enter. A new tab opens with your app.
+4. Add a row with the form. It appears in the table and in the Output panel's **Backend** tab.
+
+### Phone and QR
+
+```bash
+pnpm share:tunnel                                   # prints https://<name>.trycloudflare.com (needs cloudflared)
+PUBLIC_URL=https://<name>.trycloudflare.com pnpm --filter @create/server dev
+```
+
+Set `PUBLIC_URL` before lifting, or the app link points at localhost. Then lift a table, open the
+Output tab, choose the QR button, and scan with a phone. Test on the venue wifi first (`docs/DEPLOY.md`).
+
+Other tries: pick **Narrate** from the radial fan, hover the page title, hold Option and say "make
+this bigger". `pnpm onboard` checks your setup. Demo flow: `docs/demo-script.md`. If a live step
+fails, press Ctrl+Shift+R for replay mode.
 
 ## Environment variables (names only, in `apps/server/.env`)
 
@@ -100,7 +141,8 @@ brand `accent`, `font` and a tree of nodes. Element types:
 
 | Group | Types |
 | --- | --- |
-| Text | heading, text, badge, list, table, accordion (FAQ) |
+| Text | heading, text, badge, list, table (optional `liveFormId`), accordion (FAQ) |
+| Data | chart (bar or line, 1 to 4 series, optional `liveFormId`) |
 | Actions | button, link (both take an `icon` and an `href`: `#section-id`, https, mailto, tel) |
 | Media | image (stock `query` or uploaded `src`, sizes from logo to full), avatar, icon (any Iconify icon), video (YouTube/Vimeo), map (address) |
 | Social proof | rating |
@@ -145,11 +187,13 @@ To add a mode:
 
 ## Extension and sharing
 
-Load `apps/extension` unpacked in Chrome (see `apps/extension/README.md`). It posts a structural
-snapshot of the clicked element to `POST /api/import-element`, which returns a Create link. The
-server allows `chrome-extension://` origins on that path only (any extension ID; set
-`ALLOWED_ORIGINS` for extra web origins). The extension has not been tested in a real Chrome yet.
-OWNER: confirm it loads and imports before claiming it in the demo.
+Load `apps/extension` unpacked in Chrome (see `apps/extension/README.md`). It sends a typed entity
+to `POST /api/lift` (or a chart crop to `POST /api/extract` first) and opens the returned link. The
+server never fetches the source page. The server's CORS list allows `chrome-extension://` origins
+on the legacy import path only; lift and extract calls are made from the extension's background
+worker (its `<all_urls>` host permission). Set `ALLOWED_ORIGINS` for extra web origins. The headless
+extension test passes (12/12); a hands-on run in your own Chrome profile has not been done.
+OWNER: confirm it loads and lifts the fixture pages in real Chrome before claiming it in the demo.
 
 Phone sharing: start `pnpm dev`, run `pnpm share:tunnel` (needs `cloudflared`), set `PUBLIC_URL`
 to the printed URL, restart the API. See `docs/DEPLOY.md`.
@@ -162,6 +206,9 @@ the Express app. This route is untested on Vercel; OWNER: deploy a preview befor
 - At 1440x900 with the right panel open, the radial fan's Canvas and Narrate items can sit under
   the Run log summary and not take real clicks.
 - The hover bubble label can be a raw node description instead of a short name like "Heading".
+- Lift links use `PUBLIC_URL`, then the request Origin, then `http://localhost:5173`. Set `PUBLIC_URL` for any phone demo.
+- Lifted tables and charts are read from the page you pointed at. Values read from a chart image are approximate; use a DOM table when exact numbers matter.
+- Chart labels and values from an AI edit are not padded to equal length.
 
 ## Publishing
 
@@ -179,6 +226,11 @@ All routes are under `/api`.
 | `POST /generate` `{ prompt, screen?, history?, assets? }` | Build or refine a page, `{ summary, screen }` (streams partial frames) |
 | `POST /edit-node` `{ prompt, screen, nodeId, assets? }` | Rewrite one element, `{ summary, nodes }` |
 | `POST /route-intent` `{ text, candidates, pointer? }` | Route a spoken line: action and target (Jev, then Haiku, then keywords) |
+| `POST /lift` `{ entity, instruction? }` | Typed entity to a live app, `{ id, url, formId, provider }` (rate limited, 1 MB body) |
+| `POST /extract` `{ image, hint? }` | Chart or image crop (data URL, up to 4 MB) to an entity, `{ entity, provider }` (perceptron, claude or mock) |
+| `POST /forms/:appId` `{ formId, fields }` | Store a submitted row (the add-row form) |
+| `POST /forms/:appId/token`, `GET /forms/:appId` | Owner read token, then list stored rows (Bearer token) |
+| `POST /ask` | Chat-mode answer, optionally about a pointed-at crop |
 | `POST /import-element` | Chrome extension snapshot to a Create prototype, `{ id, url }` |
 | `POST /canvas-ops` | Turn a canvas selection (PNG and shapes) into typed edit ops (Perceptron, then Claude) |
 | `POST /generate-sketch` | Sketch to page |

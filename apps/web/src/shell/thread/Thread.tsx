@@ -6,6 +6,7 @@ import { useWorkMode } from "../../store/modeStore";
 import { useRightPanel } from "../rightPanel";
 import { deriveItems, type ThreadItem } from "./items";
 import { parseBlocks, type Inline } from "./markdown";
+import { ICON, STROKE, button, chip, focusRing } from "../../ui/styles";
 
 function useElapsed(active: boolean): number {
   const [s, setS] = useState(0);
@@ -22,7 +23,7 @@ function useElapsed(active: boolean): number {
 function Avatar() {
   return (
     <span aria-hidden className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-tray text-ink-2">
-      <Sparkles size={14} strokeWidth={1.75} />
+      <Sparkles size={ICON.sm} strokeWidth={STROKE} />
     </span>
   );
 }
@@ -49,7 +50,7 @@ function Inlines({ inlines }: { inlines: Inline[] }) {
         n.t === "bold" ? (
           <strong key={i} className="font-semibold">{n.v}</strong>
         ) : n.t === "code" ? (
-          <code key={i} className="rounded bg-tray px-1 py-0.5 font-mono text-[14px]">{n.v}</code>
+          <code key={i} className="rounded-md bg-tray px-1 py-0.5 font-mono text-[14px]">{n.v}</code>
         ) : (
           <span key={i}>{n.v}</span>
         ),
@@ -83,10 +84,10 @@ function Markdown({ text }: { text: string }) {
 }
 
 function ElementChip({ label, onClick }: { label: string; onClick: (() => void) | null }) {
-  const cls = "mb-1 mr-2 inline-flex h-5 max-w-full items-center gap-1 rounded-md bg-tray px-1.5 text-[12px] text-ink-2";
+  const cls = `${chip.tag} mb-1 mr-2`;
   const body = (
     <>
-      <Crosshair size={12} strokeWidth={1.75} aria-hidden />
+      <Crosshair size={ICON.sm} strokeWidth={STROKE} aria-hidden />
       <span className="truncate">{label}</span>
     </>
   );
@@ -96,7 +97,7 @@ function ElementChip({ label, onClick }: { label: string; onClick: (() => void) 
       type="button"
       onClick={onClick}
       aria-label={`Show ${label} on the page`}
-      className={`${cls} transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+      className={`${cls} transition-colors duration-150 hover:bg-hover hover:text-ink ${focusRing}`}
     >
       {body}
     </button>
@@ -134,7 +135,7 @@ function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
             <button
               type="button"
               onClick={() => openTab("output")}
-              className="mt-1 rounded-md text-[14px] text-ink-2 transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className={`${button.ghost} mt-1 !px-2`}
             >
               View page
             </button>
@@ -150,14 +151,14 @@ function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
         <div className="min-w-0 flex-1">
           {item.label && <ElementChip label={item.label} onClick={exists && item.nodeId ? () => focusElement(item.nodeId!) : null} />}
           <Markdown text={item.text} />
-          {item.routed && <p className="mt-1 text-[12px] text-ink-3">Answered — no changes made</p>}
+          {item.routed && <p className="mt-1 text-[12px] text-ink-3">Answered. No changes made.</p>}
           {item.suggestCode && (
             <button
               type="button"
               onClick={() => setMode("code")}
-              className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-lg bg-tray px-2.5 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className={`${button.secondary} mt-2`}
             >
-              <Code2 size={16} strokeWidth={1.75} aria-hidden />
+              <Code2 size={ICON.md} strokeWidth={STROKE} aria-hidden />
               Switch to Code
             </button>
           )}
@@ -168,15 +169,15 @@ function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
   if (item.kind === "building") return <Building label={item.label} />;
   return (
     <div role="alert" className="flex items-start gap-3 rounded-xl border border-line bg-surface px-3 py-2.5">
-      <AlertCircle size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-bad" aria-hidden />
+      <AlertCircle size={ICON.lg} strokeWidth={STROKE} className="mt-0.5 shrink-0 text-bad" aria-hidden />
       <p className="min-w-0 flex-1 text-[14px] leading-5 text-ink">{item.message}</p>
       {item.retryPrompt && (
         <button
           type="button"
           onClick={() => void generate(item.retryPrompt!)}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className={`${button.ghost} shrink-0`}
         >
-          <RotateCw size={16} strokeWidth={1.75} aria-hidden />
+          <RotateCw size={ICON.md} strokeWidth={STROKE} aria-hidden />
           Retry
         </button>
       )}

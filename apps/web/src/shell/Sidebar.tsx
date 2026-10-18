@@ -11,10 +11,13 @@ import {
 import { Archive, ArchiveRestore, ChevronDown, ChevronRight, Folder, PanelLeft, Pencil, Plus, SquarePen, Trash2 } from "lucide-react";
 import { isBlankChat as isBlankWorkspaceChat, useWorkspaceStore } from "../store/workspaceStore";
 import { AvatarMenu } from "../onboarding";
+import { ICON, STROKE, button, focusRing, input } from "../ui/styles";
 
 const AVATAR_INITIALS = "SS";
 
-const ICON = { size: 18, strokeWidth: 1.75 } as const;
+/** Nav icons are 18; icons inside rows and row actions are 16 (DESIGN.md icon roles). */
+const NAV = { size: ICON.lg, strokeWidth: STROKE } as const;
+const ROW = { size: ICON.md, strokeWidth: STROKE } as const;
 
 /** Sidebar widths in px. The collapsed icon rail is always SIDEBAR_RAIL wide. */
 export const SIDEBAR_MIN = 220;
@@ -64,9 +67,6 @@ function useSidebarWidth(): [number, (value: number) => void] {
   }, []);
   return [width, setWidth];
 }
-
-const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 /** Structural subset of the workspace chat record the sidebar reads. */
 export interface SidebarChat {
@@ -210,15 +210,15 @@ export function Sidebar({
       >
         <div className="flex h-[44px] items-center px-1">
           <IconButton label={toggleLabel} onClick={expand}>
-            <PanelLeft {...ICON} className="text-ink-2" />
+            <PanelLeft {...NAV} className="text-ink-2" />
           </IconButton>
         </div>
         <div className="mt-2 flex flex-col items-center gap-1">
           <IconButton label="New chat" onClick={() => newChat()}>
-            <SquarePen {...ICON} className="text-ink-2" />
+            <SquarePen {...NAV} className="text-ink-2" />
           </IconButton>
           <IconButton label="Show projects" onClick={expand}>
-            <Folder {...ICON} className="text-ink-2" />
+            <Folder {...NAV} className="text-ink-2" />
           </IconButton>
         </div>
         <div className="mt-auto flex h-8 items-center">
@@ -260,7 +260,7 @@ export function Sidebar({
       </div>
       <div className="flex h-[44px] items-center px-1">
         <IconButton label={toggleLabel} onClick={collapse}>
-          <PanelLeft {...ICON} className="text-ink-2" />
+          <PanelLeft {...NAV} className="text-ink-2" />
         </IconButton>
       </div>
 
@@ -269,14 +269,14 @@ export function Sidebar({
         onClick={() => newChat()}
         className={`mt-2 flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[14px] text-ink transition-colors duration-150 hover:bg-hover ${focusRing}`}
       >
-        <SquarePen {...ICON} className="shrink-0 text-ink-2" />
+        <SquarePen {...NAV} className="shrink-0 text-ink-2" />
         New chat
       </button>
 
       <nav aria-label="Chats" className="mt-4 min-h-0 flex-1 overflow-y-auto pb-4">
         {hasProjects ? (
           <div className="flex h-8 items-center justify-between pr-1 pl-2">
-            <h2 className="text-[12px] text-ink-2">Projects</h2>
+            <h2 className="text-[12px] text-ink-3">Projects</h2>
             {creating ? null : (
               <button
                 type="button"
@@ -284,9 +284,9 @@ export function Sidebar({
                 onClick={() => setCreating(true)}
                 aria-label="New project"
                 title="New project"
-                className={`grid h-8 w-8 place-items-center rounded-lg text-ink-3 transition-colors duration-150 hover:bg-hover hover:text-ink-2 ${focusRing}`}
+                className={button.icon}
               >
-                <Plus {...ICON} size={16} />
+                <Plus {...ROW} />
               </button>
             )}
           </div>
@@ -309,7 +309,7 @@ export function Sidebar({
               }}
               placeholder="Project name"
               aria-label="New project name"
-              className="h-8 w-full rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none placeholder:text-ink-3 focus:border-accent"
+              className={input}
             />
           </form>
         ) : null}
@@ -318,9 +318,9 @@ export function Sidebar({
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className={`flex h-8 w-full items-center gap-2 rounded-lg pr-2 pl-2 text-left text-[14px] text-ink-3 transition-colors duration-150 hover:bg-hover hover:text-ink-2 ${focusRing}`}
+            className={`flex h-8 w-full items-center gap-2 rounded-lg pr-2 pl-2 text-left text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink ${focusRing}`}
           >
-            <Plus {...ICON} className="shrink-0" />
+            <Plus {...NAV} className="shrink-0" />
             New project
           </button>
         ) : null}
@@ -364,7 +364,7 @@ export function Sidebar({
 
         {unassigned.length > 0 ? (
           <div className="mt-4">
-            <h2 className="flex h-8 items-center pl-2 text-[12px] text-ink-2">Chats</h2>
+            <h2 className="flex h-8 items-center pl-2 text-[12px] text-ink-3">Chats</h2>
             <ul className="flex flex-col">
               {unassigned.map((chat) => (
                 <li key={chat.id}>
@@ -388,14 +388,14 @@ export function Sidebar({
               type="button"
               aria-expanded={archivedOpen}
               onClick={() => setArchivedOpen((value) => !value)}
-              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-left text-[12px] text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-left text-[12px] text-ink-3 transition-colors duration-150 hover:bg-hover ${focusRing}`}
             >
               Archived
               <span className="ml-auto tabular-nums">{archived.length}</span>
               {archivedOpen ? (
-                <ChevronDown size={16} strokeWidth={1.75} className="shrink-0 text-ink-2" />
+                <ChevronDown size={ICON.md} strokeWidth={STROKE} className="shrink-0 text-ink-2" />
               ) : (
-                <ChevronRight size={16} strokeWidth={1.75} className="shrink-0 text-ink-2" />
+                <ChevronRight size={ICON.md} strokeWidth={STROKE} className="shrink-0 text-ink-2" />
               )}
             </button>
             {archivedOpen ? (
@@ -427,7 +427,7 @@ export function Sidebar({
   );
 }
 
-const actionButton = `grid h-6 w-6 place-items-center rounded-md text-ink-2 transition-colors duration-150 hover:bg-tray hover:text-ink ${focusRing}`;
+const actionButton = button.iconSm;
 const revealActions =
   "absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 rounded-lg bg-shell opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100";
 
@@ -472,7 +472,7 @@ function RenameField({
           finish(false);
         }
       }}
-      className={`h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none focus:border-accent ${className}`}
+      className={`${input} min-w-0 flex-1 ${className}`}
     />
   );
 }
@@ -506,14 +506,14 @@ function ConfirmDelete({
         type="button"
         autoFocus
         onClick={onConfirm}
-        className={`h-6 rounded-md px-2 text-[12px] text-ink transition-colors duration-150 hover:bg-tray ${focusRing}`}
+        className={`${button.danger} !h-6 !rounded-md !px-2 text-[12px]`}
       >
         Delete
       </button>
       <button
         type="button"
         onClick={onCancel}
-        className={`h-6 rounded-md px-2 text-[12px] text-ink-2 transition-colors duration-150 hover:bg-tray ${focusRing}`}
+        className={`${button.ghost} !h-6 !rounded-md !px-2 text-[12px]`}
       >
         Cancel
       </button>
@@ -567,19 +567,19 @@ function ProjectRow({
               type="button"
               onClick={() => onNewChat(project.id)}
               aria-label={`New chat in ${project.name}`}
-              title="New chat here"
+              title="New chat in project"
               className={actionButton}
             >
-              <SquarePen size={16} strokeWidth={1.75} />
+              <SquarePen size={ICON.md} strokeWidth={STROKE} />
             </button>
             <button
               type="button"
               onClick={() => setMode("rename")}
               aria-label={`Rename project ${project.name}`}
-              title="Rename"
+              title="Rename project"
               className={actionButton}
             >
-              <Pencil size={16} strokeWidth={1.75} />
+              <Pencil size={ICON.md} strokeWidth={STROKE} />
             </button>
             <button
               type="button"
@@ -588,7 +588,7 @@ function ProjectRow({
               title="Delete project"
               className={actionButton}
             >
-              <Trash2 size={16} strokeWidth={1.75} />
+              <Trash2 size={ICON.md} strokeWidth={STROKE} />
             </button>
           </div>
         </>
@@ -668,10 +668,10 @@ function ChatRow({
               type="button"
               onClick={() => setMode("rename")}
               aria-label={`Rename ${chat.title}`}
-              title="Rename"
+              title="Rename chat"
               className={actionButton}
             >
-              <Pencil size={16} strokeWidth={1.75} />
+              <Pencil size={ICON.md} strokeWidth={STROKE} />
             </button>
           ) : null}
           {onArchive ? (
@@ -682,7 +682,7 @@ function ChatRow({
               title={chat.archived ? "Unarchive" : "Archive"}
               className={actionButton}
             >
-              {chat.archived ? <ArchiveRestore size={16} strokeWidth={1.75} /> : <Archive size={16} strokeWidth={1.75} />}
+              {chat.archived ? <ArchiveRestore size={ICON.md} strokeWidth={STROKE} /> : <Archive size={ICON.md} strokeWidth={STROKE} />}
             </button>
           ) : null}
           {onDelete ? (
@@ -693,7 +693,7 @@ function ChatRow({
               title="Delete chat"
               className={actionButton}
             >
-              <Trash2 size={16} strokeWidth={1.75} />
+              <Trash2 size={ICON.md} strokeWidth={STROKE} />
             </button>
           ) : null}
         </div>
@@ -717,7 +717,7 @@ function IconButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`grid h-8 w-8 place-items-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+      className={button.icon}
     >
       {children}
     </button>

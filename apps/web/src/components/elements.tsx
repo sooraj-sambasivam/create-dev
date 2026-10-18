@@ -3,6 +3,7 @@ import type { Container, Leaf as LeafNode, Node, Style } from "@create/shared";
 import { EditableText } from "../editor/EditableText";
 import { formatDataValue, getField } from "./dataFormat";
 import { useSandboxData } from "./sandboxData";
+import { ChartBlock, TableBlock } from "./LiveBlocks";
 
 /**
  * How each element type looks. ScreenRenderer wraps these with editor behaviour
@@ -125,6 +126,7 @@ export function leafWidth(node: Node, parent: Direction, align: Container["align
     case "video":
     case "map":
     case "table":
+    case "chart":
     case "accordion":
     case "list":
       return "flex-1 min-w-0";
@@ -475,32 +477,9 @@ export function Leaf({ node, fill, interactive }: { node: LeafNode; fill: boolea
         </span>
       );
     case "table":
-      return (
-        <div className="w-full overflow-x-auto rounded-xl" style={{ boxShadow: "0 0 0 1px var(--border)", ...o }}>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr style={{ background: "var(--muted)" }}>
-                {node.columns.map((c, i) => (
-                  <th key={i} className="px-4 py-2.5 font-semibold">
-                    {c}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {node.rows.map((row, r) => (
-                <tr key={r} style={{ borderTop: "1px solid var(--border)" }}>
-                  {row.map((cell, c) => (
-                    <td key={c} className={`px-4 py-2.5 ${c === row.length - 1 && row.length > 1 ? "text-right tabular-nums" : ""}`}>
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
+      return <TableBlock node={node} style={o} />;
+    case "chart":
+      return <ChartBlock node={node} style={o} />;
     case "accordion":
       return (
         <div className="flex w-full flex-col rounded-xl" style={{ boxShadow: "0 0 0 1px var(--border)", ...o }}>

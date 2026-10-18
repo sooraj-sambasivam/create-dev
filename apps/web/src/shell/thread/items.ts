@@ -35,9 +35,9 @@ export function deriveItems({ history, status, error, asking, lastAttempt }: Thr
   if (attempt && (status === "loading" || status === "error")) items.push({ kind: "user", key: "attempt", text: attempt });
   if (asking) items.push({ kind: "building", key: "building", label: "Thinking…" });
   else if (status === "loading") items.push({ kind: "building", key: "building", label: "Building your page…" });
-  else if (status === "transcribing") items.push({ kind: "building", key: "building", label: "Transcribing…" });
+  else if (status === "transcribing") items.push({ kind: "building", key: "building", label: "Turning your voice into text…" });
   else if (status === "error") {
-    items.push({ kind: "error", key: "error", message: error || "Something went wrong.", retryPrompt: attempt ?? lastPrompt(history) });
+    items.push({ kind: "error", key: "error", message: error || "Something went wrong. Try again.", retryPrompt: attempt ?? lastPrompt(history) });
   }
   return items;
 }

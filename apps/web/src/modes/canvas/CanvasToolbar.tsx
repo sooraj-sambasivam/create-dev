@@ -1,3 +1,4 @@
+import { button, ICON, STROKE, surface } from "../../ui/styles";
 import { ArrowLeft, AudioWaveform, Loader2, PanelRight, Plus, Sparkles } from "lucide-react";
 
 type Props = {
@@ -14,8 +15,7 @@ type Props = {
   onTogglePreview: () => void;
 };
 
-const ghost =
-  "inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-2 text-sm text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const ghost = `${button.ghost} shrink-0 gap-2 px-2 disabled:text-ink-3 disabled:opacity-100`;
 
 export function CanvasToolbar({
   busy,
@@ -31,18 +31,18 @@ export function CanvasToolbar({
   return (
     <div
       role="toolbar"
-      aria-label="Canvas studio"
-      className="pointer-events-auto flex min-w-0 max-w-full items-center gap-1 rounded-xl border border-line bg-surface p-2 text-ink shadow-soft"
+      aria-label="Sketch"
+      className={`pointer-events-auto flex min-w-0 max-w-full items-center gap-1 ${surface.card} p-2 text-ink`}
     >
       <button type="button" className={ghost} onClick={onBack} aria-label="Back" title="Back">
-        <ArrowLeft size={16} strokeWidth={1.75} />
+        <ArrowLeft size={ICON.md} strokeWidth={STROKE} />
         <span className="@max-[760px]:sr-only">Back</span>
       </button>
-      <span className="hidden px-2 text-sm font-medium text-ink-2 @[900px]:inline">Canvas</span>
+      <span className="hidden px-2 text-[14px] text-ink-2 @[900px]:inline">Canvas</span>
       <span className="mx-1 h-5 w-px bg-line" aria-hidden />
       <button
         type="button"
-        className={`${ghost} ${narrating ? "border border-line bg-tray text-ink" : ""}`}
+        className={`${ghost} ${narrating ? "bg-hover text-ink" : ""}`}
         onClick={(e) => {
           e.currentTarget.blur();
           onNarrate();
@@ -52,7 +52,7 @@ export function CanvasToolbar({
         aria-pressed={narrating}
         title="Narrate over this canvas"
       >
-        <AudioWaveform size={16} strokeWidth={1.75} />
+        <AudioWaveform size={ICON.md} strokeWidth={STROKE} />
         <span className="@max-[760px]:sr-only">Narrate</span>
       </button>
       <button
@@ -63,7 +63,7 @@ export function CanvasToolbar({
         aria-label="Add selection"
         title="Generate only the selected shapes and add them to the page"
       >
-        <Plus size={16} strokeWidth={1.75} />
+        <Plus size={ICON.md} strokeWidth={STROKE} />
         <span className="@max-[760px]:sr-only">Add selection</span>
       </button>
       <button
@@ -73,22 +73,20 @@ export function CanvasToolbar({
         aria-label="Make it"
         title="Make it"
         aria-busy={busy || undefined}
-        className={`inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-          busy ? "cursor-progress bg-accent text-on-accent" : narrating ? "cursor-not-allowed bg-hover text-ink-3" : "bg-accent text-on-accent hover:bg-accent/90"
-        }`}
+        className={`${button.primary} shrink-0 gap-2 ${busy ? "cursor-progress" : narrating ? "cursor-not-allowed" : ""}`}
       >
-        {busy ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <Sparkles size={16} strokeWidth={1.75} />}
+        {busy ? <Loader2 size={ICON.md} strokeWidth={STROKE} className="animate-spin" /> : <Sparkles size={ICON.md} strokeWidth={STROKE} />}
         <span className="@max-[760px]:sr-only">Make it</span>
       </button>
       <button
         type="button"
-        className={`${ghost} ${previewOpen ? "border border-line bg-tray text-ink" : ""}`}
+        className={`${ghost} ${previewOpen ? "bg-hover text-ink" : ""}`}
         onClick={onTogglePreview}
         aria-label="Preview"
         aria-pressed={previewOpen}
         title={previewOpen ? "Hide preview" : "Show preview"}
       >
-        <PanelRight size={16} strokeWidth={1.75} />
+        <PanelRight size={ICON.md} strokeWidth={STROKE} />
         <span className="@max-[760px]:sr-only">Preview</span>
       </button>
     </div>

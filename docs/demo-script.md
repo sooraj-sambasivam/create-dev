@@ -1,73 +1,61 @@
 # Demo script: Create (repo `create-dev`)
 
-Theme: **Point at it. Say it. It changes.** Target: 2:00. Narrate for non-coders and small
-businesses: say "page", "website", "your customers", never "component" or "API".
+Theme: **Pixels become software you own.** Target: 2:00. Plain words: "app", "your data",
+"your phone". Never say "website builder", "component" or "API". Pointing is the gesture; the
+modes are Type, Speak, Sketch, Narrate.
 
-**Length:** the team decision allows up to two minutes (B2); this script is written for 2:00. OWNER:
-confirm the length limit on the DubHacks hacker guide before recording.
-If three minutes are allowed, use the spare time as buffer, not for extra features.
+OWNER: confirm the video length limit on the DubHacks hacker guide. If longer is allowed, spare
+time is buffer, not extra features.
 
-**Tracks:** DubHacks NEXT, Perceptron (sketch beat), SideShift, MongoDB Atlas (form beat). Say each sponsor name once, on the beat that uses it.
+**Tracks:** DubHacks NEXT, Perceptron, SideShift, MongoDB Atlas. Say each sponsor name once, on the beat that uses it.
 
-**Presenter:** OWNER: assign who speaks and who drives the mouse. Everyone presents or records (T3).
+**Presenter:** OWNER: assign who speaks, who drives the mouse and who holds the phone.
+
+Everything below is covered by headless tests except what is marked **(verify before submit)**.
 
 ## Before recording
 
-- [ ] `pnpm install`, then `pnpm dev`. Open http://localhost:5173 (default web port).
-- [ ] `GET http://localhost:3001/api/health` shows `mock:false` and the keys present
-      (Anthropic required; Jev, Perceptron, ElevenLabs optional). Keys live in `apps/server/.env`
-      and are never committed.
-- [ ] Browser (Chrome) at laptop width, light theme, microphone permission granted in advance.
-- [ ] Start from an empty app (new chat, no page).
-- [ ] Narrate is on and the pointer bubble shows when you hover the page. Do one dry run.
-- [ ] Chat | Code toggle, click-to-pin and hold-Option talk, Backend panel and a real form submission in MongoDB confirmed in the browser (verify before submit). Drop the Chat + Backend beat if any fails.
-- [ ] Extension loaded unpacked in this Chrome profile and tested on the demo site (it has never been run in a real browser; OWNER: verify). Drop the beat if it fails.
-- [ ] Phone route for the share step is tested (see `docs/integration.md`, "Share links on a phone").
-- [ ] Replay is primed: run this exact script once in record mode (the default) in the same browser
-      profile, since replay reads the recording from that browser. Keep that video as the backup.
+- [ ] `pnpm install`, `pnpm dev`. Note the web port Vite prints (5173, or 5175 if taken).
+- [ ] `GET http://localhost:3001/api/health` shows `mock:false` and the keys present. Keys live in `apps/server/.env`.
+- [ ] Chrome, laptop width, light theme, microphone permission granted ahead of time.
+- [ ] Extension loaded unpacked (`apps/extension`), web origin set on its options page to the web port, "Allow access to file URLs" on if you use `file://` fixtures. (verify before submit: a full lift in your own Chrome profile)
+- [ ] Fixture pages open in tabs: `apps/extension/demo/route-44-schedule.html` (main), `dubhacks-schedule.html` (backup), `chart.html` (optional).
+- [ ] Phone path: `pnpm share:tunnel`, then restart the API with `PUBLIC_URL=https://<name>.trycloudflare.com`. Lift AFTER this, or the QR points at localhost. Test a scan on the venue wifi. (verify before submit)
+- [ ] MongoDB: `MONGODB_URI` set, and one real row seen in the Atlas collection. Take the screenshot once (OWNER: Atlas screenshot).
+- [ ] Prime replay: run this exact script once in record mode (default) in the same browser profile. Keep that screen capture as the backup video.
+- [ ] Close the right panel before Narrate beats (at 1440x900 the fan's items can sit under the Run log).
 
 ## Timeline (2:00)
 
 | Time | Beat | On-screen steps | Say |
 | --- | --- | --- | --- |
-| 0:00-0:10 | Hook | Empty app, composer visible. | "Most website builders make you describe a change in a paragraph. We just point and talk." |
-| 0:10-0:25 | Make a page | Type: `A website for a neighborhood bakery: a hero photo, three menu items with prices, opening hours, and an order button.` Press Go. Cut to the recorded clip if the wait runs past 10 seconds. | "Type what you want. Claude builds a real page." |
-| 0:25-0:45 | Point + "make this bigger" | Open the radial fan, choose **Narrate**. Hover the page title. The bubble reads the element's label. Hold **Option** and say: `Make this bigger.` Release. The title grows in place. | "Now I point at the title and say it. The bubble shows what it understood, and it changes right there." |
-| 0:45-1:05 | Point + "swap this photo" | Hover the hero photo. Hold Option and say: `Swap this photo for a cupcake.` The photo is replaced. | "Same move for a photo. No menus, no prompt box." |
-| 1:05-1:15 | Undo and ask | Press Cmd+Z to undo. Hover where two items overlap and say `Make this red.` If the bubble asks "Which one?", click the right item. | "It never guesses silently. If it is unsure, it asks. Undo is one key." |
-| 1:15-1:35 | Sketch | Open the fan, choose **Canvas**. Draw a wide header box, two side-by-side cards, a small button box. Press Generate. Watch the preview pane. | "Or draw it. Perceptron reads the sketch, and Claude turns it into your page." |
-| 1:35-1:45 | Voice | Open the fan, choose **Mic**. Say: `Add a contact section with a phone number.` Press Go. | "Speech goes in live through ElevenLabs." |
-| OPTIONAL (verify before submit; needs time freed elsewhere, e.g. drop Undo and ask) | Chat + Backend | Switch **Chat | Code** to Chat, point at a figure, ask `What does this number mean?`. Switch back to Code. In Preview, submit the contact form; open the app's **Backend** panel and show the entry (stored in MongoDB). | "Chat answers questions about anything you point at. And the form is real: the answer lands in your backend." |
-| 1:45-1:55 | Extension (only if the gate confirms it works; otherwise do the phone share) | Click the extension icon on any website, click an element, type `make this mine but darker`. A Create tab opens. Phone alternative: **Share**, copy the link, open on the phone (`pnpm share:tunnel`). | "Point at any website and pull it into Create." |
-| 1:55-2:00 | Close | Show the four inputs: type, say, draw, point. | "Point at it. Say it. It changes." |
+| 0:00-0:20 | Lift a schedule | On the Route 44 schedule page, hover the table and hold Option. It outlines, the chip reads "Table · 12 rows × 4 cols". Release, say or type `turn this into something I can track`. The chip shows "Reading table…" then "Building your app…". A new tab opens with the app. | "This is a bus schedule. You can read it, but it isn't yours. I point, say 'turn this into something I can track'... and now it's an app: a table I can edit, a chart, and a form." |
+| 0:20-0:35 | The gap | Stay on the app. Scroll once to show table, chart, Add row. | "Google's pointer answers questions. Ours hands you software you own, with a backend." |
+| 0:35-1:00 | Judge scans the QR | Output tab, press the QR button ("Scan to open"). A judge scans it and adds a row (for example `Thu`, `777`) on their phone. Switch to the Backend tab; the row appears and flashes (3-second poll). Show the Atlas collection once. | "Scan this. Add a row. It lands in a real MongoDB Atlas collection, and shows up here." |
+| 1:00-1:25 | Chat about the chart | Switch to Chat. Point at the chart (hold Option) and ask `why does this spike in week 3?`. Read the answer. | "Chat answers about whatever I point at, using the chart and the rows behind it." |
+| 1:25-1:45 | Pointer and undo | Switch to Narrate. Hover the app title, hold Option, say `make this bigger`. The bubble shows the target, then Done. Press Cmd+Z once. | "Same pointer inside the app. It shows what it understood, and undo is one key." |
+| 1:45-1:55 | Second source (optional) | Only if working: `chart.html`, a chart that is just an image. Point at it and lift. Perceptron reads the image into a second app. Otherwise skip, and give the time to the startup line. | "Even a chart that's only pixels. Perceptron reads it." |
+| 1:55-2:00 | Startup line | Static end card. | "Every portal, PDF and screenshot is read-only. Create is the free pointer; a hosted backend at $9 to $19 a month is the business. No users yet." |
 
 Timing notes:
 
-- A Sonnet page takes about 14 to 20 seconds. Start the generation, then cut to the recorded clip of
-  the same step. Keep the same prompt text so the cut is seamless.
-- Pointer edits should land in a few seconds. Jev routes the spoken line in about 60 to 200 ms.
-  Most of the wait is the edit itself. Bigger and smaller are applied with no model call.
-- Hover on the target before you start speaking and keep the pointer still until the bubble shows
-  the label. The target is read when the first words arrive.
-- Known glitch: after "make this bigger" the brand text may wrap and the bubble can cover a nav link; pick a short title. At 1440x900 with the right panel open, the fan's Canvas/Narrate items may sit under the Run log summary; close the right panel or use a wider window.
-- Shift+drag lassos several elements. Use it only if there is time; it is not in the 2:00 script.
-- Claim only what the build shows. If the sketch preview only fills in after Generate finishes,
-  say "it builds the page" and do not say "live". **Check on the day.**
+- Hover on the target before you speak and keep still until the bubble or outline shows.
+- The lift needs one model call at most (copy polish, 12 s timeout, then it falls back). The
+  smoke test saw a row appear in the table about 2.5 s after submit.
+- Backend tab polling is 3 seconds; do not narrate over the wait.
+- Values read from an image are approximate. Never claim exact numbers from the image app.
+- Chat uses the pointed crop and row data. With `MOCK_AI=1` it returns a canned answer. (verify before submit with real keys)
 
 ## Backup plan
 
-Use the first option that works. Do not stop to debug on stage.
+Use the first option that works. Do not debug on camera.
 
-1. **Replay mode (Ctrl+Shift+R).** Answers the model, voice and intent calls from the recorded run
-   in this browser. A small dot titled "Replay on" shows while it is on. Turn it off before the next
-   live step. The share step is not covered by replay.
-2. **Recorded video.** The full run of this script, recorded before judging. Play the clip for the
-   step that failed, then return to the live app.
-3. **Mock mode (`MOCK_AI=1`).** The UI, editor, canvas, pointer and share flows work without model
-   calls. Edits use simple built-in rules (bigger, smaller, colour, remove) and pages are canned.
-   Use it when a key is capped or the network is down. Say so if it is shown.
-4. **Share step fails.** Show Publish, which downloads one self-contained HTML file, and open that
-   file on the phone. Say "a single HTML file".
-
-If the voice step fails, type the same sentence into the composer and say "typed here, same result."
-If the pointer misses its target, click the element to select it and use the ✦ box (press `/`).
+1. **Replay (Ctrl+Shift+R).** Answers model, voice and intent calls from the recorded run in this
+   browser. A dot titled "Replay on" shows. Turn it off before the next live step. Lift, forms and
+   the QR step are not covered by replay.
+2. **Different fixture.** If the table does not outline, use `dubhacks-schedule.html` or `pricing.html`.
+3. **Typed instead of spoken.** If the mic fails, type into the pill and say "typed here, same result."
+4. **Phone fails.** Open the app link on a second laptop tab and add the row there; say what the phone would do. Or show the recorded clip of the scan.
+5. **Recorded video** of the full run, made before judging.
+6. **Mock mode (`MOCK_AI=1`).** The lift, table, chart, form and QR work without keys. Say so if shown.
+7. **Fallback story** (if lift fails entirely): extension imports a table as an editable page, in-app pointer "make this bigger", Chat about a figure, then submit a form and show the row in the Backend tab and Atlas. Same pitch, table-to-app only.

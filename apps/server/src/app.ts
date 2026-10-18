@@ -15,6 +15,8 @@ import { liveRouter } from "./routes/live";
 import { importElementRouter } from "./importElement/route";
 import { askRouter } from "./ask/route";
 import { formsRouter } from "./forms/route";
+import { liftRouter } from "./lift/route";
+import { extractRouter } from "./extract/route";
 import { DEFAULT_MODEL } from "./ai/claude";
 import { allowedOrigins, isAllowedOrigin } from "./middleware/origins";
 import { createRateLimiter } from "./middleware/rateLimit";
@@ -56,6 +58,8 @@ export function createApp(): express.Express {
   app.use("/api", canvasOpsRouter); // own 10mb JSON parser
   app.use("/api", importElementRouter);
   app.use("/api", formsRouter); // own 64kb JSON parser
+app.use("/api", liftRouter); // own 1mb JSON parser
+app.use("/api", extractRouter); // own big JSON parser
   app.use(express.json({ limit: "3mb" }));
 
   app.get("/api/health", (_req, res) => {

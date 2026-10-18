@@ -81,7 +81,7 @@ export function ResizeHandle() {
       aria-valuemin={RIGHT_PANEL_MIN_WIDTH}
       aria-valuemax={maxRightPanelWidth()}
       tabIndex={0}
-      title="Drag to resize, double-click to reset"
+      title="Drag to resize. Double-click to reset."
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={end}

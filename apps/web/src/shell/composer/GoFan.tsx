@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { fanOffset, type FanDir } from "./logic";
+import { focusRing, ICON, STROKE } from "../../ui/styles";
+import { fanOffset } from "./logic";
 
 export type FanItem = {
   key: string;
@@ -16,17 +17,22 @@ export type FanItem = {
   title?: string;
 };
 
-/** Speak, Sketch, Point spring out along an arc centred on Go, past the composer's right edge, or mirrored left when the right is cramped. */
-export function GoFan({ open, items, dir = "right" }: { open: boolean; items: FanItem[]; dir?: FanDir }) {
+/**
+ * Speak, Sketch, Narrate spring up into one row above the composer, right-aligned over Go, so they
+ * never cover the text field. `rise` is the distance from Go's centre up to the row (see fanRise).
+ */
+export function GoFan({ open, items, rise }: { open: boolean; items: FanItem[]; rise: number }) {
   const reduce = useReducedMotion();
   const spring = { type: "spring" as const, stiffness: 420, damping: 28 };
   return (
     <AnimatePresence>
       {open ? (
         <div key="fan" role="group" aria-label="More ways to start" style={{ display: "contents" }}>
+          {/* Invisible bridge from Go up to the row, so the pointer never leaves the fan on its way. */}
+          <span aria-hidden="true" className="absolute bottom-full left-0 z-40 w-8" style={{ height: Math.max(0, rise - 16) }} />
           {items.map((item, index) => {
             const Icon = item.icon;
-            const { x, y } = fanOffset(index, dir);
+            const { x, y } = fanOffset(index, rise);
             return (
               <motion.button
                 key={item.key}
@@ -50,14 +56,14 @@ export function GoFan({ open, items, dir = "right" }: { open: boolean; items: Fa
                     : { x: 0, y: 0, scale: 0.4, opacity: 0, transition: { ...spring, delay: (items.length - 1 - index) * 0.035 } }
                 }
                 style={reduce ? { x, y } : undefined}
-                className={`group/fan absolute top-1/2 left-1/2 z-50 -mt-4 -ml-4 grid h-8 w-8 place-items-center rounded-full border border-[var(--c-line)] shadow-[var(--c-shadow)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-accent)] ${
-                  item.active ? "bg-[var(--c-hover)] text-[var(--c-ink)] ring-1 ring-[var(--c-ink-3)]" : "bg-[var(--c-surface)] text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink)]"} ${item.disabled || item.ariaDisabled ? "cursor-default opacity-50" : ""
-                }`}
+                className={`group/fan absolute top-1/2 left-1/2 z-50 -mt-4 -ml-4 grid size-8 place-items-center rounded-full border border-line shadow-soft ${focusRing} ${
+                  item.active ? "bg-hover text-ink" : "bg-surface text-ink-2 hover:bg-hover hover:text-ink"
+                } ${item.disabled || item.ariaDisabled ? "cursor-default opacity-50" : ""}`}
               >
-                <Icon size={16} strokeWidth={1.75} />
+                <Icon size={ICON.md} strokeWidth={STROKE} />
                 <span
                   aria-hidden="true"
-                  className={`pointer-events-none absolute ${dir === "left" ? "bottom-full left-1/2 mb-2 -translate-x-1/2" : "top-1/2 left-full ml-2 -translate-y-1/2"} rounded-lg border border-[var(--c-line)] bg-[var(--c-tray)] px-2 py-1 text-[14px] leading-4 whitespace-nowrap text-[var(--c-ink)] shadow-[var(--c-shadow)] opacity-0 transition-opacity duration-150 group-hover/fan:opacity-100 group-focus-visible/fan:opacity-100`}
+                  className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-lg border border-line bg-surface px-2 py-1 text-[14px] leading-4 whitespace-nowrap text-ink shadow-soft opacity-0 transition-opacity duration-150 group-hover/fan:opacity-100 group-focus-visible/fan:opacity-100"
                 >
                   {item.label}
                 </span>

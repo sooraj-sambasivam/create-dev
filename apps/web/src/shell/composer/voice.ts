@@ -23,7 +23,7 @@ export type VoiceEvent =
 export const DONE_MS = 900;
 /** How long the voice bar shows a notice (e.g. Mic clicked in a browser that can't record). */
 export const NOTICE_MS = 3000;
-export const MIC_UNSUPPORTED_NOTICE = "This browser can't use the microphone — type instead";
+export const MIC_UNSUPPORTED_NOTICE = "This browser can't use the microphone. Type instead.";
 
 export function initialVoiceState(unsupportedReason: string | null = null): VoiceState {
   return { phase: "idle", message: null, blocked: unsupportedReason };

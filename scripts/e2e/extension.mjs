@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { join, resolve, dirname } from "node:path";
+import { join, resolve, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const WEB = process.env.WEB_ORIGIN || "http://localhost:5175";
@@ -32,29 +32,17 @@ const results = [];
 const rec = (name, ok, detail = "") => { results.push({ name, ok }); console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? "  - " + detail : ""}`); };
 const step = async (name, fn) => { try { const r = await fn(); if (r !== undefined && r !== true) rec(name, false, String(r)); else rec(name, true); } catch (e) { rec(name, false, e.message.split("\n")[0]); } };
 
-// Fixture page: a pricing section with heading, text, image, button.
-const PIXEL = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-const html = `<!doctype html><html><head><meta charset="utf-8"><title>Acme Pricing</title><style>
-body{margin:0;font-family:system-ui,sans-serif;background:#f6f4ef;color:#1b1b1b}
-header{padding:20px 40px;font-weight:700}
-#pricing{margin:40px auto;max-width:560px;background:#fff;border-radius:16px;padding:32px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.08)}
-#pricing h2{font-size:32px;margin:0 0 8px}#pricing p{color:#555;margin:0 0 16px}
-#pricing img{width:160px;height:100px;border-radius:12px;background:#ddd}
-#pricing button{margin-top:16px;padding:12px 28px;font-size:16px;border:0;border-radius:10px;background:#1b1b1b;color:#fff}
-</style></head><body><header>Acme</header>
-<section id="pricing"><h2>Simple pricing</h2><p>One plan, everything included. Cancel any time.</p>
-<img src="/pixel.png" alt="Plan illustration"><br><button>Start free trial</button></section></body></html>`;
+// Fixture pages: the real demo pages in apps/extension/demo, served over http.
+const DEMO = join(SRC_EXT, "demo");
+const MIME = { ".html": "text/html", ".svg": "image/svg+xml", ".png": "image/png" };
 const site = createServer((req, res) => {
-  if (req.url === "/pixel.png") { res.writeHead(200, { "Content-Type": "image/png" }); res.end(Buffer.from(PIXEL, "base64")); return; }
-  res.writeHead(200, { "Content-Type": "text/html" }); res.end(html);
+  const name = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "") || "route-44-schedule.html";
+  const file = join(DEMO, name.replace(/\.\.+/g, ""));
+  if (!existsSync(file)) { res.writeHead(404); res.end("not found"); return; }
+  res.writeHead(200, { "Content-Type": MIME[extname(file)] || "application/octet-stream" }); res.end(readFileSync(file));
 });
 await new Promise((r) => site.listen(0, "127.0.0.1", r));
 const SITE = `http://127.0.0.1:${site.address().port}/`;
-{
-  const mf = join(EXT, "manifest.json"); const m = JSON.parse(readFileSync(mf, "utf8"));
-  m.host_permissions = [...m.host_permissions, `http://127.0.0.1:${site.address().port}/*`];
-  writeFileSync(mf, JSON.stringify(m, null, 2));
-}
 
 const port = 9800 + Math.floor(Math.random() * 500);
 const profile = mkdtempSync(join(tmpdir(), "create-ext-e2e-"));
@@ -111,57 +99,99 @@ try {
   const pc = await attach(page.webSocketDebuggerUrl);
   await pc.send("Page.enable"); await pc.send("Runtime.enable");
   await pc.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
-  await pc.send("Page.navigate", { url: SITE });
-  await until(async () => (await pc.ev(`document.readyState`).catch(() => "")) === "complete");
+  const open = async (file) => {
+    await pc.send("Page.navigate", { url: SITE + file });
+    await until(async () => (await pc.ev(`location.pathname`).catch(() => "")) === "/" + file && (await pc.ev(`document.readyState`).catch(() => "")) === "complete");
+    await sleep(500); // content script (document_idle) attaches
+  };
+  // The overlay host is a light-DOM div whose data-state / data-chip mirror the closed shadow root.
+  const lift = (k) => pc.ev(`(() => { const h = [...document.documentElement.children].find((e) => e.dataset && e.dataset.state); return h ? h.dataset[${JSON.stringify(k)}] || "" : "<no overlay>"; })()`);
+  const center = (sel) => pc.ev(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); e.scrollIntoView({ block: "center" }); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+  const key = (type, k, code, vk, modifiers = 0) => pc.send("Input.dispatchKeyEvent", { type, key: k, code, windowsVirtualKeyCode: vk, modifiers });
+  const move = (x, y, modifiers = 0) => pc.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y, button: "none", modifiers });
+  const pages = async () => (await targets()).filter((t) => t.type === "page");
+  const closeTab = (id) => fetch(`http://127.0.0.1:${port}/json/close/${id}`).catch(() => {});
 
-  // Arm pointer mode. A real toolbar click grants activeTab; headless cannot click the toolbar, so the test
-  // runs the same code path as the action.onClicked handler from the service worker.
-  await step("1. arm pointer mode (content script injected, armed)", async () => {
-    const tabId = await swc.ev(`chrome.tabs.query({ active: true }).then(ts => ts[0]?.id)`);
+  /** Hold Option over `sel`, expect the chip, release, send with Enter, then inspect the app that opens. */
+  async function liftFlow(tag, file, sel, chipRx, expectRows, expectChart, typed) {
+    await step(`${tag}. hold Option over ${file}: highlight + chip`, async () => {
+      await open(file);
+      const before = new Set((await pages()).map((t) => t.id));
+      pc.__before = before;
+      const p = await center(sel);
+      await key("keyDown", "Alt", "AltLeft", 18, 1);
+      await move(p.x - 4, p.y, 1); await move(p.x, p.y, 1);
+      await sleep(400);
+      await pc.shot(`ext-lift-${tag}-1-hover`);
+      const chip = await lift("chip");
+      if (!chipRx.test(chip)) return `chip was ${JSON.stringify(chip)}, wanted ${chipRx}`;
+      console.log("  chip: " + chip);
+    });
+    await step(`${tag}. release Option: "Turn this into…" pill`, async () => {
+      await sleep(100);
+      await key("keyUp", "Alt", "AltLeft", 18);
+      await sleep(300);
+      if ((await lift("state")) !== "asking") return "state was " + (await lift("state"));
+      if (typed) { await pc.send("Input.insertText", { text: typed }); await sleep(150); }
+      await pc.shot(`ext-lift-${tag}-2-pill`);
+    });
+    await step(`${tag}. Enter: progress, then the app opens`, async () => {
+      await key("keyDown", "Enter", "Enter", 13); await key("keyUp", "Enter", "Enter", 13);
+      const tab = await until(async () => (await pages()).find((t) => !pc.__before.has(t.id) && t.url.startsWith(WEB + "/?p=")), 30000);
+      if (!tab) return "no tab opened at " + WEB + "/?p=; tabs: " + (await pages()).map((t) => t.url).join(", ") + "; chip: " + (await lift("chip"));
+      console.log("  opened " + tab.url);
+      const nc = await attach(tab.webSocketDebuggerUrl);
+      await nc.send("Page.enable"); await nc.send("Runtime.enable");
+      await nc.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+      const rowsJs = `document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length`;
+      const ok = await until(async () => (await nc.ev(rowsJs).catch(() => 0)) > 0, 30000);
+      await sleep(800); await nc.shot(`ext-lift-${tag}-3-app`);
+      const rows = ok ? await nc.ev(rowsJs) : 0;
+      const charts = await nc.ev(`document.querySelectorAll('[data-screen-root] figure svg[role="img"]').length`);
+      const form = await nc.ev(`!!document.querySelector('[data-screen-root] input, [data-screen-root] textarea')`);
+      nc.ws.close(); await closeTab(tab.id);
+      if (expectRows == null ? rows < 1 : rows !== expectRows) return `app table has ${rows} rows, wanted ${expectRows}`;
+      if (expectChart && charts < 1) return "app has no chart";
+      if (!form) return "app has no add-row form";
+      console.log(`  app: ${rows} rows, ${charts} chart(s), add-row form present`);
+    });
+  }
+
+  await liftFlow("route44", "route-44-schedule.html", "#timetable tbody tr:nth-child(5)", /^Schedule · 12 rows × 4 cols$/, 12, false);
+  await liftFlow("pricing", "pricing.html", ".plans .card:nth-child(2) h3", /^Cards · 3 plans$/, 3, true, "a pricing tracker");
+
+  await step("dining list detected as List · 7 items", async () => {
+    await open("dining-hours.html");
+    const p = await center("ul.hours li:nth-child(3)");
+    await key("keyDown", "Alt", "AltLeft", 18, 1); await move(p.x - 3, p.y, 1); await move(p.x, p.y, 1); await sleep(350);
+    const chip = await lift("chip"); await pc.shot("ext-lift-dining-1-hover");
+    await key("keyUp", "Alt", "AltLeft", 18); await sleep(200); await key("keyDown", "Escape", "Escape", 27); await key("keyUp", "Escape", "Escape", 27);
+    if (chip !== "List · 7 items") return "chip was " + JSON.stringify(chip);
+  });
+
+  // Chart image: cropped from a tab screenshot, read by /api/extract (mock when no vision keys), then lifted.
+  await liftFlow("chart", "chart.html", "img", /^Chart image$/, null, false);
+
+  await step("toolbar/Alt+Shift+P path: arm, click selects, Esc cancels", async () => {
+    await open("dubhacks-schedule.html");
+    const tabId = await swc.ev(`chrome.tabs.query({}).then(ts => ts.find(t => t.url.includes("dubhacks-schedule"))?.id)`);
     if (tabId == null) return "fixture tab not found";
-    const how = "scripting.executeScript content.js (same call as action.onClicked)";
-    await swc.ev(`chrome.scripting.executeScript({ target: { tabId: ${tabId} }, files: ["content.js"] })`);
-    console.log("  armed via " + how);
-    await sleep(600);
-    const crosshair = await pc.ev(`document.documentElement.style.cursor`);
-    if (crosshair !== "crosshair") return "not armed (cursor=" + JSON.stringify(crosshair) + "); content script did not run";
+    await swc.ev(`chrome.scripting.executeScript({ target: { tabId: ${tabId} }, files: ["content.js"] }).then(() => chrome.tabs.sendMessage(${tabId}, { type: "arm" }))`);
+    await sleep(300);
+    const p = await center("#schedule tbody tr:nth-child(4)");
+    await move(p.x, p.y); await sleep(300);
+    const chip = await lift("chip"); await pc.shot("ext-lift-dubhacks-1-armed");
+    await pc.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p.x, y: p.y, button: "left", clickCount: 1 });
+    await pc.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1 });
+    await sleep(300);
+    const st = await lift("state");
+    await key("keyDown", "Escape", "Escape", 27); await key("keyUp", "Escape", "Escape", 27); await sleep(200);
+    const after = await lift("state");
+    if (chip !== "Schedule · 13 rows × 3 cols") return "chip was " + JSON.stringify(chip);
+    if (st !== "asking") return "click did not open the pill (state " + st + ")";
+    if (after !== "idle") return "Esc did not cancel (state " + after + ")";
   });
 
-  const pr = await pc.ev(`(()=>{const r=document.querySelector('#pricing').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+12}})()`);
-  // The chip lives in a closed shadow root; read it via a screenshot and via the outline geometry check below.
-  await step("2. hover pricing section -> highlight + chip (screenshot)", async () => {
-    await pc.mouse(pr.x - 5, pr.y); await pc.mouse(pr.x, pr.y); await sleep(300);
-    await pc.shot("ext-01-hover");
-    // Closed shadow root hides the chip from the DOM, so assert the highlight via the page-visible crosshair state.
-    if ((await pc.ev(`document.documentElement.style.cursor`)) !== "crosshair") return "pointer mode lost on hover";
-  });
-
-  await step("3. click captures; instruction input appears", async () => {
-    await pc.mouse(pr.x, pr.y, "mousePressed"); await pc.mouse(pr.x, pr.y, "mouseReleased"); await sleep(400);
-    await pc.shot("ext-02-instruction");
-    // Typing goes to the focused input inside the closed shadow root.
-    await pc.send("Input.insertText", { text: "make this darker" });
-    await sleep(200);
-    await pc.shot("ext-03-typed");
-  });
-
-  await step("4. Enter sends; new tab opens at web origin ?p=<id>", async () => {
-    await pc.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, text: "\r" });
-    await pc.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
-    const tab = await until(async () => (await targets()).find((t) => t.type === "page" && t.url.startsWith(WEB + "/?p=")), 20000);
-    if (!tab) return "no tab opened at " + WEB + "/?p=; tabs: " + (await targets()).filter((t) => t.type === "page").map((t) => t.url).join(", ");
-    console.log("  opened " + tab.url);
-    const nc = await attach(tab.webSocketDebuggerUrl);
-    await nc.send("Page.enable"); await nc.send("Runtime.enable");
-    await nc.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-    const ok = await until(async () => nc.ev(`document.querySelectorAll('[data-screen-root] [data-node-id]').length>0`).catch(() => false), 20000);
-    await sleep(800); await nc.shot("ext-04-imported");
-    if (!ok) return "imported screen did not render ([data-screen-root] [data-node-id] missing)";
-    const text = await nc.ev(`document.querySelector('[data-screen-root]').innerText`);
-    console.log("  rendered text: " + JSON.stringify(text.slice(0, 120)));
-    if (!/Simple pricing/i.test(text) || !/Start free trial/i.test(text) || !/Cancel any time/i.test(text)) return "rendered screen lacks pricing section content";
-    nc.ws.close();
-  });
 } catch (e) {
   rec("fatal", false, e.message);
 }

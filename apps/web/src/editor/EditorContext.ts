@@ -54,6 +54,7 @@ export const TYPE_LABELS: Record<string, string> = {
   list: "List",
   rating: "Rating",
   table: "Table",
+  chart: "Chart",
   accordion: "FAQ",
   video: "Video",
   map: "Map",

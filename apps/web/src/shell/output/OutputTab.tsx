@@ -4,6 +4,8 @@ import type { Screen } from "@create/shared";
 import { ScreenCanvas } from "../../components/ScreenCanvas";
 import { useScreenStore } from "../../store/screenStore";
 import { shareAndCopy } from "./shareApi";
+import { ShowQrButton } from "../../share/QrCard";
+import { button } from "../../ui/styles";
 
 export interface OutputTabProps {
   /** Defaults to the current screen in useScreenStore. */
@@ -50,8 +52,8 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
     }
   };
 
-  const iconBtn = "grid size-6 place-items-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-  const action = "flex h-8 min-w-[136px] items-center justify-center gap-1.5 rounded-lg border border-line px-3 text-[14px] text-ink transition-colors duration-150 hover:bg-hover disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  const iconBtn = button.iconSm;
+  const action = button.secondary;
 
   const status = useScreenStore((st) => st.status);
   const generating = status === "loading";
@@ -76,8 +78,9 @@ export function OutputTab({ screen: screenProp }: OutputTabProps) {
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={share} disabled={busy !== null} className={action}>
                   {copied ? <Check size={16} strokeWidth={1.75} className="text-ok" /> : <Link2 size={16} strokeWidth={1.75} />}
-                  {busy === "share" ? "Saving…" : copied ? "Copied" : "Copy share link"}
+                  {busy === "share" ? "Saving…" : copied ? "Copied" : "Copy link"}
                 </button>
+                {shareUrl && <ShowQrButton url={shareUrl} className={button.secondary} />}
                 {shareUrl && (
                   <div className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg bg-tray pl-3 pr-1">
                     <a href={shareUrl} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink">

@@ -1,51 +1,49 @@
 # Create: 5-slide outline
 
 ## 1. Problem
-- Changing a website means describing it in a paragraph: "the third card, no, the left one, make it bigger".
-- People point and say "fix this" to each other. Software makes you leave the page for a prompt box.
-- Who suffers: shop owners and non-coders who just need hours and a menu online.
-- Line: Point at it. Say it. It changes.
+- The web is read-only. A schedule, a price list, a chart in a report: you can read it, but you can't add a row, chart it your way, or share a live copy.
+- Today you copy it into a spreadsheet by hand, or give up.
+- Who suffers: students, small teams and shop owners who need their own version of a table.
+- Line: Pixels become software you own.
 
 ## 2. Demo
 - Embed the 2:00 video (`storyboard.md`).
-- Three frames: bakery page from one prompt; hover title + "Make this bigger"; sketch to page.
-- Callout: bubble shows what Create understood; asks "Which one?" instead of guessing.
+- Three frames: hold Option on a schedule table; the app with table, chart and Add row; a phone adds a row and it appears in the Backend tab.
+- Callout: a QR code, a real row, a real MongoDB Atlas collection.
 
 ## 3. How it works (text diagram)
 ```
- type / speak / draw / point+narrate
+ Chrome extension: hold Option on a table, list, cards or chart image
               |
-              v
-   /api/route-intent  (Jev -> Haiku -> keywords)
-     action + target (pointed element wins on "this"/"that")
+   typed entity {kind, title, columns, rows <= 500}
+   (DOM read, or /api/extract: Perceptron, then Claude vision, then mock)
               |
-   +----------+-----------+
-   |                      |
- /api/edit-node       /api/canvas-ops (Perceptron reads sketch)
- /api/generate        Claude writes edit ops
-   |                      |
-   +----------+-----------+
-              v
-   JSON component tree (Zod-validated, no raw HTML)
-              v
-   one React renderer -> live editable page -> share / publish HTML
+        /api/lift  (Claude Haiku polishes title and summary only)
+              |
+   JSON component tree (Zod): table + chart + Add-row form, liveFormId
+              |
+   one React renderer -> live app -> QR / share link / HTML export
+              |
+   /api/forms/:appId  -> MongoDB Atlas (files without MONGODB_URI)
+              |
+   Backend tab polls every 3 s
 ```
-- One schema for AI output, user edits, and saved shares.
-- Chrome extension posts a structural snapshot to `/api/import-element`, returns a Create link.
+- Inside the app: Narrate (hold Option, "make this bigger", Jev resolves "this", undo), Chat ("why does week 3 spike?"), Type, Speak, Sketch.
+- One schema for AI output, user edits, lifted apps and saved shares.
 
 ## 4. Sponsor tech
-- TypeSafe Jev: routes each spoken line to action + target, about 60-200 ms (per `docs/demo-script.md`); deictic words let the pointed element win.
-- Perceptron: reads sketch shapes and positions before Claude writes edits.
-- ElevenLabs Scribe: realtime transcription via single-use server-minted token; browser speech fallback.
-- MongoDB Atlas (MLH): share links and per-app form submissions (verify before submit); local files without it.
-- Tracks: DubHacks NEXT, Perceptron, SideShift, MongoDB Atlas.
-- Team: Sooraj Sambasivam, Abel Anand (page engine, streaming, icons, live data), pentaswan (canvas, sketch vision prototype).
-- Claude (Sonnet 5.5 / Haiku 5.5): page and edit generation.
-- Every sponsor is optional at runtime; mock mode runs the full UI with no keys.
+- Perceptron: reads chart and image crops into a typed entity; reads sketches.
+- MongoDB Atlas (MLH): every added row is a document; share links too. Local files without it.
+- TypeSafe Jev: routes each spoken line to action and target; deictic words let the pointed element win.
+- ElevenLabs Scribe: realtime voice, browser speech fallback.
+- Claude (Sonnet 5.5 / Haiku 5.5): builds and edits apps, polishes lifted copy, answers Chat.
+- Tracks: DubHacks NEXT, Perceptron, SideShift, MongoDB Atlas. Team: Sooraj Sambasivam, Abel Anand, pentaswan.
+- Every sponsor is optional at runtime; mock mode runs the lift with no keys.
 
-## 5. What's next: pointer everywhere
-- Click-to-point with no modifier key; pointing inside the canvas.
-- Extension today: point at any site, get an editable copy (verify in real Chrome before claiming). Next: the pointer inside any page, then desktop-wide, e.g. a photo on the desktop (listed in `docs/devpost.md`).
-- Multi-page sites and collaborative editing.
-- Shipping tonight, verify before submit: Chat | Code modes, per-app Backend with form submissions in MongoDB, onboarding, AI pointer click-to-pin. Show only what is confirmed in the browser; otherwise present as roadmap.
-- Close: Point at it. Say it. It changes.
+## 5. Startup and what's next
+- Every portal, PDF and screenshot is read-only. Create is the free pointer.
+- Business: a hosted backend at $9 to $19 a month, and a remix button on every shared app. No users or revenue yet.
+- Next: more sources (PDFs, screenshots), accounts and hosting, pointing outside the browser.
+- Rehearsed on sample pages today; do not claim "works on any site".
+- Verify before submit: lift in a real Chrome profile, a physical-phone QR scan, real Perceptron and Claude keys.
+- Close: Pixels become software you own.

@@ -23,6 +23,7 @@ import {
   type LassoTarget,
 } from "./targets";
 import type { IntentRequest } from "@create/shared";
+import { button } from "../../../ui/styles";
 
 export type NarrateOverlayProps = {
   onFinish(session: NarrationSession): void;
@@ -30,17 +31,16 @@ export type NarrateOverlayProps = {
 };
 
 export const HINTS = [
-  "Feel free to speak",
-  "Hold Shift and drag to lasso",
-  "Hold Option to talk · double-tap Option to lock",
+  "Speak naturally",
+  "Hold Shift and drag to select several",
+  "Hold Option and speak · double-tap Option to keep listening",
 ];
 
-export const POINTER_HINT = "Hover and talk · Shift+drag to select several";
+export const POINTER_HINT = "Hover and speak · Shift+drag to select several";
 
 export const BROWSER_SPEECH_HINT = "Using browser speech recognition";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 const MAX_EVENTS = 2000;
 /** A pointer sample older than this is not "where the user is pointing" any more. */
@@ -307,7 +307,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
               type="button"
               aria-label="Cancel narration"
               onClick={cancel}
-              className={`mt-8 h-8 rounded-lg px-3 text-[14px] text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+              className={`${button.ghost} mt-8`}
             >
               Cancel
             </button>

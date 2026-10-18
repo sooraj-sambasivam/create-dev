@@ -25,12 +25,12 @@ describe("deriveItems", () => {
   it("appends a building row while loading or transcribing", () => {
     const l = deriveItems({ history: [], status: "loading", error: null });
     expect(l).toEqual([{ kind: "building", key: "building", label: "Building your page…" }]);
-    expect(deriveItems({ history: [], status: "transcribing", error: null })[0]).toMatchObject({ label: "Transcribing…" });
+    expect(deriveItems({ history: [], status: "transcribing", error: null })[0]).toMatchObject({ label: "Turning your voice into text…" });
   });
   it("appends an error with the retry prompt", () => {
     const items = deriveItems({ history: [{ prompt: "x", summary: "y" }], status: "error", error: "boom" });
     expect(items[items.length - 1]).toEqual({ kind: "error", key: "error", message: "boom", retryPrompt: "x" });
-    expect(deriveItems({ history: [], status: "error", error: null })[0]).toMatchObject({ message: "Something went wrong.", retryPrompt: null });
+    expect(deriveItems({ history: [], status: "error", error: null })[0]).toMatchObject({ message: "Something went wrong. Try again.", retryPrompt: null });
   });
   it("shows the attempted prompt as the user bubble and retries exactly it", () => {
     const loading = deriveItems({ history: [], status: "loading", error: null, lastAttempt: "a pricing page" });

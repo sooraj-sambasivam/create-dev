@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ScreenSchema, type SharedPrototype } from "@create/shared";
 import { ScreenRenderer } from "../components/ScreenRenderer";
 import { remixScreen } from "./remix";
+import { ShowQrButton } from "./QrCard";
+import { button, text } from "../ui/styles";
 import { APP_NAME, sharedDocumentTitle } from "./brand";
 
 type LoadState =
@@ -36,22 +38,20 @@ function Page({ children }: { children: ReactNode }) {
   );
 }
 
-function TopBar({ onRemix, canRemix }: { onRemix?: () => void; canRemix: boolean }) {
+function TopBar({ onRemix, canRemix, qrUrl }: { onRemix?: () => void; canRemix: boolean; qrUrl?: string }) {
   return (
-    <header className="flex h-10 shrink-0 items-center justify-between gap-3 px-4">
-      <a href="/" className="text-sm font-medium text-ink no-underline">
+    <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line px-4">
+      <a href="/" className={`${text.ui} font-medium no-underline`}>
         Made with {APP_NAME}
       </a>
-      {onRemix && (
-        <button
-          type="button"
-          onClick={onRemix}
-          disabled={!canRemix}
-          className="inline-flex h-8 items-center rounded-lg bg-accent px-3 text-sm font-medium text-white transition-opacity duration-150 hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          Remix
-        </button>
-      )}
+      <div className="flex items-center gap-2">
+        {qrUrl && <ShowQrButton url={qrUrl} className={button.ghost} />}
+        {onRemix && (
+          <button type="button" onClick={onRemix} disabled={!canRemix} className={button.primary}>
+            Remix
+          </button>
+        )}
+      </div>
     </header>
   );
 }
@@ -59,11 +59,11 @@ function TopBar({ onRemix, canRemix }: { onRemix?: () => void; canRemix: boolean
 function Message({ title, body }: { title: string; body: string }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
-      <h1 className="text-2xl font-normal tracking-tight text-ink">{title}</h1>
-      <p className="mt-2 max-w-md text-sm text-ink-2">{body}</p>
+      <h1 className={text.display}>{title}</h1>
+      <p className="mt-2 max-w-md text-[14px] text-ink-2">{body}</p>
       <a
         href="/"
-        className="mt-6 inline-flex h-8 items-center rounded-lg border border-line px-3 text-sm font-medium text-ink no-underline transition-colors hover:bg-tray"
+        className={`mt-6 ${button.secondary} no-underline`}
       >
         Open in {APP_NAME}
       </a>
@@ -132,7 +132,7 @@ export function SharedView({ id }: { id: string }) {
   const { prototype } = state;
   return (
     <Page>
-      <TopBar onRemix={() => remixScreen(prototype.screen)} canRemix />
+      <TopBar onRemix={() => remixScreen(prototype.screen)} canRemix qrUrl={typeof location !== "undefined" ? location.href : undefined} />
       <main className="flex flex-1 flex-col" aria-label={prototype.title}>
         <div className="flex flex-1 flex-col">
           <ScreenRenderer screen={prototype.screen} editable={false} />

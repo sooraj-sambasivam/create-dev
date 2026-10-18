@@ -3,9 +3,9 @@ import { micLabel } from "./MicPill";
 
 describe("micLabel", () => {
   it("names each state", () => {
-    expect(micLabel("idle")).toBe("Mic idle");
+    expect(micLabel("idle")).toBe("Mic off");
     expect(micLabel("listening")).toBe("Listening");
-    expect(micLabel("locked")).toBe("Mic locked on");
+    expect(micLabel("locked")).toBe("Listening (locked)");
     expect(micLabel("unavailable")).toBe("Speech recognition isn't available in this browser");
   });
 

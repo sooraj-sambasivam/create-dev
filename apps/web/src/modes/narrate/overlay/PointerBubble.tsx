@@ -7,6 +7,7 @@ import { useWorkMode } from "../../../store/modeStore";
 import { usePin } from "../../../narrate/pinStore";
 import { hasAnswerSink, sendAnswerToChat } from "../../../narrate/answerSink";
 import type { PagePointer } from "./usePagePointer";
+import { button, ICON, STROKE, surface } from "../../../ui/styles";
 
 /** What the pointer is doing with the last thing said. */
 export type PointerPhase =
@@ -26,7 +27,7 @@ const STATUS: Record<Exclude<PointerPhase["kind"], "idle">, string> = {
   editing: "Editing…",
   done: "Done",
   failed: "Couldn't do that",
-  cancelled: "Cancelled",
+  cancelled: "Canceled",
   ask: "",
   answer: "",
 };
@@ -182,14 +183,14 @@ export function PointerBubble({ pointer, phase, reduce, onUndo }: { pointer: Pag
   const status = phaseText(phase, slow);
   const show = Boolean(label) || phase.kind === "ask" || phase.kind === "answer" || phase.kind === "cancelled";
   const answer = phase.kind === "answer" ? phase : null;
-  const action = "pointer-events-auto flex h-6 items-center gap-1 rounded-md px-2 text-[12px] text-ink-2 transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  const action = `${button.ghost} pointer-events-auto h-6 rounded-md px-2 text-[12px]`;
   const tone = phase.kind === "failed" ? "text-bad" : phase.kind === "done" ? "text-ok" : "text-ink-2";
 
   return (
     <div data-narrate-ignore aria-hidden="true" className="pointer-events-none fixed inset-0 z-[102]">
       <div
         ref={outline}
-        className="absolute left-0 top-0 rounded-md"
+        className="absolute left-0 top-0 rounded-lg"
         style={{ opacity: 0, boxShadow: "0 0 0 2px var(--color-accent)", transition: reduce ? "none" : "opacity 120ms" }}
       />
       <div
@@ -197,8 +198,8 @@ export function PointerBubble({ pointer, phase, reduce, onUndo }: { pointer: Pag
         className="absolute left-0 top-0 flex max-w-[320px] flex-col items-start gap-1.5"
         style={{ opacity: show ? 1 : 0, transition: reduce ? "none" : "opacity 120ms" }}
       >
-        <div className="flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 text-[12px] leading-6 text-ink shadow-soft">
-          <Crosshair size={12} strokeWidth={1.75} className={active ? "shrink-0 text-accent" : "shrink-0 text-ink-2"} />
+        <div className={`flex max-w-full items-center gap-1.5 whitespace-nowrap ${surface.pill} px-2.5 text-[12px] leading-6 text-ink`}>
+          <Crosshair size={ICON.md} strokeWidth={STROKE} className={active ? "shrink-0 text-accent" : "shrink-0 text-ink-2"} />
           {phase.kind !== "ask" && label && <span className="min-w-0 truncate">{label}</span>}
           {status && <span className={`shrink-0 ${tone}`}>{phase.kind === "ask" || !label ? status : `· ${status}`}</span>}
           {phase.kind === "done" && phase.undoable && onUndo && (
@@ -206,18 +207,18 @@ export function PointerBubble({ pointer, phase, reduce, onUndo }: { pointer: Pag
           )}
         </div>
         {answer && (
-          <div className="w-full rounded-xl border border-line bg-surface p-2.5 text-[12px] leading-5 text-ink shadow-soft">
+          <div className={`w-full ${surface.card} p-2.5 text-[12px] leading-5 text-ink`}>
             <p className="line-clamp-3 whitespace-pre-wrap" title={answer.answer}>{answer.answer}</p>
             {(answer.suggestCode || hasAnswerSink()) && (
               <div className="-mx-1 mt-1.5 flex gap-1">
                 {answer.suggestCode && (
                   <button type="button" className={action} onClick={() => setMode("code")}>
-                    <Code2 size={12} strokeWidth={1.75} />Switch to Code
+                    <Code2 size={ICON.md} strokeWidth={STROKE} />Switch to Code
                   </button>
                 )}
                 {hasAnswerSink() && (
                   <button type="button" className={action} onClick={() => sendAnswerToChat(answer.question, answer.answer)}>
-                    <MessageSquare size={12} strokeWidth={1.75} />More in chat
+                    <MessageSquare size={ICON.md} strokeWidth={STROKE} />More in chat
                   </button>
                 )}
               </div>

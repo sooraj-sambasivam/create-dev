@@ -21,6 +21,7 @@ const SUGGESTIONS: Record<string, string[]> = {
   list: ["Add two more", "Use checkmarks"],
   rating: ["Add a review count", "Make it 5 stars"],
   table: ["Add a row", "Sort by price"],
+  chart: ["Make it a line chart", "Add a title"],
   accordion: ["Add a question", "Shorter answers"],
   video: ["Make it square", "Remove it"],
   map: ["Make it taller", "Add the address below"],
