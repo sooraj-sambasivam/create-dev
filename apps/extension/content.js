@@ -420,6 +420,85 @@
     return { el: null, kind: "image", label: "Region · read as image", loop: true, box, anchor: root, entity: null };
   }
 
+  /* ---------- tray snippet: sanitized markup + styles of the circled container ---------- */
+  const TRAY_TAGS = new Set("div span p a ul ol li table thead tbody tfoot tr td th caption h1 h2 h3 h4 h5 h6 img button section article header footer nav main aside figure figcaption strong em b i u small code pre blockquote br hr label time dl dt dd cite".split(" "));
+  const TRAY_VOID = new Set(["br", "hr", "img"]);
+  const TRAY_ATTRS = new Set(["class", "id", "href", "src", "alt", "title", "role", "aria-label", "aria-current", "colspan", "rowspan", "datetime", "lang", "data-testid", "name", "type", "placeholder"]);
+  const TRAY_DROP = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "IFRAME", "OBJECT", "EMBED", "SVG", "CANVAS", "HEAD", "META", "LINK", "TEXTAREA", "SELECT", "FORM"]);
+  const TRAY_HTML_MAX = 20480, TRAY_STYLE_PROPS = ["display", "flexDirection", "color", "backgroundColor", "fontFamily", "fontSize", "fontWeight", "lineHeight", "textAlign", "padding", "margin", "borderRadius", "border", "boxShadow", "gap", "width", "height"];
+  const SAFE_HREF = /^(https?:\/\/[^\s"'<>]+|mailto:[^\s"'<>]+|tel:[+\d\s()-]+|#[\w-]*|\/[^\s"'<>]*)$/i;
+  const SAFE_SRC = /^(https?:\/\/[^\s"'<>]+|data:image\/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+=*)$/i;
+  const escH = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  function trayAttr(name, raw) {
+    if (!TRAY_ATTRS.has(name)) return null;
+    let v = String(raw).replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 500);
+    if (!v) return null;
+    if (name === "href" || name === "src") { v = absUrl(v) || (name === "src" && /^data:image\//i.test(v) ? v : ""); if (!v) return null; return (name === "href" ? SAFE_HREF : SAFE_SRC).test(v) ? v : null; }
+    return v;
+  }
+  /** Allow-listed outerHTML, at most 20 KB; the server re-sanitizes anyway. */
+  function trayHtml(root) {
+    let left = TRAY_HTML_MAX;
+    const cost = (s) => { if (s.length > left) { left = 0; return false; } left -= s.length; return true; };
+    const inner = (n, depth) => {
+      if (depth > 24) return "";
+      let out = "";
+      for (const c of n.childNodes) {
+        if (c.nodeType === 3) { const t = escH(clean(c.nodeValue) ? String(c.nodeValue).replace(/\s+/g, " ") : ""); if (t.trim()) { if (cost(t)) out += t; else break; } }
+        else if (c.nodeType === 1) { const p = emit(c, depth + 1); if (!p && left <= 0) break; out += p; }
+      }
+      return out;
+    };
+    const emit = (n, depth) => {
+      if (n === host || TRAY_DROP.has(n.tagName.toUpperCase())) return "";
+      const tag = n.tagName.toLowerCase();
+      if (!TRAY_TAGS.has(tag)) return inner(n, depth);
+      let attrs = "";
+      for (const a of n.attributes) { const name = a.name.toLowerCase(), v = trayAttr(name, a.value); if (v !== null) attrs += ` ${name}="${escH(v).replace(/"/g, "&quot;")}"`; }
+      if (tag === "img" && !/ src="/.test(attrs)) return "";
+      if (tag === "a" && / href="/.test(attrs)) attrs += ' rel="noopener noreferrer"';
+      const open = `<${tag}${attrs}>`;
+      if (TRAY_VOID.has(tag)) return cost(open) ? open : "";
+      if (!cost(open + `</${tag}>`)) return "";
+      return open + inner(n, depth) + `</${tag}>`;
+    };
+    return emit(root, 0);
+  }
+  function trayStyles(el) {
+    const out = {};
+    try {
+      const cs = getComputedStyle(el);
+      for (const p of TRAY_STYLE_PROPS) {
+        const v = cs[p];
+        if (!v || v === "none" || v === "normal" || v === "0px" || v === "rgba(0, 0, 0, 0)") continue;
+        out[p.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())] = String(v).slice(0, 200);
+      }
+    } catch {}
+    return out;
+  }
+  /** After a loop is released: shoot the region, send thumbnail + code to the tray. Never throws, never blocks the pill for long. */
+  async function trayCapture(target) {
+    try {
+      const b = target.box;
+      const x = Math.max(0, b.x), y = Math.max(0, b.y);
+      const w = Math.min(innerWidth, b.x + b.w) - x, h = Math.min(innerHeight, b.y + b.h) - y;
+      const root = target.anchor || target.el || null;
+      let thumbnail = "";
+      if (w >= 8 && h >= 8) {
+        host.style.visibility = "hidden";
+        await frames(2);
+        const shot = await send({ type: "trayShot", rect: { x, y, w, h }, viewport: { w: innerWidth, h: innerHeight } });
+        host.style.visibility = "";
+        if (shot?.ok && shot.image) thumbnail = shot.image;
+      }
+      const snippetHtml = root && root !== document.body && root !== document.documentElement ? trayHtml(root) : "";
+      if (!snippetHtml && !thumbnail) return;
+      const title = clean((target.entity && target.entity.title) || (root && text(root)) || target.label || "Snippet").slice(0, 80) || "Snippet";
+      const kind = root && /^(TABLE|UL|OL|IMG)$/.test(root.tagName) ? { TABLE: "table", UL: "list", OL: "list", IMG: "image" }[root.tagName] : snippetHtml ? "snippet" : "image";
+      await send({ type: "tray", payload: { title, kind, ...(thumbnail ? { thumbnail } : {}), ...(snippetHtml ? { snippetHtml, styles: trayStyles(root) } : {}), source: { app: "extension", url: location.href.slice(0, 2000), title: clean(document.title).slice(0, 200) } } });
+    } catch { host.style.visibility = ""; }
+  }
+
   /* ---------- crawl: follow same-origin pagination, re-run the extractor on the same container ---------- */
   const WANT_ALL = /\b(?:all|every|each)\b[^.]{0,24}\bpages?\b|\bthe rest\b|\bremaining (?:pages|results)\b|\bevery page\b/i;
   const NEXT_TEXT = /^\s*(?:next(?:\s+page)?|older|more|›|»|→|>|next\s*[›»→>])\s*$/i;
@@ -657,6 +736,13 @@
   let drawing = null, suppressClick = false, crawlOn = false, moveAt = 0, labelKey = null;
   const state = (s) => { host.dataset.state = s; };
   state("idle");
+  /** A lasso loop; shown from the moment the button goes down in pointer mode (Option held or armed). */
+  const LASSO_CURSOR = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><ellipse cx="13" cy="11" rx="9" ry="6.5" fill="rgba(62,123,240,0.12)" stroke="#fff" stroke-width="3.4"/><ellipse cx="13" cy="11" rx="9" ry="6.5" fill="none" stroke="#3E7BF0" stroke-width="1.8"/><path d="M6.5 15.5c-1.6 2.2-1 4.6 1.2 5.6" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/><path d="M6.5 15.5c-1.6 2.2-1 4.6 1.2 5.6" fill="none" stroke="#3E7BF0" stroke-width="1.8" stroke-linecap="round"/></svg>')}") 13 11, crosshair`;
+  let lassoStyle = null;
+  const lassoCursor = (on) => {
+    if (on && !lassoStyle) { lassoStyle = document.createElement("style"); lassoStyle.textContent = `html, html * { cursor: ${LASSO_CURSOR} !important; }`; document.documentElement.append(lassoStyle); }
+    else if (!on && lassoStyle) { lassoStyle.remove(); lassoStyle = null; }
+  };
   const editable = (el) => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   const pick = (x, y) => { const el = document.elementFromPoint(x, y); return el && el !== host ? el : null; };
 
@@ -701,6 +787,7 @@
     altUsed = true; hover = null;
     hideEl(ring); hideEl(chip);
     state("drawing");
+    lassoCursor(true);
     fx(loopSvg, "in", [{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: "ease-out" });
     loopSvg.__on = true; loopSvg.style.display = "block";
     try { document.documentElement.setPointerCapture(e.pointerId); } catch {}
@@ -741,6 +828,7 @@
     const dr = drawing; drawing = null;
     if (!dr) return;
     try { document.documentElement.releasePointerCapture(dr.id); } catch {}
+    lassoCursor(false);
     const tiny = dr.pts.length < 6 || boxOf(dr.pts).w + boxOf(dr.pts).h < 40;
     if (cancel || tiny) { hideEl(loopSvg, { duration: 160, easing: "ease-out", fill: "forwards" }); if (!cancel) { suppressClick = false; state("seeking"); schedule(); } return; }
     suppressClick = true; setTimeout(() => { suppressClick = false; }, 80);
@@ -750,7 +838,8 @@
     tip.setAttribute("cx", "-10");
     const target = resolveCircle(simplify(dr.pts, 2.5));
     hideEl(loopSvg, { duration: 420, easing: "cubic-bezier(.2,.7,.2,1)", fill: "forwards" });
-    lock(target);
+    // Save the circled snippet to the tray first (host is hidden for two frames for a clean shot), then ask what to do with it.
+    trayCapture(target).finally(() => { if (active && !locked) lock(target); });
   }
   addEventListener("pointerdown", (e) => {
     if (!active || locked || e.button !== 0 || !(altDown || sticky) || e.composedPath()[0] === host) return;

@@ -9,11 +9,11 @@ import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import { loadBeats, VIDEO_DIR, FFMPEG, mkdir, readJson, writeJson, ffprobeDuration, run, log } from "./lib.mjs";
 
-const KEY = process.env.ELEVENLABS_API_KEY || "";
-const VOICE_ID = process.env.ELEVEN_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
+let KEY = process.env.ELEVENLABS_API_KEY || "";
+let VOICE_ID = process.env.ELEVEN_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
 const MODEL = process.env.ELEVEN_MODEL || "eleven_multilingual_v2";
 const SAY_VOICE = process.env.VOICE || "Samantha";
-const provider = KEY ? `elevenlabs:${MODEL}:${VOICE_ID}` : `macos-say:${SAY_VOICE}`;
+
 const dir = mkdir(path.join(VIDEO_DIR, "audio"));
 const durFile = path.join(dir, "durations.json");
 const durations = readJson(durFile, {});
@@ -24,7 +24,7 @@ async function eleven(text, out) {
     headers: { "xi-api-key": KEY, "content-type": "application/json", accept: "audio/mpeg" },
     body: JSON.stringify({ text, model_id: MODEL, voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.15, use_speaker_boost: true } }),
   });
-  if (!r.ok) throw new Error(`ElevenLabs ${r.status}: ${(await r.text()).slice(0, 200).replace(KEY, "***")}`);
+  if (!r.ok) throw Object.assign(new Error(`ElevenLabs ${r.status}: ${(await r.text()).slice(0, 200).replace(KEY, "***")}`), { status: r.status });
   fs.writeFileSync(out, Buffer.from(await r.arrayBuffer()));
 }
 async function say(text, out) {
@@ -33,6 +33,30 @@ async function say(text, out) {
   await run(FFMPEG, ["-y", "-loglevel", "error", "-i", aiff, "-ar", "44100", "-ac", "1", "-codec:a", "libmp3lame", "-b:a", "128k", out]);
   fs.rmSync(aiff, { force: true });
 }
+
+/** Free ElevenLabs plans cannot use library voices over the API; fall back to an account/premade voice, then to `say`. */
+async function resolveVoice() {
+  if (!KEY) return;
+  const probe = path.join(dir, ".probe.mp3");
+  try { await eleven("Ready.", probe); fs.rmSync(probe, { force: true }); return; } catch (e) {
+    log(`ElevenLabs voice ${VOICE_ID} unavailable (${e.message.slice(0, 90)})`);
+    if (e.status === 401) { KEY = ""; return; }
+  }
+  try {
+    const r = await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": KEY } });
+    const voices = r.ok ? (await r.json()).voices || [] : [];
+    const warm = ["Sarah", "Alice", "Matilda", "Jessica", "Rachel", "Lily", "Charlotte"];
+    const ordered = [...voices].sort((a, b) => (warm.indexOf(a.name) + 99) % 99 - (warm.indexOf(b.name) + 99) % 99 || (a.category === "premade" ? -1 : 1));
+    for (const v of ordered) {
+      VOICE_ID = v.voice_id;
+      try { await eleven("Ready.", probe); fs.rmSync(probe, { force: true }); log(`using ElevenLabs voice ${v.name} (${v.voice_id})`); return; } catch {}
+    }
+  } catch {}
+  log("no usable ElevenLabs voice on this plan; using the macOS `say` placeholder");
+  KEY = "";
+}
+await resolveVoice();
+const provider = KEY ? `elevenlabs:${MODEL}:${VOICE_ID}` : `macos-say:${SAY_VOICE}`;
 
 for (const b of loadBeats()) {
   const out = path.join(dir, `${b.id}.mp3`), meta = path.join(dir, `${b.id}.json`);

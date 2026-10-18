@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw, Settings } from "lucide-react";
+import { LogOut, RotateCcw, Settings } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useOnboarding } from "./onboardingStore";
 import { SettingsPanel } from "../settings";
-import { avatar, ICON, menuItem, STROKE, surface } from "../ui/styles";
+import { avatar, hairline, ICON, menuItem, STROKE, surface, text } from "../ui/styles";
+import { UsageMeter, displayName, useAuth } from "../auth";
 import { originFor, popover, useReducedMotionSafe } from "../ui/motion";
 
 /** The avatar with a small menu: Settings and Replay onboarding. */
@@ -14,6 +15,9 @@ export function AvatarMenu({ initials }: { initials: string }) {
   const btn = useRef<HTMLButtonElement>(null);
   const replay = useOnboarding((s) => s.open);
   const { v } = useReducedMotionSafe();
+  const user = useAuth((s) => s.user);
+  const logOut = useAuth((s) => s.logOut);
+  const refreshUsage = useAuth((s) => s.refreshUsage);
 
   useEffect(() => {
     if (!open) return;
@@ -47,7 +51,10 @@ export function AvatarMenu({ initials }: { initials: string }) {
         aria-label="Account"
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!open) void refreshUsage();
+          setOpen((o) => !o);
+        }}
         className={avatar}
       >
         {initials}
@@ -64,6 +71,19 @@ export function AvatarMenu({ initials }: { initials: string }) {
           style={{ transformOrigin: originFor("up", "left") }}
           className={`${surface.menu} absolute bottom-full left-0 z-50 mb-2 w-64`}
         >
+          {user && (
+            <>
+              <div className="flex flex-col gap-2 px-2 pb-1 pt-1.5">
+                <div className="flex flex-col">
+                  <span className={`${text.ui} truncate`}>{displayName(user)}</span>
+                  {user.kind === "account" && user.email && user.name && <span className={`${text.meta} truncate`}>{user.email}</span>}
+                  {user.kind === "guest" && <span className={text.meta}>Sign up for 3x daily usage</span>}
+                </div>
+                <UsageMeter compact />
+              </div>
+              <div className={hairline} role="separator" />
+            </>
+          )}
           <button
             type="button"
             role="menuitem"
@@ -89,6 +109,20 @@ export function AvatarMenu({ initials }: { initials: string }) {
             <RotateCcw size={ICON.lg} strokeWidth={STROKE} className="text-ink-2" aria-hidden="true" />
             Replay onboarding
           </button>
+          {user && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                void logOut();
+              }}
+              className={menuItem}
+            >
+              <LogOut size={ICON.lg} strokeWidth={STROKE} className="text-ink-2" aria-hidden="true" />
+              {user.kind === "guest" ? "Sign in or sign up" : "Sign out"}
+            </button>
+          )}
         </motion.div>
       )}
       </AnimatePresence>

@@ -5,6 +5,7 @@ import { MotionControls } from "../../motion";
 import { useScreenStore } from "../../store/screenStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { BackendTab } from "../output/BackendTab";
+import { hasBackend } from "../output/appBackend";
 import { OutputTab } from "../output/OutputTab";
 import { ActivePill } from "../../ui/ActivePill";
 import { ICON, STROKE, button, card, segmented } from "../../ui/styles";
@@ -62,13 +63,15 @@ export function RightPanel() {
   const editMode = useScreenStore((s) => s.editMode);
   const hasScreen = useScreenStore((s) => s.screen !== null);
   const hasSelection = useScreenStore((s) => s.selectedId !== null);
+  const backend = useScreenStore((s) => hasBackend(s.screen));
 
-  // With nothing selected, Inspect shows the page settings (title, theme, colour, font, files).
-  const canInspect = editMode && hasScreen;
-  const inspectHint = !hasScreen ? "Nothing to inspect yet" : "Switch to Edit to inspect";
-  // A stored "inspect" tab with nothing to inspect shows Output instead.
-  const active: RightPanelTab = tab === "inspect" && !canInspect ? "output" : tab;
-  const enabled = RIGHT_PANEL_TABS.filter((t) => t !== "inspect" || canInspect);
+  // Tabs follow the page: Output and Inspect need a page, Backend needs a backend. With nothing
+  // selected, Inspect shows the page settings (title, theme, colour, font, files).
+  const visible = (t: RightPanelTab) => hasScreen && (t !== "backend" || backend) && (t !== "inspect" || editMode);
+  const enabled = RIGHT_PANEL_TABS.filter(visible);
+  const canInspect = enabled.includes("inspect");
+  // A stored tab that has disappeared shows Output instead.
+  const active: RightPanelTab = enabled.includes(tab) ? tab : "output";
 
   const pillId = useId();
   const asideRef = useRef<HTMLElement>(null);
@@ -119,11 +122,10 @@ export function RightPanel() {
     >
       <header className="flex h-12 shrink-0 items-center gap-2 px-4">
         <div role="tablist" aria-label="Side panel view" className={segmented.root}>
-          {RIGHT_PANEL_TABS.map((t) => {
-            const disabled = t === "inspect" && !canInspect;
+          {enabled.map((t) => {
             const selected = active === t;
             return (
-              <span key={t} title={disabled ? inspectHint : undefined} className="flex">
+              <span key={t} className="flex">
                 <button
                   ref={(el) => {
                     tabRefs.current[t] = el;
@@ -134,7 +136,6 @@ export function RightPanel() {
                   aria-selected={selected}
                   aria-controls="rp-body"
                   tabIndex={selected ? 0 : -1}
-                  disabled={disabled}
                   onClick={() => setTab(t)}
                   onKeyDown={onTabKeyDown}
                   className={`${segmented.item} ${selected ? segmented.active : ""}`}

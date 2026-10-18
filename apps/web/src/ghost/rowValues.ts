@@ -78,6 +78,16 @@ function nextTier(cells: string[]): string | null {
   return next ? next[0].toUpperCase() + next.slice(1) : null;
 }
 
+/** Emails: a fresh local part on the same domain, numbered past the ones already there. */
+function nextEmail(cells: string[]): string | null {
+  if (!cells.every((c) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c))) return null;
+  const domain = cells[cells.length - 1].split("@")[1];
+  const used = new Set(cells.map((c) => c.toLowerCase()));
+  let n = cells.length + 1;
+  while (used.has(`guest${n}@${domain}`.toLowerCase())) n++;
+  return `guest${n}@${domain}`;
+}
+
 /** The next value for one column given its existing cells (oldest first). */
 export function nextCell(header: string, cells: string[]): string {
   const vals = cells.map((c) => c.trim()).filter(Boolean);
@@ -89,6 +99,8 @@ export function nextCell(header: string, cells: string[]): string {
     const step = stepOf(clocks as number[], 30);
     return fmtClock((clocks[clocks.length - 1] as number) + (step > 0 ? step : 30), vals[vals.length - 1]);
   }
+  const email = nextEmail(vals);
+  if (email) return email;
   const tier = nextTier(vals);
   if (tier) return tier;
   const num = nextNumeric(vals);

@@ -84,6 +84,17 @@ export function deriveAppBackend(screen: Screen | null | undefined, ctx: Backend
   };
 }
 
+/** True when the page has something a server would do: a form with a submit button, a data node, or a table/chart fed by a form. */
+export function hasBackend(screen: Screen | null | undefined): boolean {
+  if (!screen) return false;
+  if (findForms(screen).length > 0) return true;
+  let found = false;
+  walk(screen.children, (n) => {
+    if (n.type === "data" || ((n.type === "table" || n.type === "chart") && n.liveFormId)) found = true;
+  });
+  return found;
+}
+
 /** The JSON body a form posts, with sample values per field type. */
 export function sampleBody(form: AppBackend["forms"][number]) {
   const sample = (type: string) => (type === "checkbox" ? "true" : type === "select" ? "Option" : "Example");

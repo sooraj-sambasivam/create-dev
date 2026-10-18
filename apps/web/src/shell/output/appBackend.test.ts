@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Screen } from "@create/shared";
-import { deriveAppBackend, curlExample } from "./appBackend";
+import { deriveAppBackend, curlExample, hasBackend } from "./appBackend";
 import { findForms } from "../../components/forms";
 
 const screen = {
@@ -53,5 +53,20 @@ describe("deriveAppBackend", () => {
   it("builds a curl example", () => {
     const b = deriveAppBackend(screen, { appId: "a" });
     expect(curlExample(b.forms[0], "http://h")).toContain("http://h/api/forms/a");
+  });
+});
+
+describe("hasBackend", () => {
+  const page = (children: unknown[]) => ({ title: "t", theme: "light", font: "sans", children }) as unknown as Screen;
+  it("is false without a page or with static content", () => {
+    expect(hasBackend(null)).toBe(false);
+    expect(hasBackend(page([{ id: "h", type: "heading", text: "Hi", level: 1 }, { id: "b", type: "button", label: "Go", variant: "ghost" }]))).toBe(false);
+  });
+  it("is true for forms, data nodes and form-fed tables or charts", () => {
+    expect(hasBackend(screen)).toBe(true);
+    expect(hasBackend(page([{ id: "d", type: "data", source: { route: "/time" }, field: "x", format: "text", fallback: "-" }]))).toBe(true);
+    expect(hasBackend(page([{ id: "t", type: "table", columns: ["a"], rows: [], liveFormId: "f" }]))).toBe(true);
+    expect(hasBackend(page([{ id: "c", type: "chart", kind: "bar", labels: [], series: [{ name: "s", values: [] }], liveFormId: "f" }]))).toBe(true);
+    expect(hasBackend(page([{ id: "t", type: "table", columns: ["a"], rows: [] }]))).toBe(false);
   });
 });

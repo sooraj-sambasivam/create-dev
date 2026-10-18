@@ -185,3 +185,21 @@ export const ExtractRequestSchema = z.object({
   hint: z.string().max(500).optional(),
 });
 export type ExtractResponse = { entity: Entity; provider: "perceptron" | "gemini" | "claude" | "mock" };
+
+/** Tray snippets: a lassoed region captured from a page (Narrate or the extension). All fields are optional extras on a tray item. */
+export const TRAY_THUMB_MAX_CHARS = 90_000; // a 60 KB JPEG as a base64 data URL
+export const TRAY_HTML_MAX = 20_480;
+export const TRAY_STYLE_MAX_KEYS = 24;
+export const TraySourceSchema = z.object({
+  app: z.enum(["narrate", "extension", "notch", "other"]).default("other"),
+  url: z.string().trim().max(2000).optional(),
+  title: z.string().trim().max(200).optional(),
+});
+export type TraySource = z.infer<typeof TraySourceSchema>;
+export const TrayThumbnailSchema = z
+  .string()
+  .max(TRAY_THUMB_MAX_CHARS)
+  .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/, "thumbnail must be a base64 JPEG data URL");
+export const TrayStylesSchema = z
+  .record(z.string().regex(/^[a-zA-Z-]{1,40}$/), z.string().max(200))
+  .refine((r) => Object.keys(r).length <= TRAY_STYLE_MAX_KEYS, "too many style keys");

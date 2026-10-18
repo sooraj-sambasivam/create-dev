@@ -8,13 +8,19 @@ export interface ServerInfo {
   loaded: boolean;
 }
 
+/** Inkling runs through Tinker (Thinking Machines) or OpenRouter; /api/health reports each flag. */
+export function hasInkling(h: Health | null | undefined): boolean {
+  const x = h as (Health & { hasTinker?: boolean }) | null | undefined;
+  return Boolean(x?.hasTinker || x?.hasOpenRouter);
+}
+
 /** Fallback when GET /api/models is missing: availability comes from /api/health key flags. */
 export function modelsFromHealth(h: Health | null): ModelInfo[] {
   const ok = (id: (typeof MODELS)[number]): boolean => {
     if (!h) return false;
     if (id === "sonnet" || id === "haiku") return Boolean(h.hasAnthropic || h.mock);
     if (id === "gemini") return Boolean(h.hasGemini);
-    return Boolean(h.hasOpenRouter);
+    return hasInkling(h);
   };
   return MODELS.map((id) => ({ id, label: MODEL_NAMES[id], available: ok(id) }));
 }

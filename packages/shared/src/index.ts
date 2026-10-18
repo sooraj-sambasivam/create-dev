@@ -5,3 +5,4 @@ export * from "./sanitize";
 export * from "./integration";
 export * from "./ops";
 export * from "./capture";
+export * from "./timeline";

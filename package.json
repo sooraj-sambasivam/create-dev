@@ -9,7 +9,11 @@
     "test": "pnpm -r test",
     "onboard": "node scripts/onboard.mjs",
     "share:tunnel": "node scripts/tunnel.mjs",
-    "eval:pointer": "node eval/pointer/run.mjs"
+    "eval:pointer": "node eval/pointer/run.mjs",
+    "video:capture": "node scripts/video/capture.mjs",
+    "video:voice": "node --env-file=apps/server/.env scripts/video/voice.mjs",
+    "video:assemble": "node scripts/video/assemble.mjs",
+    "video:draft": "node scripts/video/capture.mjs && node --env-file=apps/server/.env scripts/video/voice.mjs && node scripts/video/assemble.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",

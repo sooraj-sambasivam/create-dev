@@ -14,7 +14,12 @@ const POLL_MS = 120;
 /** Let the "done" face play before the celebration so neither is swallowed by the other. */
 const CELEBRATE_AFTER_MS = 1250;
 
-const cellText = (el: Element) => (el.textContent ?? "").replace(/\s+/g, " ").trim();
+/** Cell text without decoration: the "via phone" chip on a fresh row is not part of the value. */
+const cellText = (el: Element) => {
+  const clone = el.cloneNode(true) as Element;
+  clone.querySelectorAll("[data-via-phone]").forEach((n) => n.remove());
+  return (clone.textContent ?? "").replace(/\s+/g, " ").trim();
+};
 
 /** The lifted app's Add-a-row form: the page's own form first, then the generic heading search. */
 export function findLiftedForm(doc: Document = document): Element | null {

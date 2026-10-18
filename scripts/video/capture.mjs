@@ -30,7 +30,6 @@ const SEED = `(() => { try {
   if (location.origin === ${JSON.stringify(WEB)}) {
     const p = JSON.parse(localStorage.getItem("create.profile") || "null");
     if (!p || !p.state || !p.state.onboarded) localStorage.setItem("create.profile", JSON.stringify({ state: { intent: "both", level: "some", onboarded: true, onboardingSkipped: false, onboardingVersion: 99, defaultMode: "code" }, version: 0 }));
-    if (!localStorage.getItem("create-look")) localStorage.setItem("create-look", ${JSON.stringify(LOOK)});
   } } catch {} })();`;
 
 // Visible synthetic cursor; follows real (CDP-dispatched) mouse events, ripples on press. Plus a selector finder.
@@ -50,7 +49,7 @@ const OVERLAY = `(() => {
   addEventListener("mousemove", (e) => mv(e.clientX, e.clientY), true);
   addEventListener("mousedown", (e) => {
     const r = document.createElement("div");
-    r.style.cssText = "position:fixed;z-index:2147483646;pointer-events:none;left:" + (e.clientX - 18) + "px;top:" + (e.clientY - 18) + "px;width:36px;height:36px;border-radius:50%;border:3px solid #e11d8f;opacity:.9;transition:transform .45s ease-out,opacity .45s";
+    r.style.cssText = "position:fixed;z-index:2147483646;pointer-events:none;left:" + (e.clientX - 18) + "px;top:" + (e.clientY - 18) + "px;width:36px;height:36px;border-radius:50%;border:3px solid #3b82f6;opacity:.9;transition:transform .45s ease-out,opacity .45s";
     document.documentElement.appendChild(r); requestAnimationFrame(() => { r.style.transform = "scale(1.9)"; r.style.opacity = "0"; }); setTimeout(() => r.remove(), 600);
   }, true);
   if (document.documentElement) mk(); else addEventListener("DOMContentLoaded", mk);
@@ -174,7 +173,7 @@ const clickAny = async (tab, sels) => { let last; for (const s of sels) { try { 
 async function typeText(tab, text, per = 55) {
   for (const ch of text) { await tab.send("Input.dispatchKeyEvent", { type: "char", text: ch, key: ch }); await sleep(per + Math.random() * 25); }
 }
-const keyCodes = { Enter: [13, "Enter", "\r"], Alt: [18, "AltLeft"], z: [90, "KeyZ"], Meta: [91, "MetaLeft"] };
+const keyCodes = { Escape: [27, "Escape"], Enter: [13, "Enter", "\r"], Alt: [18, "AltLeft"], z: [90, "KeyZ"], Meta: [91, "MetaLeft"] };
 async function key(tab, k, down, mods = 0, text) {
   const [vk, code, t] = keyCodes[k] || [0, k];
   await tab.send("Input.dispatchKeyEvent", { type: down ? (t && text !== false ? "keyDown" : "rawKeyDown") : "keyUp", key: k, code, windowsVirtualKeyCode: vk, modifiers: mods, ...(down && t && text !== false ? { text: t } : {}) });
@@ -236,6 +235,24 @@ async function ensureApp() {
   if (!state.app) { state.app = await newTab(WEB + "/"); await sleep(2500); }
 }
 
+// ---- workspace (home composer). The real API gates it behind sign-in: continue as guest (unrecorded).
+async function openWorkspace({ resetModel = false } = {}) {
+  state.paused = true;
+  state.ws = state.ws || await newTab(WEB + "/");
+  await state.ws.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] }).catch(() => {});
+  await state.ws.send("Page.navigate", { url: WEB + "/" }); await sleep(2500);
+  const guest = await state.ws.eval(`(() => { const b = [...document.querySelectorAll('button')].find((x) => /continue as guest/i.test(x.textContent)); if (b) { b.click(); return true; } return false; })()`).catch(() => false);
+  if (guest) await sleep(2500);
+  await state.ws.eval(`(() => { const b = [...document.querySelectorAll('button,a')].find((x) => /^\\s*new chat\\s*$/i.test(x.textContent)); if (b) b.click(); })()`).catch(() => {});
+  await sleep(600);
+  await waitSel(state.ws, "[data-testid=message-input]", 15000).catch((e) => state.warnings.push("workspace: " + e.message));
+  if (resetModel) { // the model choice persists across beats: start from Sonnet (unrecorded)
+    await state.ws.eval(`document.querySelector('[data-testid=model-picker]')?.click()`).catch(() => {}); await sleep(400);
+    await state.ws.eval(`document.querySelector('[data-testid=model-sonnet]')?.click()`).catch(() => {}); await sleep(400);
+  }
+  await state.ws.eval(`window.__ccMove&&window.__ccMove(${state.pos[0]},${state.pos[1]})`).catch(() => {});
+  await recStart(state.ws); await sleep(300); state.paused = false;
+}
 // ---- beat drivers
 const drivers = {
   async "b1-point"() {
@@ -244,63 +261,83 @@ const drivers = {
     await sleep(2500); // chip: Reading table / Building your app
   },
   async "b2-app"() {
-    if (state.known && !state.app) { // b1 ran in this process: the chip phase is recorded on the source tab while the app builds
+    if (state.known && !state.app) {
       await recStart(state.src);
       await step("app-tab", async () => { state.app = await waitForAppTab(state.known, 60000); });
       if (!state.app) await ensureApp();
     } else await ensureApp();
     await recStart(state.app);
-    await step("rows", () => waitFor(state.app, `document.querySelectorAll('table tbody tr').length>=3`, 30000));
+    state.paused = true; // skip the blank load
+    await step("rows", () => waitFor(state.app, `document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length>=3`, 30000));
+    await sleep(500); state.paused = false; await sleep(300);
+    await step("hover-row", () => hover(state.app, "[data-screen-root] table:not(.sr-only) tbody tr:nth-child(4)", 1000));
     await sleep(1500);
-    await step("chart", () => smoothScrollTo(state.app, "figure svg, svg[role=img]", 5000));
+    await step("scroll", () => smoothScrollTo(state.app, "[data-screen-root] table:not(.sr-only) tbody tr:nth-child(12)", 4500));
   },
   async "b3-gap"() {
-    await ensureApp(); await recStart(state.app);
+    await ensureApp(); state.paused = true; await recStart(state.app);
+    await state.app.eval("scrollTo(0,0)"); await sleep(600); state.paused = false;
     await sleep(800);
-    await step("form", () => smoothScrollTo(state.app, "form, [data-testid=add-row], button:has-text('Add row')", 4000));
-    await sleep(3000);
+    await step("form", () => smoothScrollTo(state.app, "[data-screen-root] input", 4500));
+    await sleep(3500);
   },
   async "b4-qr-atlas"() {
-    await ensureApp(); await recStart(state.app);
-    await step("output-tab", () => click(state.app, "[role=tab]:has-text('Output')"));
-    await step("qr", () => clickAny(state.app, ["button:has-text('Scan to open')", "button:has-text('Show QR')", "button:has-text('QR')", "button:has-text('Share')"]));
-    await sleep(2500);
-    await step("second-tab-add-row", async () => { // stands in for the phone; unrecorded, then shown arriving in the Backend tab
+    await ensureApp(); state.paused = true; await recStart(state.app);
+    await state.app.eval("scrollTo(0,0)"); await sleep(600); state.paused = false;
+    await step("qr", () => clickAny(state.app, ["button:has-text('Show QR')"]));
+    await sleep(4500);
+    await step("close-qr", () => press(state.app, "Escape"));
+    await sleep(500);
+    await step("second-tab-add-row", async () => { // stands in for the phone: unrecorded, then the row arrives live in the app
       const url = await state.app.eval("location.href");
       const prev = state.paused; state.paused = true;
-      const t2 = await newTab(url); await sleep(3500);
-      const ok = await t2.eval(`(() => { const f = document.querySelector('form'); if (!f) return false; const ins = [...f.querySelectorAll('input:not([type=hidden])')]; const set = (i, v) => { if (!i) return; const s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; s.call(i, v); i.dispatchEvent(new Event('input', { bubbles: true })); }; set(ins[0], 'Thu'); set(ins[1], '777'); const b = [...f.querySelectorAll('button')].find((x) => /add/i.test(x.textContent)) || f.querySelector('button[type=submit]'); if (b) b.click(); return !!b; })()`);
-      await sleep(1500); await cdp.send("Target.closeTarget", { targetId: t2.targetId }); state.paused = prev;
+      const t2 = await newTab(url); await sleep(4000);
+      const ok = await t2.eval(`(() => { const ins = [...document.querySelectorAll('[data-screen-root] input:not([type=hidden])')]; if (ins.length < 2) return false; const set = (i, v) => { if (!i) return; const s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; s.call(i, v); i.dispatchEvent(new Event('input', { bubbles: true })); }; ['University District','6:58 AM','12:58 PM','11:30 PM'].forEach((v, k) => set(ins[k], v)); const b = [...document.querySelectorAll('[data-screen-root] button')].find((x) => /add row/i.test(x.textContent)); if (b) b.click(); return !!b; })()`);
+      await sleep(2000); await cdp.send("Target.closeTarget", { targetId: t2.targetId }); state.paused = prev;
       if (!ok) throw new Error("add-row form not found in second tab");
     });
-    await state.app.send("Page.bringToFront").catch(() => {}); await recStart(state.app);
-    await step("backend-tab", () => click(state.app, "[role=tab]:has-text('Backend')"));
-    await step("responses", () => waitFor(state.app, `/[1-9]\\d* responses?/i.test((document.querySelector('#rp-body')||document.body).innerText)`, 9000));
+    await state.app.send("Page.bringToFront").catch(() => {});
+    await step("live-row", () => waitFor(state.app, `/University District/.test(document.querySelector('[data-screen-root] table:not(.sr-only) tbody')?.textContent||'')`, 20000));
+    await step("show-row", () => smoothScrollTo(state.app, "[data-screen-root] table:not(.sr-only) tbody tr:last-child", 2500));
     await sleep(2500);
   },
   async "b5-chat"() {
-    await ensureApp(); await recStart(state.app);
-    await step("chat-mode", () => clickAny(state.app, ["[data-testid=work-mode-chat]", "button:has-text('Chat')", "[role=tab]:has-text('Chat')"]));
-    await step("point-chart", () => hover(state.app, "[data-screen-root] figure svg[role=img], figure svg, svg[role=img]", 1100));
-    await step("hold-alt", async () => { await key(state.app, "Alt", true, 1); await sleep(1100); await key(state.app, "Alt", false, 0); });
+    await openWorkspace();
+    await step("chat-mode", () => click(state.ws, "[data-testid=work-mode-chat]"));
+    await step("pick-inkling", async () => { await click(state.ws, "[data-testid=model-picker]"); await sleep(500); await click(state.ws, "[data-testid=model-inkling]"); await sleep(500); });
     await step("ask", async () => {
-      await clickAny(state.app, ["[data-testid=message-input]", "textarea", "input[type=text]"]);
-      await typeText(state.app, "why does this spike in week 3?"); await sleep(400); await press(state.app, "Enter");
+      await click(state.ws, "[data-testid=message-input]");
+      await typeText(state.ws, "In two sentences, how do I read a bus timetable?"); await sleep(400); await press(state.ws, "Enter");
     });
-    await step("answer", () => waitFor(state.app, `document.querySelectorAll('[data-testid=answer]').length>0`, 20000));
-    await sleep(3500);
+    await step("answer", () => waitFor(state.ws, `document.querySelectorAll('[data-testid=answer]').length>0`, 25000));
+    await sleep(4000);
   },
   async "b6-this"() {
-    await ensureApp(); await recStart(state.app);
-    await step("narrate-mode", () => clickAny(state.app, ["[data-testid=work-mode]", "button:has-text('Narrate')", "button:has-text('Work')"]));
-    await step("hover-title", () => hover(state.app, "[data-screen-root] h1, [data-screen-root] [data-node-id]:first-child, h1", 1100));
-    await step("hold-alt", async () => { await key(state.app, "Alt", true, 1); await sleep(1100); await key(state.app, "Alt", false, 0); });
-    await step("say", async () => {
-      await clickAny(state.app, ["[data-testid=message-input]", "textarea", "input[type=text]"]);
-      await typeText(state.app, "make this bigger"); await sleep(400); await press(state.app, "Enter");
+    await openWorkspace({ resetModel: true });
+    state.paused = true; // the build and its model time are not shown: the beat starts on the finished page
+    await step("prompt", async () => {
+      await click(state.ws, "[data-testid=message-input]");
+      await typeText(state.ws, "A landing page for a coffee shop called Ember", 25); await sleep(300); await press(state.ws, "Enter");
     });
-    await sleep(4500);
-    await step("undo", () => press(state.app, "z", 4));
+    await step("built", () => waitFor(state.ws, `(() => { if (document.querySelectorAll('[data-screen-root] [data-node-id]').length > 0) return true; const r = [...document.querySelectorAll('button')].find((b) => /^\\s*retry\\s*$/i.test(b.textContent)); if (r && /reach the server/i.test(document.body.innerText)) r.click(); return false; })()`, 150000, 1500));
+    await step("settled", () => waitFor(state.ws, `!/Building/.test(document.body.innerText)`, 60000));
+    await sleep(1500); state.paused = false; await sleep(600);
+    await step("open-narrate", async () => {
+      await hover(state.ws, "[data-testid=go]", 900); await sleep(900);
+      await click(state.ws, "[data-testid=narrate-button]"); await sleep(1000);
+    });
+    let target = null;
+    await step("hover-title", async () => {
+      target = await state.ws.eval(`(() => { const els = [...document.querySelectorAll('[data-right-panel] [data-screen-root] [data-node-id]')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > 10 && r.top >= 0 && r.bottom <= innerHeight; }); const leaf = els.filter((e) => e.textContent.trim().length > 3 && ![...e.children].some((c) => c.hasAttribute('data-node-id'))); const h = leaf.sort((a, b) => parseFloat(getComputedStyle(b).fontSize) - parseFloat(getComputedStyle(a).fontSize))[0]; if (!h) return null; const r = h.getBoundingClientRect(); const mf = (n) => Math.max(...[n, ...n.querySelectorAll('*')].map((x) => parseFloat(getComputedStyle(x).fontSize) || 0)); return { id: h.getAttribute('data-node-id'), x: r.left + Math.min(r.width / 2, 60), y: r.top + r.height / 2, fs: mf(h) }; })()`);
+      if (!target) throw new Error("no visible node in right panel");
+      await glide(state.ws, target.x - 40, target.y, 900); await glide(state.ws, target.x, target.y, 500); await sleep(1500);
+    });
+    await step("say", async () => {
+      await state.ws.eval(`Promise.resolve(window.__createNarrate.say("make this bigger", true)).then(() => 1)`);
+    });
+    await step("grew", () => waitFor(state.ws, `(() => { const e = document.querySelector('[data-node-id="${target?.id}"]'); if (!e) return false; return Math.max(...[e, ...e.querySelectorAll('*')].map((x) => parseFloat(getComputedStyle(x).fontSize) || 0)) > ${target?.fs ?? 0}; })()`, 20000));
+    await sleep(3000);
+    await step("undo", async () => { await press(state.ws, "z", 4); });
     await sleep(2500);
   },
   async "b7-pixels"() {
@@ -311,20 +348,14 @@ const drivers = {
       await pointAndAsk(tab, "img, svg", "turn this into something I can track");
       await sleep(2000);
       const app = await waitForAppTab(known, 45000); await recStart(app); state.app2 = app;
+      await step("rows", () => waitFor(app, `document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length>=2`, 30000));
       await sleep(4000);
     });
   },
   async "b8-surfaces"() {
-    const tab = state.app2 || state.app || state.src; await recStart(tab);
-    await step("home", async () => { await tab.send("Page.navigate", { url: WEB + "/" }); await sleep(2500); });
-    await step("look", async () => {
-      const before = await tab.eval(`localStorage.getItem('create-look')||''`);
-      await clickAny(tab, ["[data-testid=look-switch]", "button:has-text('Luminous')", "[aria-label*='look' i]", "button:has-text('Look')"]);
-      await sleep(1500);
-      const after = await tab.eval(`localStorage.getItem('create-look')||''`);
-      if (before === after) throw new Error("look did not visibly change");
-    });
-    await sleep(3000);
+    await openWorkspace({ resetModel: true });
+    await step("lift-button", () => hover(state.ws, "[data-testid=lift-button]", 1100));
+    await sleep(2500);
   },
   async "b9-end"() { /* card beat: rendered in assemble.mjs, nothing to capture */ },
 };

@@ -3,6 +3,7 @@ import { LiftRequestSchema, type LiftResponse } from "@create/shared";
 import { createPrototypeStore, type PrototypeStore } from "../store/prototypes";
 import { createRateLimiter } from "../middleware/rateLimit";
 import { DEFAULT_FORM_ID, entityToScreen } from "./entityToScreen";
+import { cleanEntity } from "./clean";
 import { polishCopy } from "./polish";
 import { trayStore, type TrayStore } from "../tray/store";
 
@@ -33,8 +34,8 @@ export function createLiftRouter(store: PrototypeStore = createPrototypeStore(),
       const { instruction } = parsed.data;
       const entity = { ...parsed.data.entity, rows: dedupeRows(parsed.data.entity.rows) };
       const formId = DEFAULT_FORM_ID;
-      const { copy, provider } = await polishCopy(entity, instruction);
-      const screen = entityToScreen(entity, formId, copy);
+      const { copy, provider } = await polishCopy(cleanEntity(entity), instruction);
+      const screen = entityToScreen(entity, formId, copy, instruction);
       let saved;
       try {
         saved = await store.save({ title: screen.title, screen });

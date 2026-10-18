@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { fade, scaleIn, useReducedMotionSafe } from "../ui/motion";
 import { RotateCcw, X } from "lucide-react";
+import { UsageMeter, displayName, useAuth } from "../auth";
 import { useThemeStore, THEME_LABEL, THEME_ORDER } from "../shell/theme";
 import { useProfile, type ProfileDefaultMode, type ProfileLevel } from "../onboarding/profile";
 import { useMic } from "../onboarding/useMic";
@@ -47,6 +48,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const profile = useProfile();
   const replay = useOnboarding((s) => s.open);
   const mic = useMic();
+  const user = useAuth((s) => s.user);
+  const logOut = useAuth((s) => s.logOut);
   const ref = useRef<HTMLDivElement>(null);
   const { v } = useReducedMotionSafe();
   const mac = typeof navigator === "undefined" ? true : isMacPlatform(navigator.platform);
@@ -91,6 +94,19 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         </button>
       </div>
       <div className="overflow-y-auto">
+        {user && (
+          <Section title="Account">
+            <Row label={displayName(user)}>
+              <span className="flex items-center gap-2">
+                {user.email && <span className="text-[12px] text-ink-3">{user.email}</span>}
+                <button type="button" className={`${button.secondary} ${focusRing}`} onClick={() => { onClose(); void logOut(); }}>
+                  {user.kind === "guest" ? "Sign in" : "Sign out"}
+                </button>
+              </span>
+            </Row>
+            <UsageMeter />
+          </Section>
+        )}
         <Section title="Appearance">
           <Row label="Theme">
             <SegmentedControl label="Theme" options={THEME_OPTIONS} value={theme} onChange={setTheme} />

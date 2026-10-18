@@ -14,6 +14,7 @@ import { useWorkspaceStore } from "./store/workspaceStore";
 import { selectOutputOpen, useRightPanel } from "./shell/rightPanel/rightPanelStore";
 import { MotionStyles } from "./motion";
 import { OnboardingGate } from "./onboarding";
+import { AuthGate } from "./auth";
 import { useProfile } from "./onboarding/profile";
 import { shouldShowOnboarding } from "./onboarding/steps";
 import { HoldToTalk } from "./modes/narrate/overlay/HoldToTalk";
@@ -116,10 +117,10 @@ export default function App() {
           <SharedView id={sharedId} />
         </Suspense>
       ) : (
-        <>
+        <AuthGate>
           <Builder />
           <OnboardingGate show={showOnboarding} />
-        </>
+        </AuthGate>
       )}
     </ErrorBoundary>
   );

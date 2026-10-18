@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var leftAt: Date?
     private var tick: Timer?
     private let capture = CaptureController()
+    private var wheelMonitor: Any?
 
     func applicationDidFinishLaunching(_ n: Notification) {
         setupStatusItem()
@@ -36,6 +37,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         capture.onStatus = { [weak self] text in
             self?.store.status = text
             if text != nil { self?.peek(seconds: 4) }
+        }
+
+        // The card row scrolls left to right: a plain mouse wheel (vertical) is turned into horizontal scrolling.
+        wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+            guard abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX), let cg = event.cgEvent?.copy() else { return event }
+            let dy = cg.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+            let fy = cg.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)
+            let iy = cg.getIntegerValueField(.scrollWheelEventDeltaAxis1)
+            cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: dy)
+            cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: fy)
+            cg.setIntegerValueField(.scrollWheelEventDeltaAxis2, value: iy)
+            cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: 0)
+            cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
+            cg.setIntegerValueField(.scrollWheelEventDeltaAxis1, value: 0)
+            return NSEvent(cgEvent: cg) ?? event
         }
 
         // Hover + Option-hold are polled (no event-tap). Accessibility is used only for the AX probe at the cursor.
@@ -81,7 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let cx = f.midX
         // Trigger zone: the notch/pill area. Keep-open zone: the expanded tray.
         let trigger = NSRect(x: cx - 140, y: f.maxY - 40, width: 280, height: 40)
-        let keep = NSRect(x: cx - 230, y: f.maxY - 280, width: 460, height: 280)
+        let keep = NSRect(x: cx - 300, y: f.maxY - 360, width: 600, height: 360)
 
         if expanded {
             if keep.contains(m) || Date() < pinnedUntil { leftAt = nil }

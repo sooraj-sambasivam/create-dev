@@ -29,8 +29,13 @@ export function GoFan({ open, items, dir }: { open: boolean; items: FanItem[]; d
     <AnimatePresence>
       {open ? (
         <div key="fan" role="group" aria-label="More ways to start" style={{ display: "contents" }}>
-          {/* Invisible disc under the arc, so the pointer never leaves the fan on its way out. */}
-          <span aria-hidden="true" className="absolute top-1/2 left-1/2 z-40 size-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+          {/* Invisible bridge under the arc, so the pointer never leaves the fan on its way out. */}
+          {/* Below Go (z-40) so Go stays clickable while the fan is open, and only on the fan's side so the
+              neighbouring Dictate button stays clickable. */}
+          <span
+            aria-hidden="true"
+            className={`absolute top-1/2 z-30 h-[200px] w-[130px] -translate-y-1/2 ${dir === "left" ? "right-1/2" : "left-1/2"}`}
+          />
           {items.map((item, index) => {
             const Icon = item.icon;
             const { x, y } = fanOffset(index, dir);
@@ -63,7 +68,7 @@ export function GoFan({ open, items, dir }: { open: boolean; items: FanItem[]; d
                     : { x: 0, y: 0, scale: 0.4, opacity: 0, transition: { ...spring.snappy, opacity: { duration: duration.fast, ease: ease.exit }, delay: staggerDelay(last - index, FAN_STAGGER / 2) } }
                 }
                 style={reduce ? { x, y } : undefined}
-                className={`group/fan absolute top-1/2 left-1/2 z-50 -mt-4 -ml-4 grid size-8 place-items-center rounded-full border border-line shadow-soft ${focusRing} ${
+                className={`group/fan absolute top-1/2 left-1/2 z-[35] -mt-4 -ml-4 grid size-8 place-items-center rounded-full border border-line shadow-soft ${focusRing} ${
                   item.active ? "bg-hover text-ink" : "bg-surface text-ink-2 hover:bg-hover hover:text-ink"
                 } ${item.disabled || item.ariaDisabled ? "cursor-default opacity-50" : ""}`}
               >

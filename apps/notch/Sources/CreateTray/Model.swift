@@ -8,6 +8,18 @@ struct TrayItem: Identifiable, Equatable {
     var kind: String
     var url: String
     var createdAt: String
+    /// Snippet extras (from a lasso in Narrate or the extension). Heavy parts live behind URLs on the server.
+    var thumbnailUrl: String? = nil
+    var hasSnippet: Bool = false
+    var sourceApp: String? = nil
+    var sourceUrl: String? = nil
+    var sourceTitle: String? = nil
+
+    /// "table · example.com", shown under the hover preview.
+    var sourceLine: String {
+        let host = sourceUrl.flatMap { URL(string: $0)?.host }
+        return [kind.capitalized, (sourceTitle?.isEmpty == false ? sourceTitle : host)].compactMap { $0 }.joined(separator: " \u{00B7} ")
+    }
 }
 
 private struct TrayResponse: Decodable {
@@ -17,6 +29,10 @@ private struct TrayResponse: Decodable {
         let kind: String?
         let url: String?
         let createdAt: FlexString?
+        let thumbnailUrl: String?
+        let hasSnippet: Bool?
+        struct Source: Decodable { let app: String?; let url: String?; let title: String? }
+        let source: Source?
     }
     let items: [Item]
 }
@@ -62,6 +78,10 @@ final class TrayStore: ObservableObject {
     /// Fired with the count of newly seen items (not on the first successful poll).
     var onNewItems: ((Int) -> Void)?
 
+    /// Thumbnails and snippet markup are fetched once per id and kept (the list itself stays light).
+    @Published private(set) var thumbs: [String: NSImage] = [:]
+    private var snippets: [String: String] = [:]
+    private var loading = Set<String>()
     private var seen = Set<String>()
     /// Ids dismissed locally; hidden from polls until the server stops returning them.
     private var dismissed = Set<String>()
@@ -79,6 +99,46 @@ final class TrayStore: ObservableObject {
         poll()
         timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
+        }
+    }
+
+    func loadThumb(_ item: TrayItem) {
+        guard let path = item.thumbnailUrl, thumbs[item.id] == nil, !loading.contains(item.id),
+              let url = URL(string: path, relativeTo: Endpoints.api)?.absoluteURL else { return }
+        loading.insert(item.id)
+        Task { @MainActor in
+            defer { loading.remove(item.id) }
+            if let (data, resp) = try? await session.data(from: url), (resp as? HTTPURLResponse)?.statusCode == 200, let img = NSImage(data: data) {
+                thumbs[item.id] = img
+            }
+        }
+    }
+
+    /// The snippet's markup, from cache or the server. Nil when the item has none.
+    func snippetHTML(_ item: TrayItem) async -> String? {
+        guard item.hasSnippet else { return nil }
+        if let h = snippets[item.id] { return h }
+        let url = Endpoints.api.appendingPathComponent("api/tray").appendingPathComponent(item.id).appendingPathComponent("snippet")
+        guard let (data, resp) = try? await session.data(from: url), (resp as? HTTPURLResponse)?.statusCode == 200,
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let html = obj["html"] as? String else { return nil }
+        snippets[item.id] = html
+        return html
+    }
+
+    /// Opens an item in Create: a lifted app by its link, a snippet as a new page (the server converts it like /api/import-element).
+    func open(_ item: TrayItem) {
+        if !item.url.isEmpty { openURL(item.url); return }
+        guard item.hasSnippet, !item.id.hasPrefix("local-") else { openURL(Endpoints.web.absoluteString); return }
+        status = "Opening\u{2026}"
+        Task { @MainActor in
+            var req = URLRequest(url: Endpoints.api.appendingPathComponent("api/tray").appendingPathComponent(item.id).appendingPathComponent("open"))
+            req.httpMethod = "POST"
+            var link: String?
+            if let (data, resp) = try? await session.data(for: req), (resp as? HTTPURLResponse)?.statusCode == 200,
+               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { link = obj["url"] as? String }
+            status = link == nil ? "Could not open that snippet" : nil
+            if let link { openURL(link) }
+            else { try? await Task.sleep(nanoseconds: 3_000_000_000); if status == "Could not open that snippet" { status = nil } }
         }
     }
 
@@ -131,7 +191,9 @@ final class TrayStore: ObservableObject {
             let decoded = try JSONDecoder().decode(TrayResponse.self, from: data)
             let list = decoded.items.map {
                 TrayItem(id: $0.id, title: $0.title ?? "Untitled", kind: $0.kind ?? "item",
-                         url: $0.url ?? Endpoints.web.absoluteString, createdAt: $0.createdAt?.value ?? "")
+                         url: $0.url ?? "", createdAt: $0.createdAt?.value ?? "",
+                         thumbnailUrl: $0.thumbnailUrl, hasSnippet: $0.hasSnippet ?? false,
+                         sourceApp: $0.source?.app, sourceUrl: $0.source?.url, sourceTitle: $0.source?.title)
             }
             return .items(list)
         } catch {

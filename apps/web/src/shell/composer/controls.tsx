@@ -15,7 +15,7 @@ import {
 import type { Health } from "../../lib/api";
 import { ICON, STROKE, button, chip, dot, menuItem, segmented, text } from "../../ui/styles";
 import { Popover } from "./Popover";
-import { useServerInfo } from "./useHealth";
+import { hasInkling, useServerInfo } from "./useHealth";
 import { useId } from "react";
 import { ActivePill } from "../../ui/ActivePill";
 
@@ -204,7 +204,7 @@ export const PLUGIN_ROWS: readonly PluginRow[] = [
   { key: "perceptron", label: "Perceptron vision", note: "Always on when connected", connected: (h) => Boolean(h?.hasPerceptron) },
   { key: "jev", label: "Jev intent", note: "Always on when connected", connected: (h) => Boolean(h?.hasTypesafe) },
   { key: "gemini", label: "Gemini", note: "Model provider", connected: (h) => Boolean(h?.hasGemini), provider: "gemini" },
-  { key: "inkling", label: "Inkling", note: "Model provider", connected: (h) => Boolean(h?.hasOpenRouter), provider: "inkling" },
+  { key: "inkling", label: "Inkling", note: "Model provider", connected: (h) => Boolean(hasInkling(h)), provider: "inkling" },
   { key: "mongo", label: "MongoDB Atlas", note: "Always on when connected", connected: (h) => Boolean(h?.hasMongo) },
 ];
 

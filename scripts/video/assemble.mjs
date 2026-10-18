@@ -38,10 +38,10 @@ async function render(name, html, transparent) {
   return f;
 }
 const captionHtml = (t) => `<div style="position:absolute;left:0;right:0;bottom:64px;display:flex;justify-content:center"><div style="max-width:1560px;padding:18px 34px;border-radius:20px;background:rgba(12,12,16,.78);color:#fff;font-size:40px;line-height:1.28;font-weight:560;text-align:center;letter-spacing:-.01em">${esc(t)}</div></div>`;
-const chipHtml = (sponsor, label) => `<div style="position:absolute;left:36px;top:30px;display:flex;gap:12px;align-items:center">
- <div style="padding:9px 18px;border-radius:999px;background:rgba(12,12,16,.78);color:#fff;font-size:24px;font-weight:650"><span style="color:#ff4fb8">Create</span>${sponsor ? ` <span style="opacity:.55">·</span> ${esc(sponsor)}` : ""}</div></div>
- ${source.placeholder ? `<div style="position:absolute;right:36px;top:30px;padding:9px 18px;border-radius:999px;background:#fff3c4;color:#6b4e00;font-size:22px;font-weight:650">Placeholder voice (macOS say)</div>` : ""}`;
-const cardBg = `background:radial-gradient(1200px 700px at 78% 8%,rgba(225,29,143,.38),transparent 60%),radial-gradient(900px 600px at 10% 100%,rgba(99,102,241,.28),transparent 60%),#0b0b10`;
+const chipHtml = (sponsor, label) => `<div style="position:absolute;left:36px;top:17px;display:flex;gap:12px;align-items:center">
+ <div style="padding:9px 18px;border-radius:999px;background:rgba(12,12,16,.78);color:#fff;font-size:24px;font-weight:650"><span style="color:#8ab4ff">Create</span>${sponsor ? ` <span style="opacity:.55">·</span> ${esc(sponsor)}` : ""}</div></div>
+ ${source.placeholder ? `<div style="position:absolute;right:36px;top:17px;padding:9px 18px;border-radius:999px;background:#fff3c4;color:#6b4e00;font-size:22px;font-weight:650">Placeholder voice (macOS say)</div>` : ""}`;
+const cardBg = `background:radial-gradient(1200px 700px at 78% 8%,rgba(59,130,246,.30),transparent 60%),radial-gradient(900px 600px at 10% 100%,rgba(148,163,184,.18),transparent 60%),#0b0b10`;
 const cardHtml = (lines, sub) => `<div style="position:absolute;inset:0;${cardBg};color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 140px;gap:26px">
  <div style="font-size:176px;font-weight:760;letter-spacing:-.04em;line-height:1">Create</div>
  ${lines.map((l, i) => `<div style="font-size:${i === 0 ? 50 : 34}px;font-weight:${i === 0 ? 600 : 500};opacity:${i === 0 ? 1 : 0.78};line-height:1.3">${esc(l)}</div>`).join("")}
@@ -65,7 +65,7 @@ async function frameClip(beat, out, T, items) {
   txt += `file '${path.join(fdir, idx.at(-1).f)}'\n`;
   fs.writeFileSync(list, txt);
   const speed = Math.min(MAXSPEED, Math.max(1, cap / T));
-  return { inputs: ["-f", "concat", "-safe", "0", "-i", list], pre: `[0:v]setpts=PTS/${speed.toFixed(4)},fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:color=black,tpad=stop_mode=clone:stop_duration=60,setsar=1[base]`, speed, cap };
+  return { inputs: ["-f", "concat", "-safe", "0", "-i", list], pre: `[0:v]setpts=PTS/${speed.toFixed(4)},fps=${FPS},scale=1776:999:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:${H - 999 - 0}:color=0x0b0b10,tpad=stop_mode=clone:stop_duration=60,setsar=1[base]`, speed, cap };
 }
 
 const timeline = []; // {id, start, dur, sentences}

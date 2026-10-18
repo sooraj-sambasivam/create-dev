@@ -5,6 +5,9 @@ import { useScreenStore } from "../../../store/screenStore";
 import { createRecorder } from "../../../narrate/session";
 import { createVoice, DRAIN_TIMEOUT_MS } from "../../../narrate/voice";
 import { Lasso, type LassoEvent } from "./Lasso";
+import { consumeLassoClick } from "./lassoGesture";
+import { TrayPill } from "./TrayPill";
+import { captureLoopToTray } from "../../../narrate/snippetCapture";
 import { PointerBubble, type PointerPhase } from "./PointerBubble";
 import { KeyHintBar } from "./KeyHintBar";
 import { actionNote, type PointerAction } from "./pointerActions";
@@ -37,11 +40,11 @@ export type NarrateOverlayProps = {
 
 export const HINTS = [
   "Speak naturally",
-  "Hold Shift and drag to select several",
+  "Drag to circle something and save it to your tray",
   "Hold Option and speak · double-tap Option to keep listening",
 ];
 
-export const POINTER_HINT = "Hover and speak · Shift+drag to select several";
+export const POINTER_HINT = "Hover and speak · Drag to circle and save";
 
 export const BROWSER_SPEECH_HINT = "Using browser speech recognition";
 
@@ -257,6 +260,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
     if (!recording) return;
     const click = (e: MouseEvent) => {
       if (e.button !== 0 || e.shiftKey || (e.target instanceof Element && e.target.closest("[data-narrate-ignore]"))) return;
+      if (consumeLassoClick()) return; // the click that ends a lasso drag is not a pin
       const pin = usePin.getState();
       const next = pinFromClick(resolveHoverAt(e.clientX, e.clientY), pin.pinned);
       if (next) pin.pin(next);
@@ -273,6 +277,8 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
 
   const onLasso = useCallback((ev: LassoEvent) => {
     (recorder.current?.add as unknown as Add | undefined)?.({ kind: "lasso", rect: ev.rect, targets: ev.targets });
+    // A circled region (plain drag) also goes to the tray as a snippet: thumbnail + the code behind it.
+    if (ev.via === "drag") void captureLoopToTray(ev.poly);
     const now = Date.now();
     lastLasso.current = { t: now, targets: ev.targets, areas: ev.areas };
     // Speech just before the lasso ("make these bigger", then Shift+drag) still counts.
@@ -373,6 +379,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
             onCancel={cancel}
           />
           <Lasso resolve={resolve} onLasso={onLasso} />
+          <TrayPill reduce={reduce} />
           <PointerBubble pointer={pointer} phase={phase} reduce={reduce} transcript={transcript} onAction={onPointerAction} />
         </>
       )}

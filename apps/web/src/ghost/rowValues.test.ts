@@ -8,6 +8,9 @@ describe("nextCell", () => {
     expect(nextCell("Time", ["09:00", "10:00"])).toBe("11:00");
     expect(nextCell("Time", ["11:30 PM"])).toBe("12:00 AM");
   });
+  it("makes a fresh email on the same domain", () => {
+    expect(nextCell("Email", ["ada@example.com", "ben@example.com"])).toBe("guest3@example.com");
+  });
   it("continues prices and keeps the unit", () => {
     expect(nextCell("Price", ["$9/mo", "$19/mo", "$29/mo"])).toBe("$39/mo");
     expect(nextCell("Price", ["4.50", "5.00"])).toBe("5.50");

@@ -32,6 +32,8 @@ export interface HistoryEntry {
   summary: string;
   /** "element" for ✦ requests about one element, "page" for whole-page requests. */
   kind?: "page" | "element" | "answer";
+  /** Answers: which model answered (AskResponse.provider). */
+  provider?: string;
   /** Answers (Chat mode): the answer was offered a "Switch to Code" chip. */
   suggestCode?: boolean;
   /** Answers: a question typed in Code mode, answered without editing ("Answered — no changes made"). */
@@ -460,7 +462,7 @@ export const useScreenStore = create<ScreenState>()(
           ...(target ? { pointer: { targetId: target.id, label } } : {}),
           history: turns,
         });
-        entry = { prompt: q, summary: res.answer, kind: "answer", ...(res.suggestCode ? { suggestCode: true } : {}), ...(opts.routed ? { routed: true } : {}), ...(label ? { label } : {}), ...(target ? { nodeId: target.id } : {}) };
+        entry = { prompt: q, summary: res.answer, kind: "answer", provider: res.provider, ...(res.suggestCode ? { suggestCode: true } : {}), ...(opts.routed ? { routed: true } : {}), ...(label ? { label } : {}), ...(target ? { nodeId: target.id } : {}) };
       } catch (err) {
         entry = { prompt: q, summary: `I couldn't answer that. ${err instanceof Error ? err.message : "Try again."}`, kind: "answer", ...(label ? { label } : {}), ...(target ? { nodeId: target.id } : {}) };
       }

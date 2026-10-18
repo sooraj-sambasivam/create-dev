@@ -64,6 +64,29 @@ async function captureCrop(tab, rect, viewport) {
   throw new Error("That chart is too large to read");
 }
 
+/** Visible tab -> JPEG data URL of one rect (CSS px), at most 60 KB: width steps down, then quality. */
+async function captureThumb(tab, rect, viewport) {
+  const shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+  const bmp = await createImageBitmap(await (await fetch(shot)).blob());
+  const k = bmp.width / viewport.w;
+  const sx = Math.round(rect.x * k), sy = Math.round(rect.y * k);
+  const sw = Math.max(1, Math.min(bmp.width - sx, Math.round(rect.w * k)));
+  const sh = Math.max(1, Math.min(bmp.height - sy, Math.round(rect.h * k)));
+  for (const maxW of [420, 320, 240, 160]) {
+    const scale = Math.min(1, maxW / sw, (maxW * 0.7) / sh);
+    const w = Math.max(1, Math.round(sw * scale)), h = Math.max(1, Math.round(sh * scale));
+    const canvas = new OffscreenCanvas(w, h);
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, w, h);
+    for (const quality of [0.82, 0.66, 0.5]) {
+      const blob = await canvas.convertToBlob({ type: "image/jpeg", quality });
+      if (blob.size <= 60_000) return `data:image/jpeg;base64,${toBase64(await blob.arrayBuffer())}`;
+    }
+  }
+  throw new Error("Thumbnail too large");
+}
+
 /** The lift response url, pointed at the configured web origin when the server answered with a localhost one. */
 function openUrl(url, webOrigin) {
   const base = webOrigin.replace(/\/+$/, "");
@@ -78,6 +101,16 @@ function openUrl(url, webOrigin) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const run = {
     capture: async () => ({ ok: true, image: await captureCrop(sender.tab, msg.rect, msg.viewport) }),
+    // Tray: a small JPEG of the circled region (<= 60 KB), then the item itself. Older servers answer 404; that is fine.
+    trayShot: async () => ({ ok: true, image: await captureThumb(sender.tab, msg.rect, msg.viewport) }),
+    tray: async () => {
+      const p = msg.payload || {};
+      const r = await post("/api/tray", {
+        title: String(p.title || "Snippet").slice(0, 200), kind: String(p.kind || "snippet").slice(0, 40),
+        ...(p.thumbnail ? { thumbnail: p.thumbnail } : {}), ...(p.snippetHtml ? { snippetHtml: p.snippetHtml, styles: p.styles || {} } : {}), source: p.source || { app: "extension" },
+      });
+      return { ok: true, item: r.item };
+    },
     extract: async () => {
       const r = await post("/api/extract", { image: msg.image, ...(msg.hint ? { hint: msg.hint } : {}) });
       return { ok: true, entity: r.entity, provider: r.provider };

@@ -1,10 +1,8 @@
 import { ScreenSchema, type Entity, type Node, type Screen } from "@create/shared";
+import { cleanEntity, fallbackTitle, isEchoTitle, planChart } from "./clean";
 
 export const DEFAULT_FORM_ID = "add-row";
 
-type Column = Entity["columns"][number];
-const NUMERIC = new Set<Column["type"]>(["number", "money", "percent"]);
-const TIMEISH = new Set<Column["type"]>(["date", "time"]);
 
 /** "$1,234.50" / "12%" / "(3)" -> number; anything unreadable is 0 so a chart never breaks. */
 export function parseNumber(raw: string | undefined): number {
@@ -22,8 +20,14 @@ export type LiftCopy = { title?: string; summary?: string; footer?: string };
  * The form container's id is the formId, which is what the renderer posts submissions under.
  * Row values are copied verbatim; `copy` may only change title, summary and footer text.
  */
-export function entityToScreen(entity: Entity, formId: string = DEFAULT_FORM_ID, copy: LiftCopy = {}): Screen {
-  const title = (copy.title?.trim() || entity.title.trim() || "Untitled").slice(0, 120);
+export function entityToScreen(raw: Entity, formId: string = DEFAULT_FORM_ID, copy: LiftCopy = {}, instruction?: string): Screen {
+  const entity = cleanEntity(raw);
+  const copyTitle = copy.title?.trim();
+  const title = (
+    (copyTitle && !isEchoTitle(copyTitle, instruction) ? copyTitle : "") ||
+    (!isEchoTitle(entity.title, instruction) ? entity.title.trim() : "") ||
+    fallbackTitle(entity)
+  ).slice(0, 120);
   const sourceTitle = entity.source.title?.trim() || entity.source.url?.trim();
   const children: Node[] = [];
 
@@ -37,16 +41,18 @@ export function entityToScreen(entity: Entity, formId: string = DEFAULT_FORM_ID,
     { id: "data-table", type: "table", columns: entity.columns.map((c) => c.label), rows: entity.rows.map(cells), liveFormId: formId } as Node,
   ];
 
-  const numeric = entity.columns.filter((c) => NUMERIC.has(c.type)).slice(0, 2);
-  if (numeric.length > 0 && entity.rows.length > 0) {
-    const labelCol = entity.columns.find((c) => c.type === "text" || TIMEISH.has(c.type));
+  const plan = planChart(entity);
+  if (plan && "transposed" in plan) {
+    // A row of values across plan columns: static, since new form rows do not add a plan.
+    body.push({ id: "data-chart", type: "chart", kind: "bar", title: plan.title, labels: plan.labels, series: [{ name: plan.seriesName, values: plan.values.map(parseNumber) }] } as Node);
+  } else if (plan) {
     body.push({
       id: "data-chart",
       type: "chart",
-      kind: labelCol && TIMEISH.has(labelCol.type) ? "line" : "bar",
-      title: numeric.map((c) => c.label).join(" and "),
-      labels: entity.rows.map((r, i) => (labelCol ? (r[labelCol.key] ?? "") : String(i + 1))),
-      series: numeric.map((c) => ({ name: c.label, values: entity.rows.map((r) => parseNumber(r[c.key])) })),
+      kind: plan.kind,
+      title: plan.title,
+      labels: plan.labels,
+      series: plan.series.map((c) => ({ name: c.name, values: plan.rowIdx.map((i) => parseNumber(entity.rows[i]![c.key])) })),
       liveFormId: formId,
     } as Node);
   }

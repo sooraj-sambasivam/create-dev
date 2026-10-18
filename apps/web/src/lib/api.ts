@@ -20,11 +20,12 @@ import {
 } from "@create/shared";
 
 import { currentRequestPrefs } from "../store/composerPrefs";
+import { handleAuthFailure } from "../auth/limits";
 
 async function readError(res: Response, fallback: string): Promise<string> {
   try {
-    const data = (await res.json()) as { error?: string };
-    return data.error || fallback;
+    const data = (await res.json()) as { error?: string; bucket?: string; resetAt?: string; code?: string };
+    return handleAuthFailure(res.status, data) ?? (data.error || fallback);
   } catch {
     return fallback;
   }
@@ -33,6 +34,7 @@ async function readError(res: Response, fallback: string): Promise<string> {
 async function postJson<T>(url: string, body: unknown, parse: (data: unknown) => T, fallback: string): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -59,7 +61,7 @@ export function ask(req: Pick<AskRequest, "question" | "screen" | "pointer" | "h
 export function parseAskResponse(data: unknown): AskResponse {
   const d = (data ?? {}) as Partial<AskResponse>;
   if (typeof d.answer !== "string" || !d.answer.trim()) throw new Error("The answer came back empty.");
-  const provider = d.provider === "claude" || d.provider === "perceptron+claude" ? d.provider : "mock";
+  const provider = d.provider === "claude" || d.provider === "perceptron+claude" || d.provider === "inkling" || d.provider === "gemini" ? d.provider : "mock";
   return { answer: d.answer, provider, ...(d.suggestCode ? { suggestCode: true } : {}) };
 }
 
@@ -144,6 +146,7 @@ export async function generateStream(
 ): Promise<GenerateResponse> {
   const res = await fetch("/api/generate", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...currentRequestPrefs(), ...req, stream: true }),
     signal,

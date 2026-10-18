@@ -1,0 +1,24 @@
+{
+  "api": "http://localhost:3002",
+  "viewer": "http://localhost:5175",
+  "scenarios": [
+    { "id": "L01-transit-timetable", "type": "lift", "corpus": "t01-transit-timetable", "utterance": "track this train", "note": "Sound Transit timetable; ground truth is one clipped row" },
+    { "id": "L02-gsheet-sales", "type": "lift", "corpus": "t06-gsheet-sales-table", "utterance": "turn this into something I can track and add to", "note": "Google Sheets Category / Sales / % of Total" },
+    { "id": "L03-pdf-pricing", "type": "lift", "corpus": "n03-pdf-pricing-table", "utterance": "track this pricing", "note": "PDF pricing table, Starter / Pro / Team" },
+    { "id": "L04-pdf-invoice", "type": "lift", "corpus": "n07-pdf-invoice-items", "utterance": "track this invoice", "note": "PDF invoice line items" },
+    { "id": "L05-owid-chart", "type": "lift", "corpus": "t21-owid-life-expectancy-chart", "utterance": "turn this chart into something I can track", "note": "Our World in Data line chart; values are approximate" },
+
+    { "id": "C01-sales-biggest", "type": "chat", "from": "L02-gsheet-sales", "pointerNode": "data-chart", "pointerLabel": "chart", "question": "Which category is biggest, and what share of the total is it?", "model": null, "expectProvider": "inkling" },
+    { "id": "C02-chart-meaning", "type": "chat", "from": "L05-owid-chart", "pointerNode": "data-chart", "pointerLabel": "chart", "question": "What does this chart show, and which row has the highest value?", "model": "sonnet", "expectProvider": "claude" },
+    { "id": "C03-busiest-stop", "type": "chat", "from": "L01-transit-timetable", "pointerNode": "data-table", "pointerLabel": "table", "question": "Which stop is busiest?", "model": "gemini", "expectProvider": "gemini", "note": "Timetable has no ridership; a grounded answer says so" },
+
+    { "id": "E01-bigger-title", "type": "edit", "from": "L02-gsheet-sales", "transcript": "make this bigger", "pointerNode": "title", "pointerLabel": "title", "expect": "title larger; nothing else changes" },
+    { "id": "E02-blue-chart", "type": "edit", "from": "L02-gsheet-sales", "transcript": "make this blue", "pointerNode": "data-chart", "pointerLabel": "chart", "expect": "chart colored blue; data and wiring unchanged" },
+    { "id": "E03-rename-title", "type": "edit", "from": "L01-transit-timetable", "transcript": "rename this to Arrivals", "pointerNode": "title", "pointerLabel": "title", "expect": "title text becomes Arrivals" },
+    { "id": "E04-delete-footer", "type": "edit", "from": "L03-pdf-pricing", "transcript": "delete this", "pointerNode": "footer", "pointerLabel": "footer", "expect": "footer removed; table, chart and form stay" },
+
+    { "id": "B01-bakery-orders", "type": "build", "prompt": "track weekly orders for my bakery" },
+    { "id": "B02-study-signup", "type": "build", "prompt": "a sign-up sheet for study nights" },
+    { "id": "B03-tutoring-booking", "type": "build", "prompt": "a tutoring booking page" }
+  ]
+}

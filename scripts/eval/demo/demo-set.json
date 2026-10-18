@@ -1,0 +1,44 @@
+{
+  "locked": "2026-10-18",
+  "server": "http://localhost:3002 (MOCK_AI=0)",
+  "selection": "Rounds 1-3 are the three consecutive real runs. Chosen for stable top scores and low latency.",
+  "order": ["L02-gsheet-sales", "C01-sales-biggest", "E01-bigger-title", "E04-delete-footer", "B02-study-signup"],
+  "scenarios": [
+    {
+      "id": "L02-gsheet-sales", "type": "lift", "corpus": "t06-gsheet-sales-table",
+      "utterance": "turn this into something I can track and add to", "target": "Google Sheets table: Category / Sales / % of Total",
+      "expected": "Live app titled \"Sales share by category\": table (A $100, B $140, C $440, D $340, Total $1,020), one-series Sales chart (Total not plotted), add-row form with 3 fields",
+      "scores": {"round1": "5/5/4/5", "round2": "5/5/4/5", "round3": "5/5/4/5"},
+      "latencyMs": {"round1": 3158, "round2": 2905, "round3": 3243}
+    },
+    {
+      "id": "C01-sales-biggest", "type": "chat", "from": "L02-gsheet-sales", "pointer": "chart (data-chart)", "model": "default (Inkling)",
+      "utterance": "Which category is biggest, and what share of the total is it?",
+      "expected": "Category C, $440, 43.1% of total, cites table and chart, 3 sentences, provider inkling",
+      "scores": {"round1": 5, "round2": 5, "round3": 5},
+      "latencyMs": {"round1": 1028, "round2": 1414, "round3": 1219}
+    },
+    {
+      "id": "E01-bigger-title", "type": "edit", "from": "L02-gsheet-sales", "pointer": "title",
+      "utterance": "make this bigger",
+      "expected": "Only the title changes (fontSize 4xl); summary \"Title is now larger.\"",
+      "scores": {"round1": 5, "round2": 5, "round3": 5},
+      "latencyMs": {"round1": 1777, "round2": 1768, "round3": 2021}
+    },
+    {
+      "id": "E04-delete-footer", "type": "edit", "from": "L03-pdf-pricing", "pointer": "footer",
+      "utterance": "delete this",
+      "expected": "Footer removed; table, chart and form stay. Run on a pre-lifted pricing page, not live",
+      "scores": {"round1": 5, "round2": 5, "round3": 5},
+      "latencyMs": {"round1": 1056, "round2": 895, "round3": 1081}
+    },
+    {
+      "id": "B02-study-signup", "type": "build", "prompt": "a sign-up sheet for study nights",
+      "expected": "Focused screen \"Study night sign-up\": form, table and chart with 3 example rows that match the chart, no nav or hero",
+      "scores": {"round1": "S3 C4 V4", "round2": "S4 C5 V5", "round3": "S4 C5 V5"},
+      "latencyMs": {"round1": 12934, "round2": 5600, "round3": 5514},
+      "caveat": "Perfect only in rounds 2 and 3 (two consecutive); round 1 predates the focused-screen rule"
+    }
+  ],
+  "avoid": ["L01-transit-timetable", "L04-pdf-invoice", "L05-owid-chart", "E02-blue-chart", "any PDF lift (locate 5-7s)", "B03 until re-run"]
+}

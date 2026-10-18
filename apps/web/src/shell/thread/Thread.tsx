@@ -118,6 +118,7 @@ function Item({ item }: { item: ThreadItem }) {
         <div className="min-w-0" data-testid="answer">
           {item.label && <div className="mb-1"><ElementChip label={item.label} onClick={exists && item.nodeId ? () => focusElement(item.nodeId!) : null} /></div>}
           <Markdown text={item.text} />
+          {item.providerTag && <p className="mt-1 text-[12px] text-ink-3" data-testid="answer-provider">{item.providerTag}</p>}
           {item.routed && <p className="mt-1 text-[12px] text-ink-3">Answered. No changes made.</p>}
           {item.suggestCode && (
             <button type="button" onClick={() => setMode("code")} className={`${button.secondary} mt-2`}>

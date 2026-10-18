@@ -1,7 +1,7 @@
 export { GhostCursor, mountGhost, unmountGhost } from "./GhostCursor";
 export { ghostController, GhostController, prefersReducedMotion } from "./controller";
 export type { GhostState, GhostUiState, GhostCursorApi } from "./controller";
-export { runGhost, ghostAddRow, buildAddRowSteps, findAddRowForm, findTextFields, findSubmit } from "./script";
+export { runGhost, ghostAddRow, buildAddRowSteps, findAddRowForm, findTextFields, findSubmit, fieldKeys } from "./script";
 export type { GhostStep, Target, RunOptions } from "./script";
 export { runAgentAddRow, cancelAgentRow, agentRowRunning, handleAgentCommand, findLiftedForm, readTable } from "./agentRow";
 export type { AgentRowResult } from "./agentRow";

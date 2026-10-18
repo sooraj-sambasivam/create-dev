@@ -48,13 +48,33 @@ export function mockAnswer(req: AskRequest, reading?: string | null): string {
   return wantsEdit(req.question) ? `${body} Want me to change it? Switch to Code.` : body;
 }
 
+/** Table rows and chart series on the page, as compact text, so answers can cite real figures. */
+export function pageData(screen: NonNullable<AskRequest["screen"]>, maxChars = 3500): string {
+  const out: string[] = [];
+  const visit = (nodes: Node[]) => {
+    for (const n of nodes) {
+      if (n.type === "table") {
+        out.push(`the table: ${n.columns.join(" | ")}`, ...n.rows.slice(0, 40).map((r) => `  ${r.join(" | ")}`));
+      } else if (n.type === "chart") {
+        out.push(`the ${n.kind} chart${n.title ? ` "${n.title}"` : ""}: x = ${n.labels.join(", ")}`, ...n.series.map((s) => `  ${s.name}: ${s.values.join(", ")}`));
+      } else if (n.type === "container") visit(n.children);
+    }
+  };
+  visit(screen.children);
+  return out.join("\n").slice(0, maxChars);
+}
+
 export function buildSystemPrompt(req: AskRequest, reading?: string | null): string {
   const lines = [
     "You are the assistant inside Create, a tool for building web pages by pointing and talking.",
-    "Be concise, plain and helpful. Answer questions about figures, numbers and text on the page directly.",
+    "Answer in at most 3 short sentences, in plain words, with no markdown, no lists and no preamble. Put the answer first, then the figure or reason that supports it, citing the element once; never repeat the same figure twice.",
+    "Ground every answer in the page data below. Quote exact values and labels from the table or chart, and say which element you are using (for example 'In the table, Category C has the highest sales at $440, 43.1% of the total'). Do the arithmetic when asked. If the data does not contain the answer, say so in one sentence and name what is missing; never guess.",
+    "Do not mention forms, wiring, ids, JSON or how the page was built unless asked. Do not hedge or apologize. No hype words.",
     "You are in Chat mode: you can NOT edit the page and must never say or imply that you did. If the user asks for a change, tell them to switch to Code mode.",
   ];
   if (req.screen) lines.push(`The current page outline:\n${outlineScreen(req.screen)}`);
+  const data = req.screen ? pageData(req.screen) : "";
+  if (data) lines.push(`Data on the page (table cells and chart values, exact):\n${data}`);
   const id = req.pointer?.targetId;
   const node = id && req.screen ? findNode(req.screen, id) : null;
   if (node) lines.push(`The user is pointing at this element (full JSON):\n${JSON.stringify(node).slice(0, 4000)}\n"this" and "that" mean it.`);
@@ -94,7 +114,7 @@ export async function answerAsk(
           user: req.question,
           image: imageBlock(req.pointer?.image) ? req.pointer?.image : undefined,
           history: req.history.slice(-10),
-          maxTokens: 800,
+          maxTokens: 400,
           effort: choice === "inkling" ? req.effort : undefined,
         })
       : null;

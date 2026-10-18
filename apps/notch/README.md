@@ -4,15 +4,15 @@ Native macOS menu-bar agent (no Dock icon) that shows what you lift into Create 
 Swift Package, macOS 14+, SwiftUI, [DynamicNotchKit](https://github.com/MrKai77/DynamicNotchKit) pinned to `1.1.0` (MIT).
 
 ## What it does
-- Compact pill in the notch (tray icon + count). Hover it and it expands into chips such as `Table · Route 44 schedule`.
-- Polls `GET http://localhost:3001/api/tray` every 1.5 s. Expected `{items:[{id,title,kind,url,createdAt}]}` (oldest first). A 404 means an empty tray; a dead server keeps the last chips and shows "Waiting for Create".
+- Compact pill in the notch (tray icon + count). Hover it and it expands into a horizontal row of cards, newest first: thumbnail over a one-line title. The row scrolls left to right (a mouse wheel scrolls it sideways). Hovering a card opens a larger preview (thumbnail, title, source). Click opens it in Create (a lifted app by its link; a snippet through `POST /api/tray/:id/open`, which converts the saved markup to a page like `/api/import-element`). Drag a card out to other apps: it carries the thumbnail image plus the HTML (and plain text); lifted apps carry their link. The corner x deletes.
+- Polls `GET http://localhost:3001/api/tray` every 1.5 s. Expected `{items:[{id,title,kind,createdAt,url?,thumbnailUrl?,hasSnippet?,source?}]}` (oldest first). Thumbnails (`GET /api/tray/:id/thumbnail`, JPEG) and markup (`GET /api/tray/:id/snippet`) are fetched once per card and cached, so the poll stays light. A 404 means an empty tray; a dead server keeps the last chips and shows "Waiting for Create".
 - Chip x button sends DELETE /api/tray/:id (optimistic). Motion: spring response 0.35 damping 0.8, honors Reduce Motion.
 - New chips drop in with a spring and the tray peeks open for a moment.
 - Click a chip to open its `url` in the default browser. "Send to Create" opens `http://localhost:5175`.
 - Menu-bar icon: Open Create, Show Tray, Quit.
 - Option-hold (400 ms): reads the AX element at the cursor (nearest table/list/group, children to depth 3; needs Accessibility), captures a ScreenCaptureKit crop (the AX frame if sane, else 520x360 around the cursor), POSTs `/api/locate {input:{source:"notch",image,cursor,ax,imageSize}}` and shows the label chip at once. Then `/api/extract` with the crop of the located box and `/api/lift` add the tray chip. An `ask` response shows "Which one?" with two buttons; every failure shows a visible error chip (a locate failure falls back to reading the whole crop). Stage timings go to os_signpost / `log stream --predicate 'subsystem == "dev.create.tray"'`; the chip tooltip carries the trace id. Cursor and AX frames are sent in crop-image pixels.
 
-The notch surface is physically black, so the tray uses the DESIGN.md neutral ramp in its dark form with the single accent `#3E7BF0`, SF Pro at 12/14. On a Mac without a notch DynamicNotchKit falls back to a floating pill at the top center.
+The notch surface is physically black, so on a notched display the tray uses the DESIGN.md neutral ramp in its dark form (on a display without a notch the tokens follow the system light or dark appearance) with the single accent `#3E7BF0`, SF Pro at 12/14. On a Mac without a notch DynamicNotchKit falls back to a floating pill at the top center.
 
 ## Build
 ```

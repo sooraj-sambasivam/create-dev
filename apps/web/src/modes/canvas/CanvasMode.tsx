@@ -412,7 +412,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
           <CanvasNarrate editor={editorRef.current} onBuild={buildNarration} onError={narrateError} onClose={closeNarrate} />
         )}
         {editorState && !narrating && groups.active.length > 0 && <GroupOutline editor={editorState} ids={groups.active} />}
-        {editorState && <BuiltBadges editor={editorState} groups={groups.state.built} />}
+        {editorState && !narrating && <BuiltBadges editor={editorState} groups={groups.state.built} />}
         {editorState && !narrating && groups.popoverVisible && groups.active.length > 0 && (
           <StrokePopover
             editor={editorState}
@@ -439,7 +439,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
         </div>
 
         {toast && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[500] flex justify-center px-3">
+          <div className="pointer-events-none absolute inset-x-0 bottom-32 z-[500] flex justify-center px-3">
             <div
               role={toast.kind === "error" ? "alert" : "status"}
               className={`canvas-rise-in pointer-events-auto flex w-max max-w-[min(480px,100%)] items-start gap-2 ${surface.card} px-3 py-2 text-[14px] text-ink`}

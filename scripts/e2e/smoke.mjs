@@ -253,14 +253,12 @@ try {
   });
 
   // (7) Backend tab shows the user's app, derived from the Screen
-  await step("7. Backend tab shows app-derived sections", async () => {
+  await step("7. Backend tab is hidden on a page with no form or data", async () => {
     await ev(`document.querySelector('[data-testid="work-mode-code"]')?.click()`);
-    await ev(`[...document.querySelectorAll('[role="tab"]')].find(e=>e.textContent.trim()==='Backend')?.click()`);
-    const ok = await waitFor(`/Pages/.test(document.querySelector('#rp-body')?.textContent||'')&&/Hosting/.test(document.querySelector('#rp-body')?.textContent||'')`, 8000);
-    await sleep(400); await shot("07-backend");
-    if (!ok) return "Backend tab has no Pages/Hosting sections: " + (await ev(`(document.querySelector('#rp-body')?.textContent||'').slice(0,120)`));
-    const t = await ev(`document.querySelector('#rp-body').textContent`);
-    if (/Narrate|Mongo|ElevenLabs|Perceptron/i.test(t)) return "Backend tab still shows Create's own services";
+    await sleep(500);
+    const has = await ev(`[...document.querySelectorAll('[role="tab"]')].some(e=>e.textContent.trim()==='Backend')`);
+    await shot("07-backend-hidden");
+    if (has) return "Backend tab shown on a plain landing page";
   });
 
   // (8) a form on the page, submitted in Preview, shows up in Backend
@@ -298,6 +296,9 @@ try {
     const ok = await waitFor(`/[1-9]\\d* responses?/.test(document.querySelector('#rp-body')?.textContent||'')`, 8000);
     await sleep(400); await shot("08-backend-responses");
     if (!ok) return "Backend shows no response count: " + (await ev(`(document.querySelector('#rp-body')?.textContent||'').slice(0,200)`));
+    const t7 = await ev(`document.querySelector('#rp-body').textContent`);
+    if (!/Pages/.test(t7) || !/Hosting/.test(t7)) return "Backend tab has no Pages/Hosting sections";
+    if (/Narrate|Mongo|ElevenLabs|Perceptron/i.test(t7)) return "Backend tab still shows Create's own services";
   });
 
   // (9) lift: entity -> live app; a row added through the page form shows up live in the table and in the stored responses

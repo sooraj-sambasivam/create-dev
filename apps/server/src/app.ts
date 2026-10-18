@@ -23,6 +23,9 @@ import { trayRouter } from "./tray/route";
 import { DEFAULT_MODEL } from "./ai/claude";
 import { allowedOrigins, isAllowedOrigin } from "./middleware/origins";
 import { createRateLimiter } from "./middleware/rateLimit";
+import { attachSession, createAuthRouter } from "./auth";
+import { createQuota, type QuotaOptions } from "./quota";
+import type { UserStore } from "./auth/store";
 
 /** Per-IP requests per minute on routes that spend vendor money. Each limiter is its own bucket. */
 export const COST_LIMITS: Record<string, number> = {
@@ -38,7 +41,9 @@ export const COST_LIMITS: Record<string, number> = {
 
 export { allowedOrigins, isAllowedOrigin };
 
-export function createApp(): express.Express {
+export type AppOptions = { userStore?: UserStore; quota?: QuotaOptions };
+
+export function createApp(opts: AppOptions = {}): express.Express {
   const app = express();
   // Behind Vercel's proxy req.ip would be the proxy; trust one hop so the limiter keys on the client.
   if (process.env.VERCEL) app.set("trust proxy", 1);
@@ -47,13 +52,19 @@ export function createApp(): express.Express {
     cors((req, cb) => {
       const origin = req.headers.origin;
       // No Origin header (same-origin, curl): cors adds nothing either way.
-      cb(null, { origin: origin ? isAllowedOrigin(origin, req.originalUrl ?? req.url ?? "") : false, exposedHeaders: ["x-model-fallback"] });
+      cb(null, { origin: origin ? isAllowedOrigin(origin, req.originalUrl ?? req.url ?? "") : false, exposedHeaders: ["x-model-fallback"], credentials: true });
     }),
   );
+  // Accounts: session cookie -> req.session, then the auth routes and the demo quota gate.
+  const quota = createQuota(opts.quota);
+  app.use(attachSession);
+  app.use("/api", createAuthRouter(opts.userStore));
+  app.use("/api", quota.router);
   // Cost routes: limit before any body parsing so refused requests stay cheap.
   for (const [path, max] of Object.entries(COST_LIMITS)) {
     app.post(`/api${path}`, createRateLimiter({ windowMs: 60_000, max }));
   }
+  app.use("/api", quota.gate);
   // Routers that parse their own (larger) bodies mount before the global 3mb parser.
   app.use("/api", sketchRouter);
   app.use("/api", demoRouter);

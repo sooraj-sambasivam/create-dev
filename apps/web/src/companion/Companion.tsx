@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useReducer, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "motion/react";
-import { CircleHelp, NotebookPen, ThumbsUp, TriangleAlert, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useScreenStore } from "../store/screenStore";
-import { ICON, STROKE, button, focusRing, surface } from "../ui/styles";
+import { ICON, STROKE, button, focusRing } from "../ui/styles";
 import { duration, ease, fadeUp, spring } from "../ui/motion";
-import { Face } from "./Face";
+import { Face, ORB, PIP_CSS } from "./Face";
 import { NotesCard } from "./NotesCard";
 import { activeByEvents, initialState, nextWake, reduce, type FaceKind, type MachineEvent } from "./machine";
 import { readPref, writePref, type CompanionPref } from "./prefs";
@@ -13,30 +13,31 @@ import { useCompanionSignals } from "./signals";
 type Action = { evt: MachineEvent; now: number };
 const reducer = (s: ReturnType<typeof reduce>, a: Action) => reduce(s, a.evt, a.now);
 
-const BADGES: Partial<Record<FaceKind, { Icon: typeof ThumbsUp; cls: string }>> = {
-  done: { Icon: ThumbsUp, cls: "text-ok" },
-  celebrate: { Icon: ThumbsUp, cls: "text-ok" },
-  noting: { Icon: NotebookPen, cls: "text-ink-2" },
-  confused: { Icon: CircleHelp, cls: "text-warn" },
-  error: { Icon: TriangleAlert, cls: "text-bad" },
+type Badge = { glyph: "check" | "?" | "!"; cls: string };
+const BADGES: Partial<Record<FaceKind, Badge>> = {
+  done: { glyph: "check", cls: "text-ok" },
+  celebrate: { glyph: "check", cls: "text-ok" },
+  confused: { glyph: "?", cls: "text-warn" },
+  error: { glyph: "!", cls: "text-bad" },
 };
 
 const ORB_ANIM: Partial<Record<FaceKind, TargetAndTransition>> = {
-  thinking: { rotate: 4, y: 0, scale: 1 },
-  confused: { rotate: -8, y: 0, scale: 1 },
-  celebrate: { rotate: 0, y: [0, -9, 0, -5, 0], scale: 1 },
-  cancelled: { rotate: 0, y: [0, 3, 0], scale: 1 },
-  done: { rotate: 0, y: 0, scale: 1 },
+  thinking: { rotate: 0, x: 0, y: 0, scale: 0.97 },
+  confused: { rotate: -9, x: 0, y: 0, scale: 1 },
+  celebrate: { rotate: 0, x: 0, y: [0, -8, 0, -4, 0], scale: 1 },
+  cancelled: { rotate: 0, x: 0, y: [0, 2.5, 0], scale: 1 },
+  error: { rotate: 0, x: [0, -3, 3, -2, 1.5, 0], y: 0, scale: 1 },
+  done: { rotate: 0, x: 0, y: 0, scale: [1, 1.06, 1] },
 };
 
-/** Faces that play a multi-step keyframe hop use a tween; everything else settles on a spring. */
-const KEYFRAMED = new Set<FaceKind>(["celebrate", "cancelled"]);
-
+/** Faces that play a multi-step keyframe move use a tween; everything else settles on a spring. */
+const KEYFRAMED = new Set<FaceKind>(["celebrate", "cancelled", "error", "done"]);
+const KEYFRAME_MS: Partial<Record<FaceKind, number>> = { celebrate: 0.7, cancelled: 0.28, error: 0.38, done: 0.34 };
 
 export interface DockRect { left: number; top: number; right: number; bottom: number }
 export interface Dock { right: number; bottom: number; collapsed: boolean }
 
-/** Pip's footprint: the 60px orb plus the badge and close button hanging off its corners. */
+/** Pip's footprint: the 56px orb plus the badge and close button hanging off its corners. */
 const PIP = 76;
 const DEFAULT_DOCK = { right: 20, bottom: 24 };
 
@@ -116,12 +117,13 @@ export function Companion() {
   const orbAnim: TargetAndTransition =
     ORB_ANIM[face] ??
     (face === "idle" && !reduced
-      ? { rotate: 0, y: 0, scale: [1, 1.02, 1] }
-      : { rotate: 0, y: 0, scale: 1 });
+      ? { rotate: 0, x: 0, y: [0, -1.5, 0], scale: 1 }
+      : { rotate: 0, x: 0, y: 0, scale: 1 });
   const idleLoop = face === "idle" && !reduced;
 
   return (
     <div className="pointer-events-none fixed z-40 flex items-end gap-3" style={{ right: dock.right, bottom: dock.bottom }} data-pip-dock={dock.collapsed ? "dot" : "full"}>
+      <style>{PIP_CSS}</style>
       <AnimatePresence>
         {visible && shown === "on" && (
           <motion.div
@@ -134,34 +136,44 @@ export function Companion() {
             transition={reduced ? { duration: duration.fast } : undefined}
           >
             <NotesCard notes={state.notes} reduced={reduced} />
-            <div className="group pointer-events-none relative size-[60px]" data-companion={face}>
+            <div className="group pointer-events-none relative" style={{ width: ORB, height: ORB }} data-companion={face}>
+              {/* Contact shadow: breathes with the idle float. */}
+              <motion.span
+                aria-hidden="true"
+                className="pip-contact pointer-events-none absolute left-1/2 block h-3 w-10 -translate-x-1/2 rounded-full"
+                style={{ bottom: -8 }}
+                animate={idleLoop ? { scaleX: [1, 0.9, 1], opacity: [0.9, 0.65, 0.9] } : { scaleX: face === "celebrate" ? 0.75 : 1, opacity: 0.9 }}
+                transition={idleLoop ? { duration: 4, repeat: Infinity, ease: "easeInOut" } : spring.gentle}
+              />
               <button
                 type="button"
                 aria-label="Hide companion"
                 aria-pressed={false}
                 onClick={() => choose("dot")}
-                className={`pointer-events-auto relative block size-[60px] rounded-full border border-line bg-surface shadow-soft ${focusRing}`}
+                className={`pointer-events-auto relative block rounded-full ${focusRing}`}
+                style={{ width: ORB, height: ORB }}
               >
                 {!reduced && face === "celebrate" &&
-                  [0, 0.18, 0.36].map((d) => (
+                  [0, 0.18].map((d) => (
                     <motion.span
                       key={`${state.nonce}-${d}`}
-                      className="pointer-events-none absolute inset-0 rounded-full border border-ink-3"
-                      initial={{ scale: 1, opacity: 0.5 }}
-                      animate={{ scale: 1.9, opacity: 0 }}
+                      className="pointer-events-none absolute inset-0 rounded-full border border-accent"
+                      initial={{ scale: 1, opacity: 0.45 }}
+                      animate={{ scale: 1.8, opacity: 0 }}
                       transition={{ duration: 0.9, delay: d, ease: ease.standard }}
                     />
                   ))}
                 <motion.span
-                  className="block rounded-full"
+                  className="pip-orb pip-orb-body relative flex items-center justify-center rounded-full"
+                  style={{ width: ORB, height: ORB }}
                   animate={orbAnim}
                   transition={
                     reduced
                       ? { duration: 0.15 }
                       : idleLoop
-                        ? { scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }, rotate: spring.gentle, y: spring.gentle }
+                        ? { y: { duration: 4, repeat: Infinity, ease: "easeInOut" }, rotate: spring.gentle, x: spring.gentle, scale: spring.gentle }
                         : KEYFRAMED.has(face)
-                          ? { duration: face === "celebrate" ? 0.7 : 0.28, ease: ease.standard }
+                          ? { duration: KEYFRAME_MS[face] ?? 0.3, ease: ease.standard }
                           : spring.gentle
                   }
                 >
@@ -173,28 +185,16 @@ export function Companion() {
                   <motion.span
                     key={`${face}-${state.nonce}`}
                     aria-hidden="true"
-                    className={`pointer-events-none absolute -top-2 -right-2 flex size-7 items-center justify-center ${surface.pill}`}
-                    initial={reduced ? { opacity: 0 } : { scale: 0.6, opacity: 0 }}
+                    className="pointer-events-none absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full border border-line bg-surface text-[12px] font-semibold leading-none shadow-soft"
+                    initial={reduced ? { opacity: 0 } : { scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: duration.fast, ease: ease.exit } }}
                     transition={reduced ? { duration: duration.fast } : { ...spring.bouncy, opacity: { duration: duration.fast } }}
                   >
-                    <badge.Icon size={ICON.sm} strokeWidth={STROKE} className={badge.cls} />
+                    {badge.glyph === "check" ? <Check size={ICON.sm - 2} strokeWidth={2.5} className={badge.cls} /> : <span className={badge.cls}>{badge.glyph}</span>}
                   </motion.span>
                 )}
               </AnimatePresence>
-              {face === "thinking" && (
-                <span aria-hidden="true" className="pointer-events-none absolute top-[66px] left-1/2 flex -translate-x-1/2 gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <motion.span
-                      key={i}
-                      className="size-1.5 rounded-full bg-ink-3"
-                      animate={reduced ? { opacity: 0.8 } : { opacity: [0.25, 1, 0.25] }}
-                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-                    />
-                  ))}
-                </span>
-              )}
               <button
                 type="button"
                 aria-label="Hide companion"
@@ -222,7 +222,7 @@ export function Companion() {
           >
             <motion.span
               key={state.nonce}
-              className="block size-2.5 rounded-full bg-ink-3"
+              className="pip-orb pip-dot block size-2.5 rounded-full"
               animate={reduced ? undefined : { scale: [1, 1.5, 1] }}
               transition={{ duration: 0.3 }}
             />

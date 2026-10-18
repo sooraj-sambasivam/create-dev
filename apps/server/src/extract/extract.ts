@@ -14,7 +14,11 @@ const PERCEPTRON_URL = "https://api.perceptron.inc/v1/chat/completions";
 
 export const EXTRACT_PROMPT =
   'Read the chart or table in this image. Reply with only JSON: {"kind":"table"|"chart"|"list"|"schedule","title":string,"columns":[{"key":string,"label":string,"type":"text"|"number"|"money"|"date"|"time"|"percent"}],"rows":[{"<key>":"<cell text>"}]}. ' +
-  "For a chart, use one text column for the x-axis label and one number column per series, one row per x value. Every cell is a string. Do not invent rows you cannot see.";
+  "For a chart, use one text column for the x-axis label and one number column per series, one row per x value. Name the label column by what the labels are (for example Region) and each number column by the measure and unit (for example Life expectancy, years); put the year or date range in the title, not in column labels. Read values from the printed data labels; if none are printed, estimate to the same precision as the axis ticks and keep one row per label, with no repeated labels. Every cell is a string. Do not invent rows you cannot see. " +
+  "Rules: the columns are the table's header row, so put the header labels in columns and never repeat them as a data row; skip title lines, dates and notes printed above the header; column labels are copied exactly as printed in the header, with no position words such as (row 1) or (column 1); if a header cell is blank, name it from its values (for example Time). " +
+  "Set each column type from its values: money for $ amounts, percent for %, number for plain numbers, time for clock times, date for dates, else text. " +
+  "Copy every visible row including total, subtotal and tax rows, with cell text exactly as shown (keep $ , and %); use an empty string for an empty cell, never a placeholder. " +
+  "The title is a short name for what the data is (2 to 6 words, from the page headings); it is never the user request. ";
 
 /** Pulls the first JSON object out of model text and validates it as an Entity; null when unusable. */
 export function parseEntity(text: string, hint?: string): Entity | null {
@@ -137,7 +141,11 @@ export const ENTITY_OCR_SCHEMA = {
 
 export const OCR_PROMPT =
   "Read the table, chart or list in this image. Fill the schema: columns describe each column (key is a short lowercase id), and each row is an array of cell strings in column order. " +
-  "For a chart, use one text column for the x-axis label and one number column per series, one row per x value. Keep prices as strings exactly as shown. Do not invent rows you cannot see.";
+  "For a chart, use one text column for the x-axis label and one number column per series, one row per x value. Keep prices as strings exactly as shown. Do not invent rows you cannot see. " +
+  "Rules: the columns are the table's header row, so put the header labels in columns and never repeat them as a data row; skip title lines, dates and notes printed above the header; column labels are copied exactly as printed in the header, with no position words such as (row 1) or (column 1); if a header cell is blank, name it from its values (for example Time). " +
+  "Set each column type from its values: money for $ amounts, percent for %, number for plain numbers, time for clock times, date for dates, else text. " +
+  "Copy every visible row including total, subtotal and tax rows, with cell text exactly as shown (keep $ , and %); use an empty string for an empty cell, never a placeholder. " +
+  "The title is a short name for what the data is (2 to 6 words, from the page headings); it is never the user request. ";
 
 async function timed<T>(deps: ExtractDeps, provider: string, fn: () => Promise<T | null>): Promise<T | null> {
   const t0 = performance.now();
@@ -172,7 +180,7 @@ async function viaPerceptron(image: string, hint: string | undefined, fetchImpl:
             role: "user",
             content: [
               { type: "image_url", image_url: { url: image } },
-              { type: "text", text: [OCR_PROMPT, hint ? `Context: ${hint}` : "", box ? "The image is already cropped to the target." : ""].filter(Boolean).join("\n") },
+              { type: "text", text: [OCR_PROMPT, hint ? `User request (context only, not a title): ${hint}` : "", box ? "The image is already cropped to the target." : ""].filter(Boolean).join("\n") },
             ],
           },
         ],
@@ -196,7 +204,7 @@ async function viaPerceptron(image: string, hint: string | undefined, fetchImpl:
 
 async function viaGemini(image: string, hint: string | undefined, fetchImpl?: FetchFn): Promise<Entity | null> {
   if (!process.env.GEMINI_API_KEY?.trim() || !imageBlock(image)) return null;
-  const text = await geminiText({ user: hint ? `${EXTRACT_PROMPT}\nContext: ${hint}` : EXTRACT_PROMPT, image, json: true, maxTokens: 3000, fetchImpl });
+  const text = await geminiText({ user: hint ? `${EXTRACT_PROMPT}\nUser request (context only, not a title): ${hint}` : EXTRACT_PROMPT, image, json: true, maxTokens: 3000, fetchImpl });
   return text ? parseEntity(text, hint) : null;
 }
 
@@ -212,7 +220,7 @@ async function viaClaude(image: string, hint: string | undefined, client?: Anthr
       {
         model: process.env.CLAUDE_ASK_MODEL || DEFAULT_MODEL,
         max_tokens: 3000,
-        messages: [{ role: "user", content: [block, { type: "text", text: hint ? `${EXTRACT_PROMPT}\nContext: ${hint}` : EXTRACT_PROMPT }] }],
+        messages: [{ role: "user", content: [block, { type: "text", text: hint ? `${EXTRACT_PROMPT}\nUser request (context only, not a title): ${hint}` : EXTRACT_PROMPT }] }],
       },
       { timeout: TIMEOUT_MS },
     );
