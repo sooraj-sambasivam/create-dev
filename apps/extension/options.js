@@ -1,4 +1,4 @@
-const D = { apiOrigin: "http://localhost:3001", webOrigin: "http://localhost:5173", voice: false };
+const D = { apiOrigin: "http://localhost:3002", webOrigin: "http://localhost:5176", voice: false };
 const $ = (id) => document.getElementById(id);
 chrome.storage.sync.get(D).then((s) => { $("web").value = s.webOrigin; $("api").value = s.apiOrigin; $("voice").checked = !!s.voice; });
 $("save").onclick = async () => {

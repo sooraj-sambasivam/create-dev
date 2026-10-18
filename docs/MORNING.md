@@ -1,5 +1,14 @@
 # Morning report — Create (DubHacks '26)
 
+## ✅ Ready to submit (09:25)
+- **Final video:** `/private/tmp/claude-501/-Users-soorajsambasivam-Documents-projects-create-dev/781b2c7e-b0d6-487c-909d-9cb6fda3c63e/scratchpad/video-v2/create-demo-final.mp4` (2:00, George narration, problem-first). Upload to YouTube/Vimeo (unlisted) and paste the link in Devpost.
+- **Fallback video:** `.../scratchpad/video-alt/create-demo-george-clean.mp4` (1:20).
+- **Devpost text:** `docs/devpost.md` (problem-first; tagline "Point at it. Say it. Own it."). Sponsor pages: `docs/sponsors.md`. Judge Q&A: `docs/judging-qa.md`.
+- **Code:** `integrate` 4d3252c; clean `main` published (1e957e5): 0 attribution trailers, tree identical, authors kept. All gates green at freeze: shared 42, server 361, web 724 tests, build, smoke 20/20.
+- **Live demo:** use http://localhost:5176 (real AI). 5175 is the mock used by tests.
+- **Tracks:** DubHacks NEXT, Perceptron, SideShift; MongoDB only if you add MONGODB_URI (otherwise remove that paragraph).
+- **Repo visibility:** still private — your call.
+
 ## ⏱ Hard timeline (set 08:40; Devpost due 10:00)
 - **Now → 09:15** — final wave runs in parallel: sync wired into Narrate/extension/notch, demo fixes (chart recolor, full-table lift, titles, edit repair), crafted minimal UI pass with 3 variants, video drivers + ElevenLabs George voice.
 - **09:15 freeze** — commit everything green; stop unfinished lanes.

@@ -1,6 +1,6 @@
 // Lift: the toolbar / Alt+Shift+P arms pointer mode; content.js (also auto-injected) does the pointing.
 // Network calls and tab capture run here so page CSP and CORS never apply.
-const DEFAULTS = { apiOrigin: "http://localhost:3001", webOrigin: "http://localhost:5173", voice: false };
+const DEFAULTS = { apiOrigin: "http://localhost:3002", webOrigin: "http://localhost:5176", voice: false };
 
 async function settings() {
   const s = await chrome.storage.sync.get(DEFAULTS);
