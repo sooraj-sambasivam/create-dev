@@ -51,7 +51,7 @@ export function EditableText({ nodeId, field, value, className, style }: Props) 
       contentEditable="plaintext-only"
       suppressContentEditableWarning
       spellCheck={false}
-      className={`${className ?? ""} pointer-events-auto cursor-text rounded-sm outline-none ring-2 ring-indigo-400 ring-offset-1`}
+      className={`${className ?? ""} pointer-events-auto cursor-text rounded-sm outline-none ring-2 ring-accent ring-offset-1`}
       style={style}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}

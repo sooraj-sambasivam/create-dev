@@ -38,7 +38,7 @@ export function PublishMenu() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="rounded-md bg-emerald-500/90 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-400"
+        className="h-8 rounded-lg bg-accent px-3 text-sm font-medium text-ink dark:text-shell transition-opacity duration-150 hover:opacity-90"
       >
         Publish
       </button>
@@ -48,14 +48,14 @@ export function PublishMenu() {
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className="absolute right-0 top-8 z-50 w-80 rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-neutral-300 shadow-2xl"
+            className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-line bg-surface p-4 text-sm text-ink-2 shadow-soft"
           >
-            <p className="font-medium text-white">Put your website online</p>
-            <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-neutral-400">
+            <p className="font-medium text-ink">Put your website online</p>
+            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-ink-2">
               <li>Download your website as one file.</li>
               <li>
                 Open{" "}
-                <a href="https://app.netlify.com/drop" target="_blank" rel="noopener noreferrer" className="text-indigo-300 underline">
+                <a href="https://app.netlify.com/drop" target="_blank" rel="noopener noreferrer" className="text-accent underline">
                   Netlify Drop
                 </a>{" "}
                 (free) and drag the file onto the page.
@@ -66,13 +66,13 @@ export function PublishMenu() {
               type="button"
               disabled={busy}
               onClick={download}
-              className="mt-3 w-full rounded-lg bg-emerald-500 py-2 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-60"
+              className="mt-4 h-8 w-full rounded-lg bg-accent text-sm font-medium text-ink dark:text-shell transition-opacity duration-150 hover:opacity-90 disabled:opacity-60"
             >
               {busy ? "Preparing your file…" : "Download website"}
             </button>
-            {done && !error && <p className="mt-2 text-xs text-emerald-300">Saved “{done}” to your Downloads folder.</p>}
-            {error && <p className="mt-2 text-xs text-rose-300">{error}</p>}
-            <p className="mt-3 text-[11px] leading-relaxed text-neutral-500">
+            {done && !error && <p className="mt-3 text-xs text-ok">Saved “{done}” to your Downloads folder.</p>}
+            {error && <p className="mt-3 text-xs text-bad">{error}</p>}
+            <p className="mt-4 text-xs leading-relaxed text-ink-3">
               Forms on the page are for show only; they don't send messages yet. Phone, email and map links work.
             </p>
           </motion.div>

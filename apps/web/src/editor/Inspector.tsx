@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   FONTS,
   childrenOf,
@@ -40,16 +41,16 @@ const patchStyle = (id: string, p: Partial<Style>) => useScreenStore.getState().
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border-t border-white/5 px-4 py-3 first:border-t-0">
-      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">{title}</h3>
-      <div className="flex flex-col gap-2.5">{children}</div>
+    <section className="border-t border-line py-4 first:border-t-0 first:pt-0">
+      <h3 className="mb-3 text-sm font-medium text-ink">{title}</h3>
+      <div className="flex flex-col gap-3">{children}</div>
     </section>
   );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1 text-xs text-neutral-400">
+    <div className="flex flex-col gap-2 text-xs text-ink-2">
       <span>{label}</span>
       {children}
     </div>
@@ -57,9 +58,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const inputCls =
-  "w-full rounded-md border border-white/10 bg-neutral-950/60 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-indigo-400/60";
+  "h-8 w-full rounded-md border border-line bg-surface px-2.5 text-sm text-ink outline-none placeholder:text-ink-3 focus:border-accent";
 const smallBtn =
-  "rounded-md border border-white/10 px-2 py-1 text-xs text-neutral-300 hover:bg-white/5 disabled:opacity-40";
+  "inline-flex h-8 items-center justify-center rounded-md border border-line px-3 text-sm text-ink transition-colors duration-150 hover:bg-hover disabled:opacity-40";
 
 function TextInput({
   value,
@@ -74,7 +75,7 @@ function TextInput({
 }) {
   const common = { value, placeholder, onFocus: beginSession, onBlur: beginSession };
   return multiline ? (
-    <textarea {...common} rows={3} onChange={(e) => onChange(e.target.value)} className={`${inputCls} resize-y`} />
+    <textarea {...common} rows={3} onChange={(e) => onChange(e.target.value)} className={`${inputCls} h-auto min-h-16 resize-y py-1.5`} />
   ) : (
     <input {...common} type="text" onChange={(e) => onChange(e.target.value)} className={inputCls} />
   );
@@ -103,15 +104,15 @@ function Segmented<T extends string | number>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex rounded-md border border-white/10 bg-neutral-950/60 p-0.5">
+    <div className="flex flex-wrap gap-1">
       {options.map((o) => (
         <button
           key={String(o.value)}
           type="button"
           title={o.title}
           onClick={() => onChange(o.value)}
-          className={`flex-1 rounded px-1.5 py-1 text-xs transition ${
-            o.value === value ? "bg-indigo-500 text-white" : "text-neutral-400 hover:text-neutral-100"
+          className={`h-8 min-w-10 flex-1 rounded-md px-2.5 text-xs transition-colors duration-150 ${
+            o.value === value ? "bg-hover font-medium text-ink" : "text-ink-2 hover:bg-tray hover:text-ink"
           }`}
         >
           {o.label}
@@ -131,22 +132,22 @@ function ColorPicker({ value, onPick, onLive, onReset }: { value: string | null 
   const [original] = useState(value ?? null);
   const swatches = [...new Set([original, value, ...SWATCHES].filter((c): c is string => Boolean(c)).map((c) => c.toLowerCase()))];
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-2">
       {swatches.map((c) => (
         <button
           key={c}
           type="button"
           title={c}
           onClick={() => onPick(c)}
-          className={`h-5 w-5 rounded-full border transition hover:scale-110 ${
-            value?.toLowerCase() === c ? "border-white ring-2 ring-indigo-400" : "border-white/20"
+          className={`size-4 rounded-full border border-line outline-1 -outline-offset-1 outline-ink/15 transition-transform duration-150 hover:scale-110 ${
+            value?.toLowerCase() === c ? "ring-2 ring-ink ring-offset-2 ring-offset-surface" : ""
           }`}
           style={{ background: c }}
         />
       ))}
       <label
         title="Custom color"
-        className="relative h-5 w-5 cursor-pointer overflow-hidden rounded-full border border-white/20"
+        className="relative size-4 cursor-pointer overflow-hidden rounded-full border border-line opacity-70 transition-opacity duration-150 hover:opacity-100"
         style={{ background: "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)" }}
       >
         <input
@@ -159,7 +160,7 @@ function ColorPicker({ value, onPick, onLive, onReset }: { value: string | null 
         />
       </label>
       {value && onReset && (
-        <button type="button" onClick={onReset} className="ml-auto text-[11px] text-neutral-500 hover:text-neutral-200">
+        <button type="button" onClick={onReset} className="ml-auto text-xs text-ink-3 transition-colors duration-150 hover:text-ink">
           Reset
         </button>
       )}
@@ -233,10 +234,10 @@ function IconPicker({ value, onChange, allowNone }: { value: string | null | und
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-white text-neutral-800">
-          {value ? <IconGlyph name={value} px={22} /> : <span className="text-[10px] text-neutral-400">none</span>}
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-tray text-ink">
+          {value ? <IconGlyph name={value} px={22} /> : <span aria-hidden className="size-1 rounded-full bg-ink-3" />}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[11px] text-neutral-400" title={value ?? undefined}>
+        <span className="min-w-0 flex-1 truncate text-xs text-ink-2" title={value ?? undefined}>
           {value ? iconLabel(value) : "No icon"}
         </span>
         {allowNone && value && (
@@ -252,22 +253,22 @@ function IconPicker({ value, onChange, allowNone }: { value: string | null | und
         className={inputCls}
       />
       <Segmented value={style} options={ICON_STYLES.map((s) => ({ value: s.value, label: s.label }))} onChange={setStyle} />
-      <div className="grid max-h-44 grid-cols-6 gap-1 overflow-y-auto rounded-md bg-white p-1.5 text-neutral-800">
+      <div className="grid max-h-44 grid-cols-6 gap-1 overflow-y-auto rounded-lg bg-tray p-1 text-ink">
         {results.map((name) => (
           <button
             key={name}
             type="button"
             title={iconLabel(name)}
             onClick={() => onChange(name)}
-            className={`flex aspect-square items-center justify-center rounded hover:bg-indigo-100 ${name === value ? "bg-indigo-100 ring-2 ring-indigo-400" : ""}`}
+            className={`flex aspect-square items-center justify-center rounded-md transition-colors duration-150 hover:bg-hover ${name === value ? "bg-hover ring-1 ring-ink-3" : ""}`}
           >
             <IconGlyph name={name} px={22} />
           </button>
         ))}
         {!loading && results.length === 0 && (
-          <p className="col-span-6 py-3 text-center text-[11px] text-neutral-400">{query ? "No icons found" : "Type to search"}</p>
+          <p className="col-span-6 py-2 text-center text-xs text-ink-3">{query ? "No icons found" : "Type to search"}</p>
         )}
-        {loading && results.length === 0 && <p className="col-span-6 py-3 text-center text-[11px] text-neutral-400">Searching…</p>}
+        {loading && results.length === 0 && <p className="col-span-6 py-3 text-center text-xs text-ink-3">Searching…</p>}
       </div>
     </div>
   );
@@ -309,13 +310,16 @@ function LinkField({ node, screen }: { node: Node & { href?: string | null }; sc
         }
       />
       {kind === "section" && (
-        <select value={href.slice(1)} onChange={(e) => setHref(`#${e.target.value}`)} className={inputCls}>
+        <div className="relative">
+        <select value={href.slice(1)} onChange={(e) => setHref(`#${e.target.value}`)} className={`${inputCls} appearance-none pr-8`}>
           {sectionTargets(screen).map((t) => (
             <option key={t.id} value={t.id}>
               {t.label}
             </option>
           ))}
         </select>
+        <ChevronDown size={16} strokeWidth={1.75} aria-hidden className="pointer-events-none absolute right-2.5 top-2 text-ink-3" />
+        </div>
       )}
       {kind === "web" && <TextInput value={href} onChange={liveHref} placeholder="https://instagram.com/yourpage" />}
       {kind === "email" && <TextInput value={href.replace(/^mailto:/, "")} onChange={(v) => liveHref(`mailto:${v}`)} placeholder="you@example.com" />}
@@ -354,7 +358,7 @@ function UploadButton({ onUploaded, label = "Upload your own" }: { onUploaded: (
           }
         }}
       />
-      {error && <p className="text-[11px] text-rose-300">{error}</p>}
+      {error && <p className="text-xs text-bad">{error}</p>}
     </div>
   );
 }
@@ -368,8 +372,8 @@ function PhotoField({ node, srcField, queryField, label }: { node: Node; srcFiel
     <Field label={label}>
       {src ? (
         <div className="flex items-center gap-2">
-          <img src={src} alt="" className="h-10 w-10 rounded object-cover" />
-          <span className="flex-1 text-[11px] text-neutral-400">Your upload</span>
+          <img src={src} alt="" className="size-10 rounded-md object-cover" />
+          <span className="flex-1 text-xs text-ink-2">Your upload</span>
           <button type="button" className={smallBtn} onClick={() => patch(node.id, { [srcField]: null } as Partial<Node>)}>
             Use stock photo
           </button>
@@ -389,7 +393,7 @@ function PhotoField({ node, srcField, queryField, label }: { node: Node; srcFiel
             type="button"
             title={`Use ${a.name}`}
             onClick={() => patch(node.id, { [srcField]: a.url } as Partial<Node>)}
-            className={`h-7 w-7 overflow-hidden rounded border ${src === a.url ? "border-indigo-400" : "border-white/10"}`}
+            className={`size-8 overflow-hidden rounded-md border ${src === a.url ? "border-ink ring-1 ring-ink" : "border-line"}`}
           >
             <img src={a.url} alt={a.name} className="h-full w-full object-cover" />
           </button>
@@ -408,7 +412,7 @@ function LinesField({ label, items, onChange }: { label: string; items: string[]
         onFocus={beginSession}
         onBlur={beginSession}
         onChange={(e) => onChange(e.target.value.split("\n"))}
-        className={`${inputCls} resize-y`}
+        className={`${inputCls} h-auto min-h-16 resize-y py-1.5`}
       />
     </Field>
   );
@@ -518,7 +522,7 @@ function ContentFields({ node, screen }: { node: Node; screen: Screen }) {
               type="range" min={0} max={5} step={0.1} value={node.value}
               onPointerDown={beginSession} onFocus={beginSession}
               onChange={(e) => livePatch(node.id, { value: Number(e.target.value) })}
-              className="accent-indigo-500"
+              className="accent-ink-2"
             />
           </Field>
           <Field label="Label"><Prop node={node} field="label" placeholder="1,240 reviews" /></Field>
@@ -542,10 +546,10 @@ function ContentFields({ node, screen }: { node: Node; screen: Screen }) {
         <Field label="Questions">
           <div className="flex flex-col gap-2">
             {node.items.map((item, i) => (
-              <div key={i} className="flex flex-col gap-1 rounded-md border border-white/10 p-1.5">
+              <div key={i} className="flex flex-col gap-1.5 rounded-lg border border-line p-2">
                 <TextInput value={item.question} onChange={(q) => livePatch(node.id, { items: node.items.map((it, j) => (j === i ? { ...it, question: q } : it)) })} />
                 <TextInput multiline value={item.answer} onChange={(a) => livePatch(node.id, { items: node.items.map((it, j) => (j === i ? { ...it, answer: a } : it)) })} />
-                <button type="button" className="self-end text-[11px] text-neutral-500 hover:text-rose-300" onClick={() => patch(node.id, { items: node.items.filter((_, j) => j !== i) })}>
+                <button type="button" className="self-end text-xs text-ink-3 transition-colors duration-150 hover:text-bad" onClick={() => patch(node.id, { items: node.items.filter((_, j) => j !== i) })}>
                   Remove
                 </button>
               </div>
@@ -580,7 +584,7 @@ function ContentFields({ node, screen }: { node: Node; screen: Screen }) {
         </>
       );
     case "divider":
-      return <p className="text-xs text-neutral-500">A horizontal line. Change its color below.</p>;
+      return <p className="text-xs text-ink-3">A horizontal line. Change its color below.</p>;
     case "spacer":
       return (
         <Field label="Space">
@@ -679,15 +683,15 @@ function StyleFields({ node }: { node: Node }) {
             />
           </Field>
           <Field label="Align and emphasis">
-            <div className="flex gap-1.5">
-              <div className="flex-1">
+            <div className="flex items-start gap-1.5">
+              <div className="min-w-0 flex-1">
                 <Segmented
                   value={style.align ?? "auto"}
                   options={[{ value: "auto", label: "Auto" }, { value: "left", label: "Left" }, { value: "center", label: "Center" }, { value: "right", label: "Right" }]}
                   onChange={(v) => set({ align: v === "auto" ? null : (v as Style["align"]) })}
                 />
               </div>
-              <button type="button" onClick={() => set({ italic: !style.italic })} className={`${smallBtn} italic ${style.italic ? "bg-indigo-500 text-white" : ""}`}>
+              <button type="button" onClick={() => set({ italic: !style.italic })} className={`${smallBtn} size-8 shrink-0 px-0 italic ${style.italic ? "!bg-hover font-medium" : ""}`} aria-pressed={!!style.italic}>
                 I
               </button>
             </div>
@@ -705,15 +709,15 @@ function StyleFields({ node }: { node: Node }) {
       )}
       {!["spacer", "divider"].includes(node.type) && (
         <Field label="Shadow and outline">
-          <div className="flex gap-1.5">
-            <div className="flex-1">
+          <div className="flex items-start gap-1.5">
+            <div className="min-w-0 flex-1">
               <Segmented
                 value={style.shadow ?? "none"}
                 options={[{ value: "none", label: "None" }, { value: "sm", label: "Soft" }, { value: "md", label: "Lifted" }, { value: "lg", label: "Floating" }]}
                 onChange={(v) => set({ shadow: v === "none" ? null : (v as Style["shadow"]) })}
               />
             </div>
-            <button type="button" onClick={() => set({ border: !style.border })} className={`${smallBtn} ${style.border ? "bg-indigo-500 text-white" : ""}`} title="Outline">
+            <button type="button" onClick={() => set({ border: !style.border })} className={`${smallBtn} size-8 shrink-0 px-0 ${style.border ? "!bg-hover font-medium" : ""}`} aria-pressed={!!style.border} title="Outline">
               ▢
             </button>
           </div>
@@ -742,7 +746,7 @@ function WidthField({ node }: { node: Node }) {
           type="range" min={10} max={100} step={5} value={pct ?? 100}
           onPointerDown={beginSession} onFocus={beginSession}
           onChange={(e) => livePatch(node.id, { widthPct: Number(e.target.value) })}
-          className="flex-1 accent-indigo-500"
+          className="flex-1 accent-ink-2"
         />
         <button type="button" disabled={pct === null} onClick={() => patch(node.id, { widthPct: null })} className={smallBtn}>
           Auto
@@ -777,28 +781,28 @@ function NodePanel({ node, screen }: { node: Node; screen: Screen }) {
   const index = siblings.findIndex((n) => n.id === node.id);
   const path = pathTo(screen, node.id);
   const action =
-    "flex flex-1 items-center justify-center gap-1 rounded-md border border-white/10 py-1.5 text-xs text-neutral-300 hover:bg-white/5 disabled:opacity-30";
+    "flex size-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent";
 
   return (
     <>
-      <div className="px-4 pb-2 pt-3">
-        <div className="flex flex-wrap items-center gap-1 text-[11px] text-neutral-500">
-          <button type="button" className="hover:text-neutral-200" onClick={() => s.select(null)}>Page</button>
+      <div className="pb-4">
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-ink-3">
+          <button type="button" className="transition-colors duration-150 hover:text-ink" onClick={() => s.select(null)}>Page</button>
           {path.map((n) => (
             <span key={n.id} className="flex items-center gap-1">
-              <span>/</span>
-              <button type="button" onClick={() => s.select(n.id)} className={n.id === node.id ? "font-medium text-indigo-300" : "hover:text-neutral-200"}>
+              <span aria-hidden>/</span>
+              <button type="button" onClick={() => s.select(n.id)} className={n.id === node.id ? "font-medium text-ink" : "transition-colors duration-150 hover:text-ink"}>
                 {TYPE_LABELS[n.type]}
               </button>
             </span>
           ))}
         </div>
-        <div className="mt-2 flex gap-1.5">
-          <button type="button" title="Move up" className={action} disabled={index <= 0} onClick={() => s.move(node.id, parentId, index - 1)}><ArrowUpIcon /></button>
-          <button type="button" title="Move down" className={action} disabled={index >= siblings.length - 1} onClick={() => s.move(node.id, parentId, index + 2)}><ArrowDownIcon /></button>
-          <button type="button" title="Select the group around this" className={action} disabled={!parentId} onClick={() => parentId && s.select(parentId)}><ParentIcon /></button>
-          <button type="button" title="Duplicate (⌘D)" className={action} onClick={() => s.duplicate(node.id)}><CopyIcon /></button>
-          <button type="button" title="Delete" className={`${action} hover:border-rose-500/40 hover:text-rose-300`} onClick={() => s.remove(node.id)}><TrashIcon /></button>
+        <div className="mt-3 flex items-center gap-1">
+          <button type="button" title="Move up" aria-label="Move up" className={action} disabled={index <= 0} onClick={() => s.move(node.id, parentId, index - 1)}><ArrowUpIcon /></button>
+          <button type="button" title="Move down" aria-label="Move down" className={action} disabled={index >= siblings.length - 1} onClick={() => s.move(node.id, parentId, index + 2)}><ArrowDownIcon /></button>
+          <button type="button" title="Select the group around this" aria-label="Select the group around this" className={action} disabled={!parentId} onClick={() => parentId && s.select(parentId)}><ParentIcon /></button>
+          <button type="button" title="Duplicate (⌘D)" aria-label="Duplicate (⌘D)" className={action} onClick={() => s.duplicate(node.id)}><CopyIcon /></button>
+          <button type="button" title="Delete" aria-label="Delete" className={`${action} ml-auto hover:!text-bad`} onClick={() => s.remove(node.id)}><TrashIcon /></button>
         </div>
       </div>
       <Section title={node.type === "container" ? "Layout" : "Content"}>
@@ -835,13 +839,13 @@ function PagePanel({ screen }: { screen: Screen }) {
           />
         </Field>
         <Field label="Font">
-          <div className="grid grid-cols-3 gap-1">
+          <div className="grid grid-cols-3 gap-1.5">
             {FONTS.map((f) => (
               <button
                 key={f}
                 type="button"
                 onClick={() => setScreen({ ...screen, font: f })}
-                className={`rounded-md border px-1 py-1.5 text-sm ${screen.font === f ? "border-indigo-400 bg-indigo-500/20 text-white" : "border-white/10 text-neutral-300 hover:bg-white/5"}`}
+                className={`h-8 rounded-lg border px-1 text-sm transition-colors duration-150 ${screen.font === f ? "border-ink bg-ink text-surface" : "border-line text-ink hover:bg-hover"}`}
                 style={{ fontFamily: FONT_FAMILY[f] }}
               >
                 {FONT_LABELS[f]}
@@ -851,24 +855,24 @@ function PagePanel({ screen }: { screen: Screen }) {
         </Field>
       </Section>
       <Section title="Your files">
-        <p className="text-xs leading-relaxed text-neutral-400">
+        <p className="text-xs leading-relaxed text-ink-2">
           Upload your logo or photos, then select an image and pick them, or just ask the AI: “put my logo in the nav”.
         </p>
         <div className="flex flex-wrap gap-1.5">
           {assets.map((a) => (
-            <img key={a.url} src={a.url} alt={a.name} title={a.name} className="h-12 w-12 rounded-md border border-white/10 object-cover" />
+            <img key={a.url} src={a.url} alt={a.name} title={a.name} className="size-12 rounded-lg border border-line object-cover" />
           ))}
         </div>
         <UploadButton onUploaded={() => {}} label="Upload an image" />
       </Section>
       <Section title="How to edit">
-        <ul className="flex flex-col gap-1.5 text-xs leading-relaxed text-neutral-400">
-          <li><b className="text-neutral-200">Click</b> anything to select it and change it here.</li>
-          <li><b className="text-neutral-200">Double-click</b> text to type over it.</li>
-          <li><b className="text-neutral-200">Drag</b> an element to move it. Blue lines show where it lands.</li>
-          <li><b className="text-neutral-200">Pull the blue handle</b> on the right edge to resize.</li>
-          <li><b className="text-neutral-200">Type in the ✦ box</b> under a selected element to have the AI change just that element.</li>
-          <li><b className="text-neutral-200">Preview</b> makes buttons and links work.</li>
+        <ul className="flex flex-col gap-1.5 text-xs leading-relaxed text-ink-2">
+          <li><b className="font-medium text-ink">Click</b> anything to select it and change it here.</li>
+          <li><b className="font-medium text-ink">Double-click</b> text to type over it.</li>
+          <li><b className="font-medium text-ink">Drag</b> an element to move it. Blue lines show where it lands.</li>
+          <li><b className="font-medium text-ink">Pull the blue handle</b> on the right edge to resize.</li>
+          <li><b className="font-medium text-ink">Type in the ✦ box</b> under a selected element to have the AI change just that element.</li>
+          <li><b className="font-medium text-ink">Preview</b> makes buttons and links work.</li>
           <li>⌘Z undo · ⌘⇧Z redo · ⌘D duplicate · Delete removes</li>
         </ul>
       </Section>
@@ -884,7 +888,7 @@ export function Inspector() {
   if (selectedId) walkNodes(screen.children, (n) => { if (n.id === selectedId) node = n; });
   return (
     <aside
-      className="flex w-full shrink-0 flex-col overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900/70 backdrop-blur md:max-h-[calc(100vh-14rem)] md:w-80"
+      className="flex w-full flex-col text-sm text-ink"
       onClick={(e) => e.stopPropagation()}
     >
       {node ? <NodePanel node={node} screen={screen} /> : <PagePanel screen={screen} />}
