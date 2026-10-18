@@ -24,6 +24,7 @@ const SUGGESTIONS: Record<string, string[]> = {
   accordion: ["Add a question", "Shorter answers"],
   video: ["Make it square", "Remove it"],
   map: ["Make it taller", "Add the address below"],
+  data: ["Change the label", "Show it as currency"],
   spacer: ["Remove it", "Make it bigger"],
 };
 
