@@ -15,6 +15,15 @@ _Updated overnight. Submit to Devpost by 10:00._
 - **Pointer accuracy (30 real targets):** hover 20/30 (p50 4 ms), commit 24/30 (Perceptron lifts PDFs 0/8 → 4/8; p95 ~5 s). Real demo path: all steps green, 16.3 s end to end.
 - **Committed:** 6cabf7b.
 
+## Update 02:45
+- **Committed 49f95e7** (all gates green: shared 42, server 358, web 694 tests, build, smoke 20/20).
+- **Accounts + demo limits:** guest one-click + email/password; daily limits per user/IP (guest 10 builds / 20 lifts / 40 chat; admin bypass via DEMO_ADMIN_EMAILS). Mongo store untested until MONGODB_URI is set.
+- **Composer:** Go button was unclickable (fan hover bridge sat on top) — fixed; Files, Plugins, Lift from screen, Speak/Sketch/Narrate all verified by a new e2e (19/19).
+- **Tabs:** Backend only when the app has a backend; Inspect only when a page exists. Provider tags on Chat answers.
+- **Sync (cursor ⇄ voice ⇄ screen):** live ElevenLabs Scribe binds 100% of "this/that/here" to the right target, timing error p95 35 ms (target ≤ 150 ms). Browser speech fallback 90.9%. Integration into Narrate/extension/notch running now (H2).
+- **Demo quality:** 15 real scenarios × 4 rounds; locked demo set: sales lift (~3 s), Inkling chat (~1.2 s), "make this bigger" (~1.9 s), "delete this" (~1 s), study sign-up build (~5.5 s). Avoid on stage until fixed: "make this blue" on charts, timetable lift (one row), PDF lifts (5–7 s).
+- **Submission kit:** devpost.md, README, sponsors.md, judging-qa.md (fact-checked).
+
 ## In progress
 - Stage G (your 01:35 list): accounts + demo limits, composer controls end to end, conditional Backend/Inspect tabs, better Pip, canvas QA, agent cursor stress (20+ runs), press-drag lasso → tray with snippet + code, horizontal notch tray.
 - Next: demo video draft (screen capture + voiceover), submission kit, clean main.
