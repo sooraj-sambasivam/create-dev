@@ -1,0 +1,47 @@
+{
+ "id": "t09-notion-table",
+ "app": "Chromium (Notion)",
+ "kind": "table",
+ "label": "Entries table view",
+ "utterance": "track this table",
+ "url": "https://bensomething.notion.site/Synced-Database-Views-d03baa8ecb524b6996d8278233f78e61",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 96,
+  "y": 394,
+  "w": 601,
+  "h": 156
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 339,
+  "y": 457
+ },
+ "collectedAt": "2026-10-18T07:33:24.734Z",
+ "boxPage": {
+  "x": 96,
+  "y": 394,
+  "w": 601,
+  "h": 156
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 900,
+  "capturedHeight": 900,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

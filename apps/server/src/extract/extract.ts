@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { EntitySchema, type Entity, type ExtractResponse } from "@create/shared";
+import { EntitySchema, type Entity, type ExtractResponse, type PixelBox, type StageTiming } from "@create/shared";
 import { PERCEPTRON_DEFAULT_MODEL } from "../canvasOps/perceptron";
 import { imageBlock } from "../ask/ask";
 import { DEFAULT_MODEL } from "../ai/claude";
@@ -27,7 +27,12 @@ export function parseEntity(text: string, hint?: string): Entity | null {
     return null;
   }
   if (!raw || typeof raw !== "object") return null;
-  const o = raw as { rows?: unknown; title?: unknown };
+  const o = raw as { rows?: unknown; title?: unknown; columns?: unknown };
+  if (Array.isArray(o.rows) && Array.isArray(o.columns)) {
+    // Schema-constrained OCR returns rows as arrays of cell strings in column order.
+    const keys = (o.columns as { key?: unknown }[]).map((c) => String(c?.key ?? ""));
+    o.rows = o.rows.map((r) => (Array.isArray(r) ? Object.fromEntries(keys.map((k, i) => [k, String(r[i] ?? "")])) : r));
+  }
   if (Array.isArray(o.rows)) {
     o.rows = o.rows.map((r) =>
       r && typeof r === "object" ? Object.fromEntries(Object.entries(r as Record<string, unknown>).map(([k, v]) => [k, String(v ?? "")])) : r,
@@ -95,9 +100,60 @@ export function mockEntity(hint?: string): Entity {
 }
 
 type FetchFn = typeof fetch;
-export type ExtractDeps = { fetchImpl?: FetchFn; client?: Anthropic; jevFetch?: FetchFn };
+export type ExtractDeps = {
+  fetchImpl?: FetchFn;
+  client?: Anthropic;
+  jevFetch?: FetchFn;
+  /** Where the client's crop sits in the screenshot; metadata only (no server-side cropping). */
+  box?: PixelBox;
+  /** Receives one timing per read-stage provider attempt. */
+  onStage?: (t: StageTiming) => void;
+};
 
-async function viaPerceptron(image: string, hint: string | undefined, fetchImpl: FetchFn): Promise<Entity | null> {
+/** Strict JSON schema for Perceptron OCR. Rows are arrays of cell strings so columns can be dynamic. */
+export const ENTITY_OCR_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "title", "columns", "rows"],
+  properties: {
+    kind: { type: "string", enum: ["table", "chart", "list", "schedule"] },
+    title: { type: "string" },
+    columns: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["key", "label", "type"],
+        properties: {
+          key: { type: "string" },
+          label: { type: "string" },
+          type: { type: "string", enum: ["text", "number", "money", "date", "time", "percent"] },
+        },
+      },
+    },
+    rows: { type: "array", items: { type: "array", items: { type: "string" } } },
+  },
+} as const;
+
+export const OCR_PROMPT =
+  "Read the table, chart or list in this image. Fill the schema: columns describe each column (key is a short lowercase id), and each row is an array of cell strings in column order. " +
+  "For a chart, use one text column for the x-axis label and one number column per series, one row per x value. Keep prices as strings exactly as shown. Do not invent rows you cannot see.";
+
+async function timed<T>(deps: ExtractDeps, provider: string, fn: () => Promise<T | null>): Promise<T | null> {
+  const t0 = performance.now();
+  let out: T | null = null;
+  let error: string | undefined;
+  try {
+    out = await fn();
+    if (!out) error = "no usable result";
+  } catch (err) {
+    error = err instanceof Error ? err.message.slice(0, 200) : "failed";
+  }
+  deps.onStage?.({ stage: "read", provider, ms: Math.round(performance.now() - t0), ok: !!out, ...(error ? { error } : {}) });
+  return out;
+}
+
+async function viaPerceptron(image: string, hint: string | undefined, fetchImpl: FetchFn, box?: PixelBox): Promise<Entity | null> {
   const apiKey = process.env.PERCEPTRON_API_KEY?.trim();
   if (!apiKey) return null;
   const controller = new AbortController();
@@ -110,12 +166,13 @@ async function viaPerceptron(image: string, hint: string | undefined, fetchImpl:
       body: JSON.stringify({
         model: process.env.PERCEPTRON_MODEL || PERCEPTRON_DEFAULT_MODEL,
         max_completion_tokens: 3000,
+        response_format: { type: "json_schema", json_schema: { name: "entity", strict: true, schema: ENTITY_OCR_SCHEMA } },
         messages: [
           {
             role: "user",
             content: [
               { type: "image_url", image_url: { url: image } },
-              { type: "text", text: hint ? `${EXTRACT_PROMPT}\nContext: ${hint}` : EXTRACT_PROMPT },
+              { type: "text", text: [OCR_PROMPT, hint ? `Context: ${hint}` : "", box ? "The image is already cropped to the target." : ""].filter(Boolean).join("\n") },
             ],
           },
         ],
@@ -123,7 +180,7 @@ async function viaPerceptron(image: string, hint: string | undefined, fetchImpl:
     });
     if (!res.ok) {
       console.warn(`[extract] perceptron HTTP ${res.status}`);
-      return null;
+      throw new Error(`HTTP ${res.status}`);
     }
     const body = (await res.json()) as { choices?: { message?: { content?: unknown } }[] };
     const c = body.choices?.[0]?.message?.content;
@@ -131,7 +188,7 @@ async function viaPerceptron(image: string, hint: string | undefined, fetchImpl:
     return parseEntity(text, hint);
   } catch (err) {
     console.warn("[extract] perceptron unavailable:", err instanceof Error ? err.message : "unknown");
-    return null;
+    throw err instanceof Error && err.message.startsWith("HTTP") ? err : new Error(controller.signal.aborted ? "timeout" : "network error");
   } finally {
     clearTimeout(timer);
   }
@@ -168,14 +225,15 @@ async function viaClaude(image: string, hint: string | undefined, client?: Anthr
 
 async function chain(image: string, hint: string | undefined, deps: ExtractDeps): Promise<ExtractResponse> {
   if (process.env.MOCK_AI !== "1") {
-    const p = await viaPerceptron(image, hint, deps.fetchImpl ?? fetch);
+    const p = await timed(deps, "perceptron", () => viaPerceptron(image, hint, deps.fetchImpl ?? fetch, deps.box));
     if (p) return { entity: p, provider: "perceptron" };
-    const g = await viaGemini(image, hint, deps.fetchImpl);
+    const g = await timed(deps, "gemini", () => viaGemini(image, hint, deps.fetchImpl));
     // ExtractResponse.provider is frozen in shared; the picker only needs to know it was not mock.
     if (g) return { entity: g, provider: "gemini" as unknown as "claude" };
-    const c = await viaClaude(image, hint, deps.client);
+    const c = await timed(deps, "claude", () => viaClaude(image, hint, deps.client));
     if (c) return { entity: c, provider: "claude" };
   }
+  deps.onStage?.({ stage: "read", provider: "mock", ms: 0, ok: true });
   return { entity: mockEntity(hint), provider: "mock" };
 }
 

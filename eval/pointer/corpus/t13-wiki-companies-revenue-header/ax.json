@@ -1,0 +1,503 @@
+{
+ "role": "AXWebArea",
+ "title": "Revenue column header",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "columnheader",
+   "title": "Revenue",
+   "frame": {
+    "x": 653,
+    "y": 426,
+    "w": 80,
+    "h": 46
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": 264,
+    "y": 426,
+    "w": 911,
+    "h": 46
+   }
+  },
+  {
+   "role": "table",
+   "frame": {
+    "x": 264,
+    "y": 426,
+    "w": 912,
+    "h": 2243
+   }
+  },
+  {
+   "role": "region",
+   "title": "List",
+   "frame": {
+    "x": 264,
+    "y": 360,
+    "w": 912,
+    "h": 2309
+   }
+  },
+  {
+   "role": "main",
+   "frame": {
+    "x": 264,
+    "y": -141,
+    "w": 1132,
+    "h": 5780
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": 264,
+    "y": 473,
+    "w": 911,
+    "h": 33
+   }
+  },
+  {
+   "role": "columnheader",
+   "title": "USD (in billions)",
+   "frame": {
+    "x": 653,
+    "y": 473,
+    "w": 136,
+    "h": 33
+   }
+  },
+  {
+   "role": "columnheader",
+   "title": "Profit",
+   "frame": {
+    "x": 733,
+    "y": 426,
+    "w": 56,
+    "h": 46
+   }
+  },
+  {
+   "role": "cell",
+   "title": "716 Increase",
+   "frame": {
+    "x": 653,
+    "y": 506,
+    "w": 80,
+    "h": 85
+   }
+  },
+  {
+   "role": "image",
+   "title": "Increase",
+   "frame": {
+    "x": 703,
+    "y": 545,
+    "w": 11,
+    "h": 11
+   }
+  },
+  {
+   "role": "columnheader",
+   "title": "Industry",
+   "frame": {
+    "x": 507,
+    "y": 426,
+    "w": 145,
+    "h": 80
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": 264,
+    "y": 506,
+    "w": 911,
+    "h": 85
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 264,
+    "y": 318,
+    "w": 912,
+    "h": 26
+   }
+  },
+  {
+   "role": "cell",
+   "title": "79.9",
+   "frame": {
+    "x": 733,
+    "y": 506,
+    "w": 56,
+    "h": 85
+   }
+  },
+  {
+   "role": "cell",
+   "title": "Retail Information technology",
+   "frame": {
+    "x": 507,
+    "y": 506,
+    "w": 145,
+    "h": 85
+   }
+  },
+  {
+   "role": "columnheader",
+   "title": "Employees",
+   "frame": {
+    "x": 789,
+    "y": 426,
+    "w": 98,
+    "h": 80
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 264,
+    "y": 276,
+    "w": 912,
+    "h": 26
+   }
+  },
+  {
+   "role": "cell",
+   "title": "713 Increase",
+   "frame": {
+    "x": 653,
+    "y": 591,
+    "w": 80,
+    "h": 33
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": 264,
+    "y": 591,
+    "w": 911,
+    "h": 33
+   }
+  },
+  {
+   "role": "image",
+   "title": "Increase",
+   "frame": {
+    "x": 703,
+    "y": 604,
+    "w": 11,
+    "h": 11
+   }
+  },
+  {
+   "role": "link",
+   "title": "Retail",
+   "frame": {
+    "x": 515,
+    "y": 514,
+    "w": 41,
+    "h": 17
+   }
+  },
+  {
+   "role": "link",
+   "title": "Information technology",
+   "frame": {
+    "x": 515,
+    "y": 540,
+    "w": 80,
+    "h": 43
+   }
+  },
+  {
+   "role": "cell",
+   "title": "21.8",
+   "frame": {
+    "x": 733,
+    "y": 591,
+    "w": 56,
+    "h": 33
+   }
+  },
+  {
+   "role": "cell",
+   "title": "1,576,000",
+   "frame": {
+    "x": 789,
+    "y": 506,
+    "w": 98,
+    "h": 85
+   }
+  },
+  {
+   "role": "cell",
+   "title": "Retail",
+   "frame": {
+    "x": 507,
+    "y": 591,
+    "w": 145,
+    "h": 33
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 264,
+    "y": 234,
+    "w": 912,
+    "h": 26
+   }
+  },
+  {
+   "role": "cell",
+   "title": "545 Increase",
+   "frame": {
+    "x": 653,
+    "y": 625,
+    "w": 80,
+    "h": 59
+   }
+  },
+  {
+   "role": "image",
+   "title": "Increase",
+   "frame": {
+    "x": 703,
+    "y": 650,
+    "w": 11,
+    "h": 11
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": 264,
+    "y": 625,
+    "w": 911,
+    "h": 59
+   }
+  },
+  {
+   "role": "link",
+   "title": "Retail",
+   "frame": {
+    "x": 515,
+    "y": 600,
+    "w": 41,
+    "h": 17
+   }
+  },
+  {
+   "role": "cell",
+   "title": "2,100,000",
+   "frame": {
+    "x": 789,
+    "y": 591,
+    "w": 98,
+    "h": 33
+   }
+  },
+  {
+   "role": "cell",
+   "title": "9.2",
+   "frame": {
+    "x": 733,
+    "y": 625,
+    "w": 56,
+    "h": 59
+   }
+  },
+  {
+   "role": "cell",
+   "title": "Electricity",
+   "frame": {
+    "x": 507,
+    "y": 625,
+    "w": 145,
+    "h": 59
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 264,
+    "y": 192,
+    "w": 912,
+    "h": 26
+   }
+  },
+  {
+   "role": "link",
+   "title": "Electricity",
+   "frame": {
+    "x": 515,
+    "y": 646,
+    "w": 68,
+    "h": 17
+   }
+  },
+  {
+   "role": "link",
+   "title": "United States",
+   "frame": {
+    "x": 894,
+    "y": 557,
+    "w": 25,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "title": "United States",
+   "frame": {
+    "x": 894,
+    "y": 560,
+    "w": 25,
+    "h": 14
+   }
+  },
+  {
+   "role": "cell",
+   "title": "480 Decrease",
+   "frame": {
+    "x": 653,
+    "y": 684,
+    "w": 80,
+    "h": 33
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": 264,
+    "y": 684,
+    "w": 911,
+    "h": 33
+   }
+  },
+  {
+   "role": "image",
+   "title": "Decrease",
+   "frame": {
+    "x": 703,
+    "y": 697,
+    "w": 11,
+    "h": 11
+   }
+  },
+  {
+   "role": "cell",
+   "title": "1,361,423",
+   "frame": {
+    "x": 789,
+    "y": 625,
+    "w": 98,
+    "h": 59
+   }
+  },
+  {
+   "role": "cell",
+   "title": "106",
+   "frame": {
+    "x": 733,
+    "y": 684,
+    "w": 56,
+    "h": 33
+   }
+  },
+  {
+   "role": "columnheader",
+   "title": "Name",
+   "frame": {
+    "x": 326,
+    "y": 426,
+    "w": 182,
+    "h": 80
+   }
+  },
+  {
+   "role": "columnheader",
+   "title": "Headquarters[note 1]",
+   "frame": {
+    "x": 887,
+    "y": 426,
+    "w": 160,
+    "h": 80
+   }
+  },
+  {
+   "role": "cell",
+   "title": "Amazon",
+   "frame": {
+    "x": 326,
+    "y": 506,
+    "w": 182,
+    "h": 85
+   }
+  },
+  {
+   "role": "cell",
+   "title": "73,311",
+   "frame": {
+    "x": 789,
+    "y": 684,
+    "w": 98,
+    "h": 33
+   }
+  },
+  {
+   "role": "cell",
+   "title": "476 Decrease",
+   "frame": {
+    "x": 653,
+    "y": 718,
+    "w": 80,
+    "h": 59
+   }
+  },
+  {
+   "role": "link",
+   "title": "China",
+   "frame": {
+    "x": 894,
+    "y": 646,
+    "w": 25,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "title": "Decrease",
+   "frame": {
+    "x": 703,
+    "y": 743,
+    "w": 11,
+    "h": 11
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": 264,
+    "y": 718,
+    "w": 911,
+    "h": 59
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 197
+ }
+}

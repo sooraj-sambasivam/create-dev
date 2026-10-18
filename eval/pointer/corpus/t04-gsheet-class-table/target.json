@@ -1,0 +1,47 @@
+{
+ "id": "t04-gsheet-class-table",
+ "app": "Chromium (Google Sheets)",
+ "kind": "table",
+ "label": "Class Data sheet table",
+ "utterance": "track this table",
+ "url": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/htmlview",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 0,
+  "y": 29,
+  "w": 772,
+  "h": 709
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 312,
+  "y": 316
+ },
+ "collectedAt": "2026-10-18T07:32:53.714Z",
+ "boxPage": {
+  "x": 0,
+  "y": 29,
+  "w": 772,
+  "h": 709
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 900,
+  "capturedHeight": 900,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

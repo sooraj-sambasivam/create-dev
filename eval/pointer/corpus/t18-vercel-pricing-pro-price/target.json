@@ -1,0 +1,47 @@
+{
+ "id": "t18-vercel-pricing-pro-price",
+ "app": "Chromium (Vercel)",
+ "kind": "text",
+ "label": "Pro plan price $20/mo",
+ "utterance": "what does this plan cost?",
+ "url": "https://vercel.com/pricing",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 520,
+  "y": 422,
+  "w": 98,
+  "h": 56
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 566,
+  "y": 448
+ },
+ "collectedAt": "2026-10-18T07:37:41.895Z",
+ "boxPage": {
+  "x": 520,
+  "y": 453,
+  "w": 98,
+  "h": 56
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 15346,
+  "capturedHeight": 2400,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

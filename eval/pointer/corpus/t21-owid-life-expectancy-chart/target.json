@@ -1,0 +1,47 @@
+{
+ "id": "t21-owid-life-expectancy-chart",
+ "app": "Chromium (Our World in Data)",
+ "kind": "chart",
+ "label": "life expectancy line chart",
+ "utterance": "what does this chart show?",
+ "url": "https://ourworldindata.org/grapher/life-expectancy",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 80,
+  "y": 100,
+  "w": 1280,
+  "h": 680
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 703,
+  "y": 430
+ },
+ "collectedAt": "2026-10-18T07:37:56.574Z",
+ "boxPage": {
+  "x": 80,
+  "y": 100,
+  "w": 1280,
+  "h": 680
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 4283,
+  "capturedHeight": 2400,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

@@ -1,0 +1,97 @@
+{
+ "startedAt": "2026-10-18T07:50:37.855Z",
+ "base": "http://localhost:5175",
+ "api": "http://localhost:3001",
+ "note": "MOCK_AI responses unless the server has provider keys; recorded bodies are what the server returned.",
+ "record": {
+  "liftStages": [
+   {
+    "stage": "locate",
+    "ms": 23,
+    "status": 200,
+    "traceId": "tr_mvdj01til6l6qx",
+    "ask": null,
+    "source": "dom"
+   },
+   {
+    "stage": "read",
+    "ms": 2,
+    "status": 200,
+    "provider": "mock",
+    "traceId": "tr_mvdj01tmret5j3"
+   },
+   {
+    "stage": "act:lift",
+    "ms": 1,
+    "status": 200
+   }
+  ],
+  "steps": [
+   {
+    "name": "open lifted app (table + chart)",
+    "ok": true,
+    "ms": 553
+   },
+   {
+    "name": "editor: prompt renders the app in the right panel",
+    "ok": true,
+    "ms": 2029
+   },
+   {
+    "name": "Chat: ask about the chart",
+    "ok": true,
+    "ms": 1069
+   },
+   {
+    "name": "Narrate: make the heading bigger",
+    "ok": true,
+    "ms": 3507
+   }
+  ],
+  "recordings": [
+   {
+    "route": "POST /api/generate",
+    "kind": "ndjson",
+    "chunks": 2,
+    "latencyMs": 236
+   },
+   {
+    "route": "POST /api/route-intent",
+    "kind": "body",
+    "chunks": 0,
+    "latencyMs": 84
+   }
+  ],
+  "liftedUrl": "http://localhost:5175/?p=8mTKssinpi"
+ },
+ "replay": {
+  "steps": [
+   {
+    "name": "open lifted app (table + chart)",
+    "ok": true,
+    "ms": 532
+   },
+   {
+    "name": "editor: prompt renders the app in the right panel",
+    "ok": true,
+    "ms": 2027
+   },
+   {
+    "name": "Chat: ask about the chart",
+    "ok": true,
+    "ms": 1069
+   },
+   {
+    "name": "Narrate: make the heading bigger",
+    "ok": true,
+    "ms": 3492
+   }
+  ],
+  "replayDotVisible": true,
+  "aiRequestsOnNetwork": [],
+  "uncoveredAiRequestsOnNetwork": [
+   "/api/ask"
+  ]
+ },
+ "finishedAt": "2026-10-18T07:50:54.310Z"
+}

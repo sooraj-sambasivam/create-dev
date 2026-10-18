@@ -1,0 +1,513 @@
+{
+ "role": "AXWebArea",
+ "title": "first departure time cell",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "cell",
+   "title": "This trip arrives Lynnwood City Center at 5:53 a.m.",
+   "frame": {
+    "x": 1255,
+    "y": 420,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": -505,
+    "y": 420,
+    "w": 21479,
+    "h": 50
+   }
+  },
+  {
+   "role": "row",
+   "frame": {
+    "x": -505,
+    "y": 420,
+    "w": 21601,
+    "h": 60
+   }
+  },
+  {
+   "role": "main",
+   "frame": {
+    "x": 24,
+    "y": 63,
+    "w": 1392,
+    "h": 2099
+   }
+  },
+  {
+   "role": "table",
+   "title": "Route 1-line, To Federal Way, 2026-10-18",
+   "frame": {
+    "x": -505,
+    "y": 420,
+    "w": 21601,
+    "h": 1621
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Mountlake Terrace at 5:57 a.m.",
+   "frame": {
+    "x": 1255,
+    "y": 480,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "button",
+   "title": "Scroll table right",
+   "frame": {
+    "x": 1385,
+    "y": 369,
+    "w": 30,
+    "h": 49
+   }
+  },
+  {
+   "role": "image",
+   "title": "Scroll table right",
+   "frame": {
+    "x": 1393,
+    "y": 386,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Shoreline North/185th at 6:00 a.m.",
+   "frame": {
+    "x": 1255,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "button",
+   "title": "View schedule in Point to point format",
+   "frame": {
+    "x": 1249,
+    "y": 306,
+    "w": 134,
+    "h": 48
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Lynnwood City Center at 6:01 a.m.",
+   "frame": {
+    "x": 1415,
+    "y": 420,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Mountlake Terrace at 6:05 a.m.",
+   "frame": {
+    "x": 1415,
+    "y": 480,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 1095,
+    "y": 420,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Shoreline South/148th at 6:03 a.m.",
+   "frame": {
+    "x": 1255,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 1095,
+    "y": 480,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Shoreline North/185th at 6:08 a.m.",
+   "frame": {
+    "x": 1415,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "button",
+   "title": "View schedule in Table format",
+   "frame": {
+    "x": 1115,
+    "y": 306,
+    "w": 134,
+    "h": 48
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 1095,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Shoreline South/148th at 6:11 a.m.",
+   "frame": {
+    "x": 1415,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Pinehurst at 6:05 a.m.",
+   "frame": {
+    "x": 1255,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 1095,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Pinehurst at 6:13 a.m.",
+   "frame": {
+    "x": 1415,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 1095,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Northgate at 6:08 a.m.",
+   "frame": {
+    "x": 1255,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 935,
+    "y": 420,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Northgate at 6:16 a.m.",
+   "frame": {
+    "x": 1415,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 935,
+    "y": 480,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Northgate.",
+   "frame": {
+    "x": 1095,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 935,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Roosevelt at 6:12 a.m.",
+   "frame": {
+    "x": 1255,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "tab",
+   "title": "More info",
+   "frame": {
+    "x": 937,
+    "y": 193,
+    "w": 280,
+    "h": 40
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 935,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Roosevelt at 6:20 a.m.",
+   "frame": {
+    "x": 1415,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Roosevelt.",
+   "frame": {
+    "x": 1095,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 935,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives U District at 6:14 a.m.",
+   "frame": {
+    "x": 1255,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives U District at 6:22 a.m.",
+   "frame": {
+    "x": 1415,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Northgate.",
+   "frame": {
+    "x": 935,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve U District.",
+   "frame": {
+    "x": 1095,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Roosevelt.",
+   "frame": {
+    "x": 935,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 775,
+    "y": 420,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 775,
+    "y": 480,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 775,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 775,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve U District.",
+   "frame": {
+    "x": 935,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 775,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Northgate at 5:38 a.m.",
+   "frame": {
+    "x": 775,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Roosevelt at 5:45 a.m.",
+   "frame": {
+    "x": 775,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "tab",
+   "title": "Alerts",
+   "frame": {
+    "x": 636,
+    "y": 193,
+    "w": 280,
+    "h": 40
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives U District at 5:49 a.m.",
+   "frame": {
+    "x": 775,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 127
+ }
+}

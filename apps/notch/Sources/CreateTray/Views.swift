@@ -104,6 +104,52 @@ struct ChipView: View {
     }
 }
 
+struct LocateChipView: View {
+    let state: LocateState
+    var onPick: (Int) -> Void
+    var body: some View {
+        switch state {
+        case .label(let kind, let text, let tip, let working):
+            HStack(spacing: 8) {
+                Image(systemName: symbol(for: kind)).font(.system(size: 14, weight: .medium)).foregroundStyle(Tok.accent).frame(width: 16)
+                Text(text.isEmpty ? kind.capitalized : "\(kind.capitalized) \u{00B7} \(text)")
+                    .font(.system(size: 12, weight: .medium)).foregroundStyle(Tok.ink).lineLimit(1).truncationMode(.tail)
+                Spacer(minLength: 0)
+                if let working { Text(working).font(.system(size: 11)).foregroundStyle(Tok.ink3) }
+            }
+            .padding(.horizontal, 12).frame(height: 32)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Tok.chip))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Tok.accent.opacity(0.45), lineWidth: 1))
+            .help(tip)
+            .accessibilityLabel("Found \(text)")
+        case .ask(let prompt, let options, let tip):
+            VStack(alignment: .leading, spacing: 6) {
+                Text(prompt).font(.system(size: 12, weight: .semibold)).foregroundStyle(Tok.ink)
+                HStack(spacing: 6) {
+                    ForEach(Array(options.prefix(2).enumerated()), id: \.offset) { i, o in
+                        Button { onPick(i) } label: {
+                            Text(o).font(.system(size: 12, weight: .medium)).foregroundStyle(.white).lineLimit(1)
+                                .padding(.horizontal, 12).frame(height: 28).frame(maxWidth: .infinity)
+                                .background(Capsule().fill(i == 0 ? Tok.accent : Tok.chipHover))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .help(tip)
+        case .error(let msg, let tip):
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 13)).foregroundStyle(Color.orange).frame(width: 16)
+                Text(msg).font(.system(size: 12)).foregroundStyle(Tok.ink).lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.orange.opacity(0.12)))
+            .help(tip)
+        }
+    }
+}
+
 struct TrayContent: View {
     @ObservedObject var store: TrayStore
 
@@ -131,6 +177,11 @@ struct TrayContent: View {
                 }
                 .buttonStyle(.plain)
             }
+            if let st = store.locate {
+                LocateChipView(state: st) { store.onPick?($0) }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.chipDrop)
+            }
             if store.items.isEmpty {
                 Text(store.online ? "Nothing here yet. Lift something from the page." : "Waiting for Create on localhost:3001")
                     .font(.system(size: 12))
@@ -149,6 +200,7 @@ struct TrayContent: View {
                 .animation(Motion.spring, value: store.items)
             }
         }
+        .animation(Motion.spring, value: store.locate)
         .frame(minWidth: 340)
         .padding(.horizontal, 12)
         .padding(.top, 4)

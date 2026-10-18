@@ -1,0 +1,480 @@
+{
+ "role": "AXWebArea",
+ "title": "Plus plan price",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "article",
+   "title": "Plus*",
+   "frame": {
+    "x": 433,
+    "y": 440,
+    "w": 242,
+    "h": 498
+   }
+  },
+  {
+   "role": "main",
+   "frame": {
+    "x": 0,
+    "y": 49,
+    "w": 1440,
+    "h": 6766
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Plus*",
+   "frame": {
+    "x": 433,
+    "y": 440,
+    "w": 242,
+    "h": 28
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 433,
+    "y": 512,
+    "w": 242,
+    "h": 72
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Essentials for staying organized.",
+   "frame": {
+    "x": 159,
+    "y": 328,
+    "w": 439,
+    "h": 80
+   }
+  },
+  {
+   "role": "link",
+   "title": "Get started",
+   "frame": {
+    "x": 433,
+    "y": 600,
+    "w": 242,
+    "h": 36
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Free",
+   "frame": {
+    "x": 159,
+    "y": 440,
+    "w": 242,
+    "h": 28
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 159,
+    "y": 512,
+    "w": 242,
+    "h": 72
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 433,
+    "y": 660,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 433,
+    "y": 689,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "link",
+   "title": "Sign up",
+   "frame": {
+    "x": 159,
+    "y": 600,
+    "w": 242,
+    "h": 36
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 433,
+    "y": 688,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 433,
+    "y": 717,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 159,
+    "y": 660,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 433,
+    "y": 716,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "article",
+   "title": "Free",
+   "frame": {
+    "x": 159,
+    "y": 440,
+    "w": 242,
+    "h": 498
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 433,
+    "y": 745,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 159,
+    "y": 688,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "LabelText",
+   "frame": {
+    "x": 246,
+    "y": 246,
+    "w": 102,
+    "h": 30
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 433,
+    "y": 744,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 433,
+    "y": 773,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 159,
+    "y": 716,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 433,
+    "y": 772,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "group",
+   "title": "Select payment mode:",
+   "frame": {
+    "x": 125,
+    "y": 242,
+    "w": 227,
+    "h": 38
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 159,
+    "y": 744,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 433,
+    "y": 688,
+    "w": 242,
+    "h": 208
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 433,
+    "y": 801,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "title": "Figma",
+   "frame": {
+    "x": 413,
+    "y": 148,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 159,
+    "y": 688,
+    "w": 242,
+    "h": 172
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 433,
+    "y": 800,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 159,
+    "y": 772,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 433,
+    "y": 829,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "LabelText",
+   "frame": {
+    "x": 129,
+    "y": 246,
+    "w": 117,
+    "h": 30
+   }
+  },
+  {
+   "role": "image",
+   "title": "OpenAI",
+   "frame": {
+    "x": 289,
+    "y": 148,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 159,
+    "y": 689,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "title": "Volvo",
+   "frame": {
+    "x": 537,
+    "y": 148,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 433,
+    "y": 828,
+    "w": 242,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 159,
+    "y": 717,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 433,
+    "y": 857,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 764,
+    "y": 689,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 159,
+    "y": 800,
+    "w": 242,
+    "h": 60
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 159,
+    "y": 745,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 764,
+    "y": 717,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 433,
+    "y": 856,
+    "w": 242,
+    "h": 40
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 159,
+    "y": 773,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "title": "Ramp",
+   "frame": {
+    "x": 661,
+    "y": 148,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 764,
+    "y": 745,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "heading",
+   "title": "One tool to run your company.",
+   "frame": {
+    "x": 125,
+    "y": 54,
+    "w": 876,
+    "h": 64
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 159,
+    "y": 801,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Business Recommended",
+   "frame": {
+    "x": 764,
+    "y": 440,
+    "w": 244,
+    "h": 28
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 97
+ }
+}

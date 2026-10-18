@@ -30,6 +30,10 @@ async function post(path, body) {
   return json;
 }
 
+/** Recent pointer traces (client stages and /api/locate traces). Kept in memory for the e2e test and the demo. */
+globalThis.__createTraces = [];
+function keepTrace(t) { globalThis.__createTraces.push(t); if (globalThis.__createTraces.length > 100) globalThis.__createTraces.shift(); }
+
 const toBase64 = (buf) => {
   const bytes = new Uint8Array(buf);
   let s = "";
@@ -78,6 +82,28 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const r = await post("/api/extract", { image: msg.image, ...(msg.hint ? { hint: msg.hint } : {}) });
       return { ok: true, entity: r.entity, provider: r.provider };
     },
+    // Cloud locate for targets the DOM cannot decide (images, charts, free-hand loops). Never throws past this point.
+    locate: async () => {
+      const t0 = Date.now();
+      try {
+        const input = { source: "extension", image: msg.image, ...(msg.imageSize ? { imageSize: msg.imageSize } : {}), ...(msg.cursor ? { cursor: msg.cursor } : {}), ...(msg.dom ? { dom: msg.dom } : {}), ...(msg.hint ? { hint: msg.hint } : {}) };
+        const r = await post("/api/locate", { input });
+        keepTrace({ kind: "locate", ms: Date.now() - t0, ok: true, id: r.trace?.id, stages: r.trace?.stages?.length ?? 0, ask: r.ask || null });
+        return { ok: true, result: r.result ?? null, ask: r.ask, traceId: r.trace?.id };
+      } catch (err) {
+        const error = err instanceof Error ? err.message : "Locate failed";
+        keepTrace({ kind: "locate", ms: Date.now() - t0, ok: false, error });
+        return { ok: false, error };
+      }
+    },
+    // Client-side stage timings (hover to label, command to done).
+    trace: async () => {
+      const stage = { stage: msg.stage, provider: msg.provider, ms: Math.max(0, Math.round(msg.ms)), ok: msg.ok !== false, ...(msg.error ? { error: String(msg.error).slice(0, 500) } : {}) };
+      keepTrace({ kind: "client", ...stage });
+      post("/api/traces", { source: "extension", traceId: msg.traceId, stages: [stage] }).catch((e) => console.info("Create: trace not posted (" + (e?.message || e) + ")"));
+      return { ok: true };
+    },
+    traces: async () => ({ ok: true, traces: globalThis.__createTraces }),
     lift: async () => {
       const snap = msg.snapshot && JSON.stringify(msg.snapshot).length <= 150_000 ? { snapshot: msg.snapshot } : {};
       const r = await post("/api/lift", { entity: msg.entity, ...(msg.instruction ? { instruction: msg.instruction } : {}), ...snap });

@@ -1,0 +1,13 @@
+{
+ "tag": "td",
+ "text": "$100",
+ "rect": {
+  "x": 130,
+  "y": 157,
+  "w": 101,
+  "h": 21
+ },
+ "selectorPath": "body.docs-gm > div#sheets-viewport > div#0 > div.ritz.grid-container > table.waffle.grid-minimized > tbody > tr > td.s3",
+ "tableLike": true,
+ "snapshot": "<table class=\"waffle grid-minimized\" cellspacing=\"0\" cellpadding=\"0\"><thead><tr><th class=\"row-header freezebar-origin-ltr header-shim row-header-shim\"></th><th id=\"0C0\" style=\"width:27px;\" class=\"header-shim\"></th><th id=\"0C1\" style=\"width:100px;\" class=\"header-shim\"></th><th id=\"0C2\" style=\"width:100px;\" class=\"header-shim\"></th><th id=\"0C3\" style=\"width:100px;\" class=\"header-shim\"></th></tr></thead><tbody><tr><th id=\"0R0\" class=\"row-headers-background row-header-shim\"><div>1</div></th><td></td><td></td><td></td><td></td></tr><tr><th id=\"0R1\" class=\"row-headers-background row-header-shim\"><div>2</div></th><td></td><td class=\"s0 softmerge\"><div class=\"softmerge-inner\" style=\"width:198px;left:-1px\">Google Sheet Analysis</div></td><td class=\"s1\"></td><td class=\"s1\"></td></tr><tr><th id=\"0R2\" class=\"row-headers-background row-header-shim\"><div>3</div></th><td></td><td></td><td></td><td></td></tr><tr><th id=\"0R3\" class=\"row-headers-background row-header-shim\"><div>4</div></th><td></td><td class=\"s2\">Date Created:</td><td class=\"s3\">June 20, 2023</td><td></td></tr><tr><th id=\"0R4\" class=\"row-headers-background row-header-shim\"><div>5</div></th><td></td><td></td><td></td><td></td></tr><tr><th id=\"0R5\" class=\"row-headers-background row-header-shim\"><div>6</div></th><td></td><td class=\"s4\">Category</td><td class=\"s5\">Sales</td><td class=\"s5\">% of Total</td></tr><tr><th id=\"0R6\" class=\"row-headers-background row-header-shim\"><div>7</div></th><td></td><td class=\"s2\">A</td><td class=\"s3\">$100</td><td class=\"s3\">9.8%</td></tr><tr><th id=\"0R7\" class=\"row-headers-background row-header-shim\"><div>8</div></th><td></td><td class=\"s2\">B</td><td class=\"s3\">$140</td><td class=\"s3\">13.7%</td></tr><tr><th id=\"0R8\" class=\"row-headers-background row-header-shim\"><div>9</div></th><td></td><td class=\"s2\">C</td><td class=\"s3\">$440</td><td class=\"s3\">43.1%</td></tr><tr><th id=\"0R9\" class=\"row-headers-background row-header-shim\"><div>10</div></th><td></td><td class=\"s6\">D</td><td class=\"s7\">$340</td><td class=\"s7\">33.3%</td></tr><tr><th id=\"0R10\" class=\"row-headers-background row-header-shim\"><div>11</div></th><td></td><td class=\"s8\">Total</td><td class=\"s9\">$1,020</td><td class=\"s9\">100.0%</td></tr></tbody></table>"
+}

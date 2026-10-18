@@ -1,0 +1,494 @@
+{
+ "role": "AXWebArea",
+ "title": "life expectancy line chart",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "figure",
+   "frame": {
+    "x": 80,
+    "y": 100,
+    "w": 1280,
+    "h": 680
+   }
+  },
+  {
+   "role": "main",
+   "frame": {
+    "x": 0,
+    "y": 76,
+    "w": 1440,
+    "h": 3707
+   }
+  },
+  {
+   "role": "navigation",
+   "frame": {
+    "x": 81,
+    "y": 208,
+    "w": 957,
+    "h": 32
+   }
+  },
+  {
+   "role": "group",
+   "title": "Time range slider",
+   "frame": {
+    "x": 204,
+    "y": 684,
+    "w": 750,
+    "h": 26
+   }
+  },
+  {
+   "role": "group",
+   "title": "Timeline controls",
+   "frame": {
+    "x": 81,
+    "y": 681,
+    "w": 957,
+    "h": 32
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 97,
+    "y": 151,
+    "w": 860,
+    "h": 41
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 688,
+    "y": 731,
+    "w": 103,
+    "h": 32
+   }
+  },
+  {
+   "role": "button",
+   "title": "Download",
+   "frame": {
+    "x": 688,
+    "y": 731,
+    "w": 103,
+    "h": 32
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Life expectancy",
+   "frame": {
+    "x": 97,
+    "y": 117,
+    "w": 925,
+    "h": 30
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 799,
+    "y": 731,
+    "w": 76,
+    "h": 32
+   }
+  },
+  {
+   "role": "button",
+   "title": "Share",
+   "frame": {
+    "x": 799,
+    "y": 731,
+    "w": 76,
+    "h": 32
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 688,
+    "y": 731,
+    "w": 334,
+    "h": 32
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "World",
+   "frame": {
+    "x": 1055,
+    "y": 419,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Africa",
+   "frame": {
+    "x": 1055,
+    "y": 454,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Asia",
+   "frame": {
+    "x": 1055,
+    "y": 385,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Americas",
+   "frame": {
+    "x": 1055,
+    "y": 350,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Europe",
+   "frame": {
+    "x": 1055,
+    "y": 316,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "United States ",
+   "frame": {
+    "x": 1055,
+    "y": 545,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Oceania",
+   "frame": {
+    "x": 1055,
+    "y": 281,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Monaco",
+   "frame": {
+    "x": 1055,
+    "y": 579,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "banner",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 76
+   }
+  },
+  {
+   "role": "tab",
+   "title": "Bar",
+   "frame": {
+    "x": 332,
+    "y": 210,
+    "w": 71,
+    "h": 28
+   }
+  },
+  {
+   "role": "button",
+   "title": "Jump to 2023",
+   "frame": {
+    "x": 974,
+    "y": 681,
+    "w": 48,
+    "h": 32
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 883,
+    "y": 731,
+    "w": 139,
+    "h": 32
+   }
+  },
+  {
+   "role": "button",
+   "title": "Enter full-screen",
+   "frame": {
+    "x": 883,
+    "y": 731,
+    "w": 139,
+    "h": 32
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "San Marino",
+   "frame": {
+    "x": 1055,
+    "y": 614,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "button",
+   "title": "Toggle about menu",
+   "frame": {
+    "x": 570,
+    "y": 26,
+    "w": 55,
+    "h": 21
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 570,
+    "y": 23,
+    "w": 55,
+    "h": 26
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 957,
+    "y": 117,
+    "w": 65,
+    "h": 36
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Hong Kong",
+   "frame": {
+    "x": 1055,
+    "y": 648,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "button",
+   "title": "Toggle resources menu",
+   "frame": {
+    "x": 467,
+    "y": 26,
+    "w": 79,
+    "h": 21
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 467,
+    "y": 23,
+    "w": 79,
+    "h": 26
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Japan",
+   "frame": {
+    "x": 1055,
+    "y": 683,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Life expectancyLong-run data",
+   "frame": {
+    "x": 104,
+    "y": 820,
+    "w": 808,
+    "h": 21
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 104,
+    "y": 849,
+    "w": 912,
+    "h": 32
+   }
+  },
+  {
+   "role": "tab",
+   "title": "Line",
+   "frame": {
+    "x": 256,
+    "y": 210,
+    "w": 76,
+    "h": 28
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "South Korea",
+   "frame": {
+    "x": 1055,
+    "y": 718,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "LabelText",
+   "frame": {
+    "x": 1055,
+    "y": 410,
+    "w": 239,
+    "h": 34
+   }
+  },
+  {
+   "role": "LabelText",
+   "frame": {
+    "x": 1055,
+    "y": 445,
+    "w": 239,
+    "h": 34
+   }
+  },
+  {
+   "role": "link",
+   "title": "with major processing",
+   "frame": {
+    "x": 567,
+    "y": 889,
+    "w": 125,
+    "h": 16
+   }
+  },
+  {
+   "role": "LabelText",
+   "frame": {
+    "x": 1055,
+    "y": 376,
+    "w": 239,
+    "h": 34
+   }
+  },
+  {
+   "role": "LabelText",
+   "frame": {
+    "x": 1055,
+    "y": 341,
+    "w": 239,
+    "h": 34
+   }
+  },
+  {
+   "role": "combobox",
+   "title": "Submit",
+   "frame": {
+    "x": 830,
+    "y": 16,
+    "w": 300,
+    "h": 40
+   }
+  },
+  {
+   "role": "link",
+   "title": "Latest",
+   "frame": {
+    "x": 405,
+    "y": 28,
+    "w": 38,
+    "h": 17
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 405,
+    "y": 23,
+    "w": 38,
+    "h": 26
+   }
+  },
+  {
+   "role": "LabelText",
+   "frame": {
+    "x": 1055,
+    "y": 307,
+    "w": 239,
+    "h": 34
+   }
+  },
+  {
+   "role": "checkbox",
+   "title": "Saint Barthelemy",
+   "frame": {
+    "x": 1055,
+    "y": 752,
+    "w": 13,
+    "h": 13
+   }
+  },
+  {
+   "role": "navigation",
+   "frame": {
+    "x": 207,
+    "y": 23,
+    "w": 419,
+    "h": 26
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 207,
+    "y": 23,
+    "w": 419,
+    "h": 26
+   }
+  },
+  {
+   "role": "LabelText",
+   "frame": {
+    "x": 1055,
+    "y": 536,
+    "w": 239,
+    "h": 34
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 110
+ }
+}

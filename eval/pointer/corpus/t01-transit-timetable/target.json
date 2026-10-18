@@ -1,0 +1,47 @@
+{
+ "id": "t01-transit-timetable",
+ "app": "Chromium (Sound Transit)",
+ "kind": "table",
+ "label": "first populated timetable row (1 Line, to Federal Way)",
+ "utterance": "track this train",
+ "url": "https://www.soundtransit.org/ride-with-us/routes-schedules/1-line",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 25,
+  "y": 420,
+  "w": 1415,
+  "h": 60
+ },
+ "boxClipped": true,
+ "cursor": {
+  "x": 625,
+  "y": 446
+ },
+ "collectedAt": "2026-10-18T07:40:49.848Z",
+ "boxPage": {
+  "x": 25,
+  "y": 847,
+  "w": 1415,
+  "h": 60
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 3219,
+  "capturedHeight": 2400,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

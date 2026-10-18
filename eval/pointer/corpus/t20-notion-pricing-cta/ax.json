@@ -1,0 +1,489 @@
+{
+ "role": "AXWebArea",
+ "title": "Get Notion free button",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "link",
+   "title": "Get Notion free",
+   "frame": {
+    "x": 1284,
+    "y": 14,
+    "w": 132,
+    "h": 36
+   }
+  },
+  {
+   "role": "navigation",
+   "title": "Main",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 64
+   }
+  },
+  {
+   "role": "link",
+   "title": "Log in",
+   "frame": {
+    "x": 1207,
+    "y": 17,
+    "w": 61,
+    "h": 30
+   }
+  },
+  {
+   "role": "link",
+   "title": "Request a demo",
+   "frame": {
+    "x": 795,
+    "y": 17,
+    "w": 128,
+    "h": 30
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Enterprise*",
+   "frame": {
+    "x": 1040,
+    "y": 515,
+    "w": 244,
+    "h": 28
+   }
+  },
+  {
+   "role": "image",
+   "title": "Cursor",
+   "frame": {
+    "x": 785,
+    "y": 223,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "heading",
+   "title": "The AI workspace for work that matters.",
+   "frame": {
+    "x": 764,
+    "y": 401,
+    "w": 343,
+    "h": 80
+   }
+  },
+  {
+   "role": "link",
+   "title": "Pricing",
+   "frame": {
+    "x": 725,
+    "y": 17,
+    "w": 66,
+    "h": 30
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 1040,
+    "y": 587,
+    "w": 244,
+    "h": 72
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 700,
+    "y": 27,
+    "w": 10,
+    "h": 10
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Business Recommended",
+   "frame": {
+    "x": 764,
+    "y": 515,
+    "w": 244,
+    "h": 28
+   }
+  },
+  {
+   "role": "image",
+   "title": "Ramp",
+   "frame": {
+    "x": 661,
+    "y": 223,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "link",
+   "title": "Contact Sales",
+   "frame": {
+    "x": 1040,
+    "y": 675,
+    "w": 244,
+    "h": 36
+   }
+  },
+  {
+   "role": "button",
+   "title": "Resources",
+   "frame": {
+    "x": 612,
+    "y": 17,
+    "w": 109,
+    "h": 30
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 1040,
+    "y": 735,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 764,
+    "y": 587,
+    "w": 244,
+    "h": 72
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 588,
+    "y": 27,
+    "w": 10,
+    "h": 10
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 1040,
+    "y": 763,
+    "w": 244,
+    "h": 40
+   }
+  },
+  {
+   "role": "article",
+   "title": "Enterprise*",
+   "frame": {
+    "x": 1040,
+    "y": 515,
+    "w": 244,
+    "h": 572
+   }
+  },
+  {
+   "role": "button",
+   "title": "Product",
+   "frame": {
+    "x": 517,
+    "y": 17,
+    "w": 91,
+    "h": 30
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 1040,
+    "y": 764,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "title": "Volvo",
+   "frame": {
+    "x": 537,
+    "y": 223,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "heading",
+   "title": "One tool to run your company.",
+   "frame": {
+    "x": 125,
+    "y": 129,
+    "w": 876,
+    "h": 64
+   }
+  },
+  {
+   "role": "link",
+   "title": "Get started",
+   "frame": {
+    "x": 764,
+    "y": 675,
+    "w": 244,
+    "h": 36
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 1040,
+    "y": 811,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 1040,
+    "y": 839,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 1040,
+    "y": 812,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 764,
+    "y": 735,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 1040,
+    "y": 867,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 1040,
+    "y": 840,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 764,
+    "y": 763,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 1040,
+    "y": 763,
+    "w": 244,
+    "h": 256
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 1040,
+    "y": 895,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 1040,
+    "y": 868,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "article",
+   "title": "Business Recommended",
+   "frame": {
+    "x": 764,
+    "y": 515,
+    "w": 244,
+    "h": 572
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 764,
+    "y": 791,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 1040,
+    "y": 896,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "title": "Figma",
+   "frame": {
+    "x": 413,
+    "y": 223,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 764,
+    "y": 764,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Plus*",
+   "frame": {
+    "x": 433,
+    "y": 515,
+    "w": 242,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 764,
+    "y": 819,
+    "w": 244,
+    "h": 72
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 764,
+    "y": 792,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 764,
+    "y": 820,
+    "w": 17,
+    "h": 17
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 764,
+    "y": 899,
+    "w": 244,
+    "h": 20
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 433,
+    "y": 587,
+    "w": 242,
+    "h": 72
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 764,
+    "y": 763,
+    "w": 244,
+    "h": 316
+   }
+  },
+  {
+   "role": "link",
+   "title": "Get started",
+   "frame": {
+    "x": 433,
+    "y": 675,
+    "w": 242,
+    "h": 36
+   }
+  },
+  {
+   "role": "image",
+   "title": "OpenAI",
+   "frame": {
+    "x": 289,
+    "y": 223,
+    "w": 84,
+    "h": 24
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Essentials for staying organized.",
+   "frame": {
+    "x": 159,
+    "y": 403,
+    "w": 439,
+    "h": 80
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 433,
+    "y": 735,
+    "w": 242,
+    "h": 20
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 84
+ }
+}

@@ -10,7 +10,7 @@ Swift Package, macOS 14+, SwiftUI, [DynamicNotchKit](https://github.com/MrKai77/
 - New chips drop in with a spring and the tray peeks open for a moment.
 - Click a chip to open its `url` in the default browser. "Send to Create" opens `http://localhost:5175`.
 - Menu-bar icon: Open Create, Show Tray, Quit.
-- Stretch: hold Option for 400 ms. Captures a 520x360 crop around the cursor (ScreenCaptureKit), POSTs it to `/api/extract` `{image, hint}` then `/api/lift` `{entity}`, and adds the result as a chip.
+- Option-hold (400 ms): reads the AX element at the cursor (nearest table/list/group, children to depth 3; needs Accessibility), captures a ScreenCaptureKit crop (the AX frame if sane, else 520x360 around the cursor), POSTs `/api/locate {input:{source:"notch",image,cursor,ax,imageSize}}` and shows the label chip at once. Then `/api/extract` with the crop of the located box and `/api/lift` add the tray chip. An `ask` response shows "Which one?" with two buttons; every failure shows a visible error chip (a locate failure falls back to reading the whole crop). Stage timings go to os_signpost / `log stream --predicate 'subsystem == "dev.create.tray"'`; the chip tooltip carries the trace id. Cursor and AX frames are sent in crop-image pixels.
 
 The notch surface is physically black, so the tray uses the DESIGN.md neutral ramp in its dark form with the single accent `#3E7BF0`, SF Pro at 12/14. On a Mac without a notch DynamicNotchKit falls back to a floating pill at the top center.
 
@@ -25,7 +25,7 @@ Use the `.app` for the demo: permissions attach to its bundle id (`dev.create.tr
 ## Run (demo day)
 1. Build once, well before the demo. Do not rebuild afterward; a rebuild changes the binary and macOS can drop the grants.
 2. Open `Create Tray.app` from Finder (or `open` it). Do not launch it from Terminal or Xcode, or the grants go to that host app.
-3. Grant Screen Recording once (System Settings, Privacy & Security) if you use the Option-hold capture, then quit and reopen the app. The tray itself needs no permissions.
+3. Grant Screen Recording and Accessibility once (System Settings, Privacy & Security) for the Option-hold capture, then quit and reopen the app. The tray itself needs no permissions.
 4. Start the server (port 3001) and web app (5175).
 
 ## Not verified

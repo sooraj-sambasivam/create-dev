@@ -1,0 +1,13 @@
+{
+ "tag": "span",
+ "text": "Get Notion free",
+ "rect": {
+  "x": 1299,
+  "y": 22,
+  "w": 102,
+  "h": 20
+ },
+ "selectorPath": "div.globalNavigation-module-scss-module__HWB10a__globalNavigationWrapper.globalNavigation-module-scss-module__HWB10a__stickyWrapper > div.base-module-scss-module__QPCBRq__theme.theme-module-scss-module__thoEPa__theme > nav.globalNavigation-module-scss-module__HWB10a__globalNavigation > div.globalNavigation-module-scss-module__HWB10a__container > div.globalNavigation-module-scss-module__HWB10a__actions > span.globalNavigation-module-scss-module__HWB10a__primaryCta > a.button-module-scss-module__pIQ4pG__button.button-module-scss-module__pIQ4pG__buttonVariantPrimary > span.typography-module-scss-module__s4Stoa__typography.globalNavigation-module-scss-module__HWB10a__noWrap",
+ "tableLike": false,
+ "snapshot": "<a class=\"button-module-scss-module__pIQ4pG__button button-module-scss-module__pIQ4pG__buttonVariantPrimary button-module-scss-module__pIQ4pG__buttonSizeM globalNavigation-module-scss-module__HWB10a__tryFreeCta\" data-analytics-name=\"desktop_nav_cta\" data-analytics-event=\"click_cta\" data-analytics-label=\"Get Notion free\" data-analytics-href=\"/signup\" href=\"/signup?from=marketing&amp;pathname=%2Fpricing&amp;tid=8f754c636d874b2fb19571ce9d3436cd\" data-tailor-watermark=\"31ypsg\"><span class=\"typography-module-scss-module__s4Stoa__typography globalNavigation-module-scss-module__HWB10a__noWrap\" style=\"--typography-font:var(--tatami-typography-sans-100-medium-font);--typography-font-sm:var(--tatami-typography-sans-100-medium-font);--typography-letter-spacing:var(--tatami-typography-sans-100-medium-letter-spacing);--typography-letter-spacing-sm:var(--tatami-typography-sans-100-medium-letter-spacing);--typography-color:inherit\">Get Notion free</span></a>"
+}

@@ -1,0 +1,490 @@
+{
+ "role": "AXWebArea",
+ "title": "Pro plan price",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "main",
+   "frame": {
+    "x": 0,
+    "y": -115,
+    "w": 1440,
+    "h": 7541
+   }
+  },
+  {
+   "role": "button",
+   "title": "GET STARTED",
+   "frame": {
+    "x": 429,
+    "y": 510,
+    "w": 274,
+    "h": 58
+   }
+  },
+  {
+   "role": "button",
+   "title": "More pricing information",
+   "frame": {
+    "x": 655,
+    "y": 479,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 655,
+    "y": 479,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 691,
+    "y": 603,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 691,
+    "y": 603,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 691,
+    "y": 637,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 691,
+    "y": 637,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 384,
+    "y": 603,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 384,
+    "y": 603,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 691,
+    "y": 671,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 691,
+    "y": 671,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 384,
+    "y": 637,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 384,
+    "y": 637,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 541,
+    "y": 163,
+    "w": 67,
+    "h": 19
+   }
+  },
+  {
+   "role": "image",
+   "title": "OpenAI logo",
+   "frame": {
+    "x": 541,
+    "y": 163,
+    "w": 67,
+    "h": 19
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 691,
+    "y": 705,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 691,
+    "y": 705,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 384,
+    "y": 671,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 384,
+    "y": 671,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 441,
+    "y": 163,
+    "w": 50,
+    "h": 20
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 658,
+    "y": 161,
+    "w": 56,
+    "h": 24
+   }
+  },
+  {
+   "role": "image",
+   "title": "IBM logo",
+   "frame": {
+    "x": 441,
+    "y": 163,
+    "w": 50,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "title": "Stripe logo",
+   "frame": {
+    "x": 658,
+    "y": 161,
+    "w": 56,
+    "h": 24
+   }
+  },
+  {
+   "role": "button",
+   "title": "GET STARTED",
+   "frame": {
+    "x": 737,
+    "y": 510,
+    "w": 274,
+    "h": 58
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 384,
+    "y": 705,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 384,
+    "y": 705,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "link",
+   "title": "GET STARTED",
+   "frame": {
+    "x": 122,
+    "y": 510,
+    "w": 274,
+    "h": 58
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 429,
+    "y": 743,
+    "w": 20,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 737,
+    "y": 743,
+    "w": 20,
+    "h": 20
+   }
+  },
+  {
+   "role": "button",
+   "title": "More information",
+   "frame": {
+    "x": 691,
+    "y": 781,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 691,
+    "y": 781,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 445,
+    "y": 103,
+    "w": 550,
+    "h": 30
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 416,
+    "y": 151,
+    "w": 799,
+    "h": 44
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 764,
+    "y": 162,
+    "w": 105,
+    "h": 21
+   }
+  },
+  {
+   "role": "image",
+   "title": "Rivian logo",
+   "frame": {
+    "x": 764,
+    "y": 162,
+    "w": 105,
+    "h": 21
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 251,
+    "y": 153,
+    "w": 165,
+    "h": 37
+   }
+  },
+  {
+   "role": "button",
+   "title": "More pricing information",
+   "frame": {
+    "x": 962,
+    "y": 479,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 962,
+    "y": 479,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 429,
+    "y": 818,
+    "w": 20,
+    "h": 20
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 230,
+    "y": 25,
+    "w": 699,
+    "h": 31
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 532,
+    "y": 25,
+    "w": 113,
+    "h": 31
+   }
+  },
+  {
+   "role": "button",
+   "title": "Resources",
+   "frame": {
+    "x": 544,
+    "y": 31,
+    "w": 89,
+    "h": 19
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Choose a paid plan built for businesses.",
+   "frame": {
+    "x": 0,
+    "y": 31,
+    "w": 1440,
+    "h": 56
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 435,
+    "y": 25,
+    "w": 97,
+    "h": 31
+   }
+  },
+  {
+   "role": "link",
+   "title": "Enterprise",
+   "frame": {
+    "x": 447,
+    "y": 29,
+    "w": 73,
+    "h": 23
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 645,
+    "y": 25,
+    "w": 73,
+    "h": 31
+   }
+  },
+  {
+   "role": "link",
+   "title": "Pricing",
+   "frame": {
+    "x": 657,
+    "y": 29,
+    "w": 49,
+    "h": 23
+   }
+  },
+  {
+   "role": "image",
+   "title": "Slackbot (personal AI agent)",
+   "frame": {
+    "x": 765,
+    "y": 817,
+    "w": 22,
+    "h": 22
+   }
+  },
+  {
+   "role": "navigation",
+   "title": "Primary Navigation",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 80
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 110
+ }
+}

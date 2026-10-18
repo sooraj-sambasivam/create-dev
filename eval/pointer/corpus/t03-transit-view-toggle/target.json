@@ -1,0 +1,47 @@
+{
+ "id": "t03-transit-view-toggle",
+ "app": "Chromium (Sound Transit)",
+ "kind": "button",
+ "label": "Point to point view toggle",
+ "utterance": "switch to point to point",
+ "url": "https://www.soundtransit.org/ride-with-us/routes-schedules/1-line",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 1249,
+  "y": 426,
+  "w": 134,
+  "h": 48
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 1328,
+  "y": 454
+ },
+ "collectedAt": "2026-10-18T07:32:48.247Z",
+ "boxPage": {
+  "x": 1249,
+  "y": 733,
+  "w": 134,
+  "h": 48
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 3219,
+  "capturedHeight": 2400,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

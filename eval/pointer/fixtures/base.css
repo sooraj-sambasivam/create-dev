@@ -1,0 +1,9 @@
+@page { size: Letter; margin: 0.6in; }
+* { box-sizing: border-box; }
+body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1c1c1e; font-size: 12px; margin: 0; }
+h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 14px; margin: 22px 0 8px; }
+p.sub { color: #6b6b70; margin: 0 0 18px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #d0d0d6; padding: 7px 9px; text-align: left; }
+th { background: #f1f1f4; font-weight: 600; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }

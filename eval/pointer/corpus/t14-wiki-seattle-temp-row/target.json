@@ -1,0 +1,47 @@
+{
+ "id": "t14-wiki-seattle-temp-row",
+ "app": "Chromium (Wikipedia)",
+ "kind": "table",
+ "label": "Seattle mean daily maximum temperature row",
+ "utterance": "track this",
+ "url": "https://en.wikipedia.org/wiki/Seattle",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 265,
+  "y": 427,
+  "w": 911,
+  "h": 46
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 683,
+  "y": 448
+ },
+ "collectedAt": "2026-10-18T07:40:27.258Z",
+ "boxPage": {
+  "x": 265,
+  "y": 9024,
+  "w": 911,
+  "h": 46
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 48844,
+  "capturedHeight": 2400,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

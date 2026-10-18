@@ -1,0 +1,722 @@
+[
+ {
+  "id": "n01-pdf-schedule-table",
+  "dir": "n01-pdf-schedule-table",
+  "app": "Preview (PDF, rendered)",
+  "kind": "table",
+  "label": "Route 44 weekday timetable",
+  "utterance": "track this schedule",
+  "box": {
+   "x": 370,
+   "y": 145,
+   "w": 701,
+   "h": 205
+  },
+  "cursor": {
+   "x": 780,
+   "y": 252
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": false,
+  "hasAx": false
+ },
+ {
+  "id": "n02-pdf-schedule-arrival",
+  "dir": "n02-pdf-schedule-arrival",
+  "app": "Preview (PDF, rendered)",
+  "kind": "text",
+  "label": "6:41 arrival time at University District Station",
+  "utterance": "when does the first bus arrive?",
+  "box": {
+   "x": 581,
+   "y": 320,
+   "w": 82,
+   "h": 29
+  },
+  "cursor": {
+   "x": 618,
+   "y": 332
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": false,
+  "hasAx": false
+ },
+ {
+  "id": "n03-pdf-pricing-table",
+  "dir": "n03-pdf-pricing-table",
+  "app": "Preview (PDF, rendered)",
+  "kind": "table",
+  "label": "Starter / Pro / Team pricing table",
+  "utterance": "track this pricing",
+  "box": {
+   "x": 370,
+   "y": 145,
+   "w": 701,
+   "h": 206
+  },
+  "cursor": {
+   "x": 790,
+   "y": 234
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": false,
+  "hasAx": false
+ },
+ {
+  "id": "n04-pdf-pricing-pro-price",
+  "dir": "n04-pdf-pricing-pro-price",
+  "app": "Preview (PDF, rendered)",
+  "kind": "text",
+  "label": "Pro plan price $12 / month",
+  "utterance": "what does this plan cost?",
+  "box": {
+   "x": 728,
+   "y": 175,
+   "w": 174,
+   "h": 30
+  },
+  "cursor": {
+   "x": 804,
+   "y": 193
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": false,
+  "hasAx": false
+ },
+ {
+  "id": "n05-pdf-revenue-chart",
+  "dir": "n05-pdf-revenue-chart",
+  "app": "Preview (PDF, rendered)",
+  "kind": "chart",
+  "label": "Quarterly revenue bar chart",
+  "utterance": "what does this chart show?",
+  "box": {
+   "x": 370,
+   "y": 145,
+   "w": 640,
+   "h": 360
+  },
+  "cursor": {
+   "x": 679,
+   "y": 304
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": false,
+  "hasAx": false
+ },
+ {
+  "id": "n06-pdf-revenue-q4-bar",
+  "dir": "n06-pdf-revenue-q4-bar",
+  "app": "Preview (PDF, rendered)",
+  "kind": "chart",
+  "label": "Q4 bar (72M) in the revenue chart",
+  "utterance": "why is this bar so high?",
+  "box": {
+   "x": 820,
+   "y": 205,
+   "w": 80,
+   "h": 270
+  },
+  "cursor": {
+   "x": 859,
+   "y": 342
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": false,
+  "hasAx": false
+ },
+ {
+  "id": "n07-pdf-invoice-items",
+  "dir": "n07-pdf-invoice-items",
+  "app": "Preview (PDF, rendered)",
+  "kind": "table",
+  "label": "Invoice 2041 line items table",
+  "utterance": "track this invoice",
+  "box": {
+   "x": 370,
+   "y": 145,
+   "w": 701,
+   "h": 235
+  },
+  "cursor": {
+   "x": 664,
+   "y": 258
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": false,
+  "hasAx": false
+ },
+ {
+  "id": "n08-pdf-invoice-total",
+  "dir": "n08-pdf-invoice-total",
+  "app": "Preview (PDF, rendered)",
+  "kind": "text",
+  "label": "Total due $1,165.92",
+  "utterance": "pay this amount",
+  "box": {
+   "x": 921,
+   "y": 349,
+   "w": 149,
+   "h": 30
+  },
+  "cursor": {
+   "x": 987,
+   "y": 366
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": false,
+  "hasAx": false
+ },
+ {
+  "id": "t01-transit-timetable",
+  "dir": "t01-transit-timetable",
+  "app": "Chromium (Sound Transit)",
+  "kind": "table",
+  "label": "first populated timetable row (1 Line, to Federal Way)",
+  "utterance": "track this train",
+  "box": {
+   "x": 25,
+   "y": 420,
+   "w": 1415,
+   "h": 60
+  },
+  "cursor": {
+   "x": 625,
+   "y": 446
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t02-transit-time-cell",
+  "dir": "t02-transit-time-cell",
+  "app": "Chromium (Sound Transit)",
+  "kind": "text",
+  "label": "first departure time cell",
+  "utterance": "what time is this train?",
+  "box": {
+   "x": 1255,
+   "y": 420,
+   "w": 160,
+   "h": 60
+  },
+  "cursor": {
+   "x": 1345,
+   "y": 454
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t03-transit-view-toggle",
+  "dir": "t03-transit-view-toggle",
+  "app": "Chromium (Sound Transit)",
+  "kind": "button",
+  "label": "Point to point view toggle",
+  "utterance": "switch to point to point",
+  "box": {
+   "x": 1249,
+   "y": 426,
+   "w": 134,
+   "h": 48
+  },
+  "cursor": {
+   "x": 1328,
+   "y": 454
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t04-gsheet-class-table",
+  "dir": "t04-gsheet-class-table",
+  "app": "Chromium (Google Sheets)",
+  "kind": "table",
+  "label": "Class Data sheet table",
+  "utterance": "track this table",
+  "box": {
+   "x": 0,
+   "y": 29,
+   "w": 772,
+   "h": 709
+  },
+  "cursor": {
+   "x": 312,
+   "y": 316
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t05-gsheet-class-major-header",
+  "dir": "t05-gsheet-class-major-header",
+  "app": "Chromium (Google Sheets)",
+  "kind": "table",
+  "label": "Major column header cell",
+  "utterance": "what does this column mean?",
+  "box": {
+   "x": 530,
+   "y": 53,
+   "w": 121,
+   "h": 35
+  },
+  "cursor": {
+   "x": 581,
+   "y": 68
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t06-gsheet-sales-table",
+  "dir": "t06-gsheet-sales-table",
+  "app": "Chromium (Google Sheets)",
+  "kind": "table",
+  "label": "Category / Sales / % of Total table",
+  "utterance": "track this sales table",
+  "box": {
+   "x": 0,
+   "y": 29,
+   "w": 332,
+   "h": 233
+  },
+  "cursor": {
+   "x": 183,
+   "y": 158
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t07-gsheet-sales-total",
+  "dir": "t07-gsheet-sales-total",
+  "app": "Chromium (Google Sheets)",
+  "kind": "text",
+  "label": "Total sales cell $1,020",
+  "utterance": "track this number",
+  "box": {
+   "x": 130,
+   "y": 241,
+   "w": 101,
+   "h": 21
+  },
+  "cursor": {
+   "x": 186,
+   "y": 253
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t08-gsheet-sales-share-c",
+  "dir": "t08-gsheet-sales-share-c",
+  "app": "Chromium (Google Sheets)",
+  "kind": "text",
+  "label": "43.1% share cell for category C",
+  "utterance": "what does this percentage mean?",
+  "box": {
+   "x": 231,
+   "y": 199,
+   "w": 101,
+   "h": 21
+  },
+  "cursor": {
+   "x": 279,
+   "y": 209
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t09-notion-table",
+  "dir": "t09-notion-table",
+  "app": "Chromium (Notion)",
+  "kind": "table",
+  "label": "Entries table view",
+  "utterance": "track this table",
+  "box": {
+   "x": 96,
+   "y": 394,
+   "w": 601,
+   "h": 156
+  },
+  "cursor": {
+   "x": 339,
+   "y": 457
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t10-notion-status-header",
+  "dir": "t10-notion-status-header",
+  "app": "Chromium (Notion)",
+  "kind": "table",
+  "label": "Status column header",
+  "utterance": "what is this column?",
+  "box": {
+   "x": 204,
+   "y": 454,
+   "w": 100,
+   "h": 36
+  },
+  "cursor": {
+   "x": 250,
+   "y": 470
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t11-notion-entry-row",
+  "dir": "t11-notion-entry-row",
+  "app": "Chromium (Notion)",
+  "kind": "table",
+  "label": "Entry 2 row",
+  "utterance": "open this entry",
+  "box": {
+   "x": 104,
+   "y": 454,
+   "w": 300,
+   "h": 36
+  },
+  "cursor": {
+   "x": 266,
+   "y": 473
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t12-wiki-companies-row",
+  "dir": "t12-wiki-companies-row",
+  "app": "Chromium (Wikipedia)",
+  "kind": "table",
+  "label": "Walmart row in largest companies table",
+  "utterance": "track this company",
+  "box": {
+   "x": 264,
+   "y": 433,
+   "w": 911,
+   "h": 33
+  },
+  "cursor": {
+   "x": 697,
+   "y": 449
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t13-wiki-companies-revenue-header",
+  "dir": "t13-wiki-companies-revenue-header",
+  "app": "Chromium (Wikipedia)",
+  "kind": "table",
+  "label": "Revenue column header",
+  "utterance": "what does this column mean?",
+  "box": {
+   "x": 653,
+   "y": 426,
+   "w": 80,
+   "h": 46
+  },
+  "cursor": {
+   "x": 686,
+   "y": 445
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t14-wiki-seattle-temp-row",
+  "dir": "t14-wiki-seattle-temp-row",
+  "app": "Chromium (Wikipedia)",
+  "kind": "table",
+  "label": "Seattle mean daily maximum temperature row",
+  "utterance": "track this",
+  "box": {
+   "x": 265,
+   "y": 427,
+   "w": 911,
+   "h": 46
+  },
+  "cursor": {
+   "x": 683,
+   "y": 448
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t15-wiki-warming-chart",
+  "dir": "t15-wiki-warming-chart",
+  "app": "Chromium (Wikipedia)",
+  "kind": "chart",
+  "label": "Common Era global temperature chart",
+  "utterance": "what does this chart show?",
+  "box": {
+   "x": 830,
+   "y": 321,
+   "w": 342,
+   "h": 257
+  },
+  "cursor": {
+   "x": 983,
+   "y": 436
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t16-slack-pricing-pro-price",
+  "dir": "t16-slack-pricing-pro-price",
+  "app": "Chromium (Slack)",
+  "kind": "text",
+  "label": "Pro plan price",
+  "utterance": "track this price",
+  "box": {
+   "x": 505,
+   "y": 424,
+   "w": 135,
+   "h": 52
+  },
+  "cursor": {
+   "x": 576,
+   "y": 451
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t17-slack-pricing-cta",
+  "dir": "t17-slack-pricing-cta",
+  "app": "Chromium (Slack)",
+  "kind": "button",
+  "label": "Pro plan Get started button",
+  "utterance": "start this plan",
+  "box": {
+   "x": 429,
+   "y": 421,
+   "w": 274,
+   "h": 58
+  },
+  "cursor": {
+   "x": 573,
+   "y": 451
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t18-vercel-pricing-pro-price",
+  "dir": "t18-vercel-pricing-pro-price",
+  "app": "Chromium (Vercel)",
+  "kind": "text",
+  "label": "Pro plan price $20/mo",
+  "utterance": "what does this plan cost?",
+  "box": {
+   "x": 520,
+   "y": 422,
+   "w": 98,
+   "h": 56
+  },
+  "cursor": {
+   "x": 566,
+   "y": 448
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t19-notion-pricing-plus",
+  "dir": "t19-notion-pricing-plus",
+  "app": "Chromium (Notion)",
+  "kind": "text",
+  "label": "Plus plan price",
+  "utterance": "track this price",
+  "box": {
+   "x": 433,
+   "y": 476,
+   "w": 40,
+   "h": 28
+  },
+  "cursor": {
+   "x": 453,
+   "y": 490
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t20-notion-pricing-cta",
+  "dir": "t20-notion-pricing-cta",
+  "app": "Chromium (Notion)",
+  "kind": "button",
+  "label": "Get Notion free button",
+  "utterance": "sign me up",
+  "box": {
+   "x": 1284,
+   "y": 14,
+   "w": 132,
+   "h": 36
+  },
+  "cursor": {
+   "x": 1357,
+   "y": 34
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t21-owid-life-expectancy-chart",
+  "dir": "t21-owid-life-expectancy-chart",
+  "app": "Chromium (Our World in Data)",
+  "kind": "chart",
+  "label": "life expectancy line chart",
+  "utterance": "what does this chart show?",
+  "box": {
+   "x": 80,
+   "y": 100,
+   "w": 1280,
+   "h": 680
+  },
+  "cursor": {
+   "x": 703,
+   "y": 430
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ },
+ {
+  "id": "t22-owid-chart-title",
+  "dir": "t22-owid-chart-title",
+  "app": "Chromium (Our World in Data)",
+  "kind": "text",
+  "label": "chart title",
+  "utterance": "explain this chart title",
+  "box": {
+   "x": 81,
+   "y": 101,
+   "w": 957,
+   "h": 91
+  },
+  "cursor": {
+   "x": 490,
+   "y": 140
+  },
+  "imageSize": {
+   "w": 1440,
+   "h": 900
+  },
+  "hasDom": true,
+  "hasAx": true
+ }
+]

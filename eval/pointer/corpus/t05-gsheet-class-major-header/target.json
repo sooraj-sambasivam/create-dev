@@ -1,0 +1,47 @@
+{
+ "id": "t05-gsheet-class-major-header",
+ "app": "Chromium (Google Sheets)",
+ "kind": "table",
+ "label": "Major column header cell",
+ "utterance": "what does this column mean?",
+ "url": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/htmlview",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 530,
+  "y": 53,
+  "w": 121,
+  "h": 35
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 581,
+  "y": 68
+ },
+ "collectedAt": "2026-10-18T07:32:59.042Z",
+ "boxPage": {
+  "x": 530,
+  "y": 53,
+  "w": 121,
+  "h": 35
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 900,
+  "capturedHeight": 900,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

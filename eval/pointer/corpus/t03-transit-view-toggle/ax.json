@@ -1,0 +1,512 @@
+{
+ "role": "AXWebArea",
+ "title": "Point to point view toggle",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "button",
+   "title": "View schedule in Point to point format",
+   "frame": {
+    "x": 1249,
+    "y": 426,
+    "w": 134,
+    "h": 48
+   }
+  },
+  {
+   "role": "main",
+   "frame": {
+    "x": 24,
+    "y": 183,
+    "w": 1392,
+    "h": 2099
+   }
+  },
+  {
+   "role": "button",
+   "title": "Scroll table right",
+   "frame": {
+    "x": 1385,
+    "y": 489,
+    "w": 30,
+    "h": 49
+   }
+  },
+  {
+   "role": "image",
+   "title": "Scroll table right",
+   "frame": {
+    "x": 1393,
+    "y": 506,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 1305,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "button",
+   "title": "View schedule in Table format",
+   "frame": {
+    "x": 1115,
+    "y": 426,
+    "w": 134,
+    "h": 48
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 1145,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 1305,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 1145,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 1305,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 1145,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "tab",
+   "title": "More info",
+   "frame": {
+    "x": 937,
+    "y": 313,
+    "w": 280,
+    "h": 40
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 985,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 1305,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 1145,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 985,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 985,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 1305,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 1145,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 985,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip arrives Northgate at 5:38 a.m.",
+   "frame": {
+    "x": 1305,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Northgate.",
+   "frame": {
+    "x": 1145,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 825,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 985,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 825,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 825,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Northgate.",
+   "frame": {
+    "x": 985,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 825,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 825,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "tab",
+   "title": "Alerts",
+   "frame": {
+    "x": 636,
+    "y": 313,
+    "w": 280,
+    "h": 40
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Northgate.",
+   "frame": {
+    "x": 825,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 665,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 731,
+    "y": 321,
+    "w": 20,
+    "h": 20
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 665,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "tablist",
+   "frame": {
+    "x": 24,
+    "y": 304,
+    "w": 1392,
+    "h": 54
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 665,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "button",
+   "title": "Show  map",
+   "frame": {
+    "x": 24,
+    "y": 246,
+    "w": 1392,
+    "h": 48
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 665,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "button",
+   "title": "Find schedule",
+   "frame": {
+    "x": 707,
+    "y": -13,
+    "w": 265,
+    "h": 44
+   }
+  },
+  {
+   "role": "navigation",
+   "title": "Breadcrumb",
+   "frame": {
+    "x": 0,
+    "y": 116,
+    "w": 1440,
+    "h": 67
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 24,
+    "y": 132,
+    "w": 1392,
+    "h": 27
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 665,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Northgate.",
+   "frame": {
+    "x": 665,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Lynnwood City Center.",
+   "frame": {
+    "x": 505,
+    "y": 540,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "button",
+   "title": "Choose date, Selected date is October 18, 2026",
+   "frame": {
+    "x": 552,
+    "y": 427,
+    "w": 48,
+    "h": 46
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Mountlake Terrace.",
+   "frame": {
+    "x": 505,
+    "y": 600,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline North/185th.",
+   "frame": {
+    "x": 505,
+    "y": 660,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Shoreline South/148th.",
+   "frame": {
+    "x": 505,
+    "y": 720,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Pinehurst.",
+   "frame": {
+    "x": 505,
+    "y": 780,
+    "w": 160,
+    "h": 60
+   }
+  },
+  {
+   "role": "cell",
+   "title": "This trip does not serve Northgate.",
+   "frame": {
+    "x": 505,
+    "y": 840,
+    "w": 160,
+    "h": 60
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 89
+ }
+}

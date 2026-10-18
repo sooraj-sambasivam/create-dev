@@ -1,0 +1,93 @@
+{
+ "note": "Hit: structural providers (AX/DOM) answer inside the 85% skip gate, so no pixel provider runs. Fast path.",
+ "target": {
+  "id": "t07-gsheet-sales-total",
+  "app": "Chromium (Google Sheets)",
+  "kind": "text",
+  "utterance": "track this number",
+  "groundTruthBox": {
+   "x": 130,
+   "y": 241,
+   "w": 101,
+   "h": 21
+  },
+  "cursor": {
+   "x": 186,
+   "y": 253
+  }
+ },
+ "wallMs": 24,
+ "verdict": "hit",
+ "iou": 1,
+ "ask": null,
+ "result": {
+  "box": {
+   "x": 130,
+   "y": 241,
+   "w": 101,
+   "h": 21
+  },
+  "kind": "table",
+  "label": "$1,020",
+  "source": "dom",
+  "confidence": 0.9
+ },
+ "trace": {
+  "id": "tr_mvdj0npseb63np",
+  "startedAt": 1792309866256,
+  "input": {
+   "source": "app",
+   "hasImage": true,
+   "imageBytes": 30850,
+   "imageSize": {
+    "w": 1440,
+    "h": 900
+   },
+   "cursor": {
+    "x": 186,
+    "y": 253
+   },
+   "hasAx": true,
+   "hasDom": true,
+   "utteranceChars": 17
+  },
+  "stages": [
+   {
+    "stage": "capture",
+    "provider": "app",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "ax",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "dom",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "fuse",
+    "ms": 0,
+    "ok": true
+   }
+  ],
+  "result": {
+   "box": {
+    "x": 130,
+    "y": 241,
+    "w": 101,
+    "h": 21
+   },
+   "kind": "table",
+   "label": "$1,020",
+   "source": "dom",
+   "confidence": 0.9
+  }
+ }
+}

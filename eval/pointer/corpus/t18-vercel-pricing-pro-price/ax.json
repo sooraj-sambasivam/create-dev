@@ -1,0 +1,390 @@
+{
+ "role": "AXWebArea",
+ "title": "Pro plan price $20/mo",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "main",
+   "frame": {
+    "x": 0,
+    "y": 33,
+    "w": 1440,
+    "h": 14672
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 520,
+    "y": 494,
+    "w": 352,
+    "h": 48
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 520,
+    "y": 625,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 520,
+    "y": 657,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Scale your app, control your costs",
+   "frame": {
+    "x": 24,
+    "y": 153,
+    "w": 920,
+    "h": 128
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 520,
+    "y": 689,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 520,
+    "y": 721,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 520,
+    "y": 753,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 57,
+    "y": 494,
+    "w": 352,
+    "h": 48
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 520,
+    "y": 785,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "link",
+   "title": "Start a free trial",
+   "frame": {
+    "x": 520,
+    "y": 835,
+    "w": 140,
+    "h": 36
+   }
+  },
+  {
+   "role": "banner",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 64
+   }
+  },
+  {
+   "role": "link",
+   "title": "Pricing",
+   "frame": {
+    "x": 353,
+    "y": 16,
+    "w": 68,
+    "h": 32
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 984,
+    "y": 625,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 984,
+    "y": 657,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "link",
+   "title": "Enterprise",
+   "frame": {
+    "x": 264,
+    "y": 16,
+    "w": 89,
+    "h": 32
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 984,
+    "y": 689,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 984,
+    "y": 721,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 57,
+    "y": 593,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "navigation",
+   "title": "Main navigation",
+   "frame": {
+    "x": 65,
+    "y": 0,
+    "w": 356,
+    "h": 64
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 984,
+    "y": 753,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 57,
+    "y": 625,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 57,
+    "y": 657,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "button",
+   "title": "Resources",
+   "frame": {
+    "x": 159,
+    "y": 16,
+    "w": 104,
+    "h": 32
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 984,
+    "y": 785,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 57,
+    "y": 689,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 57,
+    "y": 721,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 57,
+    "y": 753,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "link",
+   "title": "Skip to content",
+   "frame": {
+    "x": 47,
+    "y": 63,
+    "w": 120,
+    "h": 24
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 984,
+    "y": 494,
+    "w": 352,
+    "h": 48
+   }
+  },
+  {
+   "role": "link",
+   "title": "Start deploying",
+   "frame": {
+    "x": 57,
+    "y": 835,
+    "w": 137,
+    "h": 36
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 57,
+    "y": 785,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "role": "button",
+   "title": "Products",
+   "frame": {
+    "x": 65,
+    "y": 16,
+    "w": 94,
+    "h": 32
+   }
+  },
+  {
+   "role": "link",
+   "title": "Get a demo",
+   "frame": {
+    "x": 984,
+    "y": 835,
+    "w": 111,
+    "h": 36
+   }
+  },
+  {
+   "role": "link",
+   "title": "Vercel",
+   "frame": {
+    "x": 16,
+    "y": 15,
+    "w": 37,
+    "h": 34
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 24,
+    "y": 23,
+    "w": 21,
+    "h": 18
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": -7,
+    "y": 0,
+    "w": 14,
+    "h": 7
+   }
+  },
+  {
+   "role": "link",
+   "title": "Get a Demo",
+   "frame": {
+    "x": 1152,
+    "y": 16,
+    "w": 101,
+    "h": 32
+   }
+  },
+  {
+   "role": "link",
+   "title": "Log In",
+   "frame": {
+    "x": 1265,
+    "y": 16,
+    "w": 64,
+    "h": 32
+   }
+  },
+  {
+   "role": "link",
+   "title": "Sign Up",
+   "frame": {
+    "x": 1341,
+    "y": 16,
+    "w": 75,
+    "h": 32
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 40
+ }
+}

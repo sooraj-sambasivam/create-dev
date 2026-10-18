@@ -1,0 +1,47 @@
+{
+ "id": "t20-notion-pricing-cta",
+ "app": "Chromium (Notion)",
+ "kind": "button",
+ "label": "Get Notion free button",
+ "utterance": "sign me up",
+ "url": "https://www.notion.com/pricing",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 1284,
+  "y": 14,
+  "w": 132,
+  "h": 36
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 1357,
+  "y": 34
+ },
+ "collectedAt": "2026-10-18T07:34:37.519Z",
+ "boxPage": {
+  "x": 1284,
+  "y": 14,
+  "w": 132,
+  "h": 36
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 7407,
+  "capturedHeight": 2400,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

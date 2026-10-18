@@ -1,0 +1,93 @@
+{
+ "note": "Demo-path entry (lift a schedule from a web target). The returned box is a single cell, not the table: a wrong box returned with confidence 0.9 and no prompt. This is the open table-vs-cell defect.",
+ "target": {
+  "id": "t01-transit-timetable",
+  "app": "Chromium (Sound Transit)",
+  "kind": "table",
+  "utterance": "track this train",
+  "groundTruthBox": {
+   "x": 25,
+   "y": 420,
+   "w": 1415,
+   "h": 60
+  },
+  "cursor": {
+   "x": 625,
+   "y": 446
+  }
+ },
+ "wallMs": 2,
+ "verdict": "WRONG BOX, no Which-one prompt",
+ "iou": 0.03,
+ "ask": null,
+ "result": {
+  "box": {
+   "x": 535,
+   "y": 442,
+   "w": 100,
+   "h": 24
+  },
+  "kind": "table",
+  "label": ":",
+  "source": "dom",
+  "confidence": 0.9
+ },
+ "trace": {
+  "id": "tr_mvdj0nssklhx04",
+  "startedAt": 1792309866364,
+  "input": {
+   "source": "app",
+   "hasImage": true,
+   "imageBytes": 69430,
+   "imageSize": {
+    "w": 1440,
+    "h": 900
+   },
+   "cursor": {
+    "x": 625,
+    "y": 446
+   },
+   "hasAx": true,
+   "hasDom": true,
+   "utteranceChars": 16
+  },
+  "stages": [
+   {
+    "stage": "capture",
+    "provider": "app",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "ax",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "dom",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "fuse",
+    "ms": 0,
+    "ok": true
+   }
+  ],
+  "result": {
+   "box": {
+    "x": 535,
+    "y": 442,
+    "w": 100,
+    "h": 24
+   },
+   "kind": "table",
+   "label": ":",
+   "source": "dom",
+   "confidence": 0.9
+  }
+ }
+}

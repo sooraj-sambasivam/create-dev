@@ -32,6 +32,13 @@ private struct FlexString: Decodable {
     }
 }
 
+/// What the Option-hold pipeline is showing near the notch.
+enum LocateState: Equatable {
+    case label(kind: String, text: String, tip: String, working: String?)
+    case ask(prompt: String, options: [String], tip: String)
+    case error(String, tip: String)
+}
+
 /// Shared motion: one spring everywhere, matched to the web app (response 0.35, damping 0.8).
 enum Motion {
     static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
@@ -49,6 +56,9 @@ final class TrayStore: ObservableObject {
     @Published private(set) var items: [TrayItem] = []
     @Published private(set) var online = false
     @Published var status: String? = nil
+    @Published var locate: LocateState? = nil
+    /// Index of the "Which one?" button pressed.
+    var onPick: ((Int) -> Void)?
     /// Fired with the count of newly seen items (not on the first successful poll).
     var onNewItems: ((Int) -> Void)?
 

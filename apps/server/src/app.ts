@@ -18,6 +18,7 @@ import { askRouter } from "./ask/route";
 import { formsRouter } from "./forms/route";
 import { liftRouter } from "./lift/route";
 import { extractRouter } from "./extract/route";
+import { locateRouter } from "./pipeline/route";
 import { trayRouter } from "./tray/route";
 import { DEFAULT_MODEL } from "./ai/claude";
 import { allowedOrigins, isAllowedOrigin } from "./middleware/origins";
@@ -62,6 +63,7 @@ export function createApp(): express.Express {
   app.use("/api", formsRouter); // own 64kb JSON parser
 app.use("/api", liftRouter); // own 1mb JSON parser
 app.use("/api", extractRouter); // own big JSON parser
+  app.use("/api", locateRouter); // own big JSON parser
   app.use("/api", trayRouter); // own 8kb JSON parser
   app.use(express.json({ limit: "3mb" }));
 

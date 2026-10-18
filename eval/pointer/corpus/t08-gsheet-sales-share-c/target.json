@@ -1,0 +1,47 @@
+{
+ "id": "t08-gsheet-sales-share-c",
+ "app": "Chromium (Google Sheets)",
+ "kind": "text",
+ "label": "43.1% share cell for category C",
+ "utterance": "what does this percentage mean?",
+ "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4CmyhVsSYtVtK8MwyZ6WqkcEf1oxCx15zq-dZDitvCZt7alqYBy-ydnxJiApR-gD7oLsDY4s4V_sa/pubhtml",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 231,
+  "y": 199,
+  "w": 101,
+  "h": 21
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 279,
+  "y": 209
+ },
+ "collectedAt": "2026-10-18T07:33:14.726Z",
+ "boxPage": {
+  "x": 231,
+  "y": 199,
+  "w": 101,
+  "h": 21
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 900,
+  "capturedHeight": 900,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

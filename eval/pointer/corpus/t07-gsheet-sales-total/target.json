@@ -1,0 +1,47 @@
+{
+ "id": "t07-gsheet-sales-total",
+ "app": "Chromium (Google Sheets)",
+ "kind": "text",
+ "label": "Total sales cell $1,020",
+ "utterance": "track this number",
+ "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4CmyhVsSYtVtK8MwyZ6WqkcEf1oxCx15zq-dZDitvCZt7alqYBy-ydnxJiApR-gD7oLsDY4s4V_sa/pubhtml",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 130,
+  "y": 241,
+  "w": 101,
+  "h": 21
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 186,
+  "y": 253
+ },
+ "collectedAt": "2026-10-18T07:33:09.608Z",
+ "boxPage": {
+  "x": 130,
+  "y": 241,
+  "w": 101,
+  "h": 21
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 900,
+  "capturedHeight": 900,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

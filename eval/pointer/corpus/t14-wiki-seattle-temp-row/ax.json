@@ -1,0 +1,491 @@
+{
+ "role": "AXWebArea",
+ "title": "Seattle mean daily maximum temperature row",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "table",
+   "frame": {
+    "x": 264,
+    "y": -30,
+    "w": 912,
+    "h": 907
+   }
+  },
+  {
+   "role": "region",
+   "title": "Climate",
+   "frame": {
+    "x": 264,
+    "y": -1129,
+    "w": 912,
+    "h": 2006
+   }
+  },
+  {
+   "role": "region",
+   "title": "Geography",
+   "frame": {
+    "x": 264,
+    "y": -2502,
+    "w": 912,
+    "h": 3379
+   }
+  },
+  {
+   "role": "main",
+   "frame": {
+    "x": 264,
+    "y": -8793,
+    "w": 1132,
+    "h": 48479
+   }
+  },
+  {
+   "role": "link",
+   "title": "Crime",
+   "frame": {
+    "x": 60,
+    "y": 425,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "International relations",
+   "frame": {
+    "x": 60,
+    "y": 453,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Infrastructure",
+   "frame": {
+    "x": 60,
+    "y": 397,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "See also",
+   "frame": {
+    "x": 60,
+    "y": 481,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Media",
+   "frame": {
+    "x": 60,
+    "y": 369,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Notes",
+   "frame": {
+    "x": 60,
+    "y": 509,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 425,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 453,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 397,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Education",
+   "frame": {
+    "x": 60,
+    "y": 341,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 481,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "References",
+   "frame": {
+    "x": 60,
+    "y": 537,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 369,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 509,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Government and politics",
+   "frame": {
+    "x": 60,
+    "y": 313,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 48,
+    "y": 61,
+    "w": 176,
+    "h": 588
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 341,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 537,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Bibliography",
+   "frame": {
+    "x": 60,
+    "y": 565,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "navigation",
+   "title": "Contents",
+   "frame": {
+    "x": 32,
+    "y": 24,
+    "w": 208,
+    "h": 625
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 313,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Parks and recreation",
+   "frame": {
+    "x": 60,
+    "y": 285,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 565,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Further reading",
+   "frame": {
+    "x": 60,
+    "y": 593,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 285,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Sports",
+   "frame": {
+    "x": 60,
+    "y": 257,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 593,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "External links",
+   "frame": {
+    "x": 60,
+    "y": 621,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 257,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 621,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Religion",
+   "frame": {
+    "x": 60,
+    "y": 229,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 229,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Culture",
+   "frame": {
+    "x": 60,
+    "y": 201,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 201,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Economy",
+   "frame": {
+    "x": 60,
+    "y": 173,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 173,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Demographics",
+   "frame": {
+    "x": 60,
+    "y": 145,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 1216,
+    "y": 350,
+    "w": 164,
+    "h": 102
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 145,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "link",
+   "title": "Geography",
+   "frame": {
+    "x": 60,
+    "y": 117,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 117,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "button",
+   "title": "Toggle Infrastructure subsection",
+   "frame": {
+    "x": 37,
+    "y": 398,
+    "w": 22,
+    "h": 22
+   }
+  },
+  {
+   "role": "list",
+   "frame": {
+    "x": 1216,
+    "y": 239,
+    "w": 164,
+    "h": 70
+   }
+  },
+  {
+   "role": "link",
+   "title": "History",
+   "frame": {
+    "x": 60,
+    "y": 89,
+    "w": 164,
+    "h": 28
+   }
+  },
+  {
+   "role": "listitem",
+   "frame": {
+    "x": 48,
+    "y": 89,
+    "w": 176,
+    "h": 28
+   }
+  },
+  {
+   "role": "navigation",
+   "title": "Appearance",
+   "frame": {
+    "x": 1200,
+    "y": 24,
+    "w": 196,
+    "h": 428
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 61
+ }
+}

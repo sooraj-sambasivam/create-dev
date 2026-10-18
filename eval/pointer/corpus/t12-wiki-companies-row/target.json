@@ -1,0 +1,47 @@
+{
+ "id": "t12-wiki-companies-row",
+ "app": "Chromium (Wikipedia)",
+ "kind": "table",
+ "label": "Walmart row in largest companies table",
+ "utterance": "track this company",
+ "url": "https://en.wikipedia.org/wiki/List_of_largest_companies_by_revenue",
+ "groundTruth": "dom-rect",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 264,
+  "y": 433,
+  "w": 911,
+  "h": 33
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 697,
+  "y": 449
+ },
+ "collectedAt": "2026-10-18T07:36:31.478Z",
+ "boxPage": {
+  "x": 264,
+  "y": 822,
+  "w": 911,
+  "h": 33
+ },
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": "dom.json",
+  "ax": "ax.json"
+ },
+ "fullPage": {
+  "pageHeight": 6145,
+  "capturedHeight": 2400,
+  "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ }
+}

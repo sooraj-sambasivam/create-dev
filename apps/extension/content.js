@@ -518,8 +518,10 @@
       const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), Math.max(500, CRAWL_MS - (Date.now() - t0)));
       let html = "";
       try {
-        const res = await fetch(url, { credentials: "include", signal: ctl.signal });
+        const res = await fetch(url, { credentials: "same-origin", redirect: "follow", signal: ctl.signal });
         if (!res.ok || !/html/i.test(res.headers.get("content-type") || "")) break;
+        // A redirect off the page's origin ends the crawl: never read or merge another site's content.
+        if (res.url && new URL(res.url).origin !== location.origin) break;
         base = res.url || url;
         html = (await res.text()).slice(0, 3_000_000);
       } catch { break; } finally { clearTimeout(timer); }
@@ -617,7 +619,7 @@
   /* ---------- state ---------- */
   let sticky = false, altDown = false, altUsed = false, altAt = 0, active = false, locked = null, busy = false;
   let mx = -1, my = -1, raf = 0, hover = null, recognition = null, listening = false;
-  let drawing = null, suppressClick = false, crawlOn = false;
+  let drawing = null, suppressClick = false, crawlOn = false, moveAt = 0, labelKey = null;
   const state = (s) => { host.dataset.state = s; };
   state("idle");
   const editable = (el) => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
@@ -628,8 +630,17 @@
     if (!active || locked || drawing) return;
     const el = mx >= 0 ? pick(mx, my) : null;
     hover = el ? detect(el) : null;
-    if (hover) { const r = showRing(hover.el.getBoundingClientRect()); setChip(hover.label, { rect: r }); state("hover"); }
-    else { hideEl(ring); if (sticky) setChip("Point at or circle a table, list, cards or chart"); else hideEl(chip); state("seeking"); }
+    if (hover) {
+      const r = showRing(hover.el.getBoundingClientRect()); setChip(hover.label, { rect: r }); state("hover");
+      // hover -> label latency: from the pointer move that led here to the label being painted.
+      if (labelKey !== hover.el && moveAt) {
+        const ms = performance.now() - moveAt; labelKey = hover.el;
+        host.dataset.hoverMs = String(Math.round(ms));
+        track("locate", "client:hover-label", ms, ms < 300 ? undefined : "over 300 ms budget");
+      }
+      moveAt = 0;
+    } else {
+      labelKey = null; moveAt = 0; hideEl(ring); if (sticky) setChip("Point at or circle a table, list, cards or chart"); else hideEl(chip); state("seeking"); }
   }
   const schedule = () => { if (!raf) raf = requestAnimationFrame(refresh); };
 
@@ -722,7 +733,7 @@
   for (const t of ["selectstart", "dragstart"]) addEventListener(t, (e) => { if (drawing) e.preventDefault(); }, true);
 
   /* ---------- input handlers (always on, cheap) ---------- */
-  addEventListener("mousemove", (e) => { mx = e.clientX; my = e.clientY; if (active && !locked && !drawing) schedule(); }, true);
+  addEventListener("mousemove", (e) => { mx = e.clientX; my = e.clientY; if (!moveAt) moveAt = performance.now(); if (active && !locked && !drawing) schedule(); }, true);
   addEventListener("scroll", () => { if (active && !locked && !drawing) schedule(); }, true);
   addEventListener("blur", () => { if (altDown && !locked) { altDown = false; if (drawing) endDraw(true); if (!sticky) deactivate(); } });
   addEventListener("keydown", (e) => {
@@ -796,6 +807,11 @@
       chrome.runtime.sendMessage(msg, (res) => resolve(res ?? { ok: false, error: chrome.runtime.lastError?.message || "No answer from the extension" }));
     } catch (err) { resolve({ ok: false, error: err instanceof Error ? err.message : "Extension was reloaded; refresh this page" }); }
   });
+  /** Client stage timing: performance.measure plus a message to the background, which posts it to /api/traces. */
+  function track(stage, provider, ms, error) {
+    try { performance.measure(`create:${stage}:${provider}`, { start: performance.now() - ms, duration: ms }); } catch {}
+    send({ type: "trace", stage, provider, ms, ok: !error || /budget/.test(error), ...(error ? { error } : {}) }).then((r) => { if (!r?.ok) console.info("Create: trace not recorded", r?.error); });
+  }
   const frames = (n) => new Promise((r) => { const step = () => (n-- > 0 ? requestAnimationFrame(step) : r()); step(); });
 
   /** Tab screenshot crop of the target (the loop's bounding box for a region). */
@@ -818,7 +834,7 @@
   async function submit() {
     if (busy || !locked) return;
     busy = true;
-    const d = locked, value = clean(input.value) || DEFAULT;
+    const d = locked, value = clean(input.value) || DEFAULT, t0 = performance.now();
     const instruction = `Turn this into ${value}`.slice(0, 1000);
     const wantAll = d.kind === "dom" && d.el && (crawlOn || WANT_ALL.test(value));
     stopListening();
@@ -826,6 +842,7 @@
     state("working");
     const r = rectOf(d);
     const fail = (msg) => {
+      track("act", "client:command-done", performance.now() - t0, msg);
       busy = false; state("error");
       setChip(msg, { error: true, rect: r });
       showEl(pill, "flex"); input.focus();
@@ -835,6 +852,10 @@
       const cap = await capture(d);
       if (!cap.ok) return { error: cap.error || "Could not capture that" };
       const hint = clean((d.el && (d.el.getAttribute("alt") || d.el.getAttribute("aria-label"))) || document.title).slice(0, 500);
+      // The DOM cannot say what is inside an image or a loop: ask /api/locate. A miss shows "Which one?", never a silent guess.
+      const loc = await send({ type: "locate", image: cap.image, hint, cursor: { x: Math.round(mx), y: Math.round(my) }, ...(d.el ? { dom: { tag: d.el.tagName.toLowerCase(), text: clean(d.el.textContent || "").slice(0, 2000), rect: { x: r.left, y: r.top, w: r.width, h: r.height }, selectorPath: JSON.stringify(pathOf(d.el)).slice(0, 1000) } } : {}) });
+      if (loc.ok && loc.ask) return { error: `${loc.ask} Point closer or circle it.` };
+      if (!loc.ok) console.info("Create: locate unavailable, reading the crop directly:", loc.error);
       const ex = await send({ type: "extract", image: cap.image, hint });
       if (!ex.ok) return { error: ex.error || "Could not read that" };
       const e = ex.entity;
@@ -868,6 +889,7 @@
     }
     if (!lift.ok) return fail(lift.error || "Could not build that. Is Create running?");
     state("done");
+    { const ms = performance.now() - t0; host.dataset.doneMs = String(Math.round(ms)); track("act", "client:command-done", ms); }
     setChip("Opened your app", { rect: r, progress: 1 });
     setTimeout(release, 1200);
   }

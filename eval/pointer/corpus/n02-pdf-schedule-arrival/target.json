@@ -1,0 +1,37 @@
+{
+ "id": "n02-pdf-schedule-arrival",
+ "app": "Preview (PDF, rendered)",
+ "kind": "text",
+ "label": "6:41 arrival time at University District Station",
+ "utterance": "when does the first bus arrive?",
+ "url": null,
+ "source": "eval/pointer/fixtures/schedule.pdf (printed from schedule.html via Page.printToPDF)",
+ "groundTruth": "layout-mapped: print-layout DOM rect + page offset on a CoreGraphics render; no Preview AX frame (cmux-cua daemon unavailable, Screen Recording not granted to this shell)",
+ "viewport": {
+  "w": 1440,
+  "h": 900,
+  "dpr": 1
+ },
+ "imageSize": {
+  "w": 1440,
+  "h": 900
+ },
+ "box": {
+  "x": 581,
+  "y": 320,
+  "w": 82,
+  "h": 29
+ },
+ "boxClipped": false,
+ "cursor": {
+  "x": 618,
+  "y": 332
+ },
+ "collectedAt": "2026-10-18T07:42:02.549712+00:00",
+ "files": {
+  "shot": "shot.png",
+  "shotSmall": "shot_small.png",
+  "dom": null,
+  "ax": null
+ }
+}

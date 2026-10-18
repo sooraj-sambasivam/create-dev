@@ -1,0 +1,507 @@
+{
+ "role": "AXWebArea",
+ "title": "Status column header",
+ "frame": {
+  "x": 0,
+  "y": 0,
+  "w": 1440,
+  "h": 900
+ },
+ "children": [
+  {
+   "role": "button",
+   "title": "Status",
+   "frame": {
+    "x": 204,
+    "y": 454,
+    "w": 100,
+    "h": 36
+   }
+  },
+  {
+   "role": "main",
+   "frame": {
+    "x": 0,
+    "y": 44,
+    "w": 1440,
+    "h": 856
+   }
+  },
+  {
+   "role": "link",
+   "title": "Entries",
+   "frame": {
+    "x": 104,
+    "y": 419,
+    "w": 292,
+    "h": 31
+   }
+  },
+  {
+   "role": "button",
+   "title": "Open comments",
+   "frame": {
+    "x": 188,
+    "y": 499,
+    "w": 34,
+    "h": 20
+   }
+  },
+  {
+   "role": "button",
+   "title": "Open comments",
+   "frame": {
+    "x": 188,
+    "y": 536,
+    "w": 34,
+    "h": 20
+   }
+  },
+  {
+   "role": "button",
+   "title": "Name",
+   "frame": {
+    "x": 104,
+    "y": 454,
+    "w": 100,
+    "h": 36
+   }
+  },
+  {
+   "role": "button",
+   "title": "Date",
+   "frame": {
+    "x": 304,
+    "y": 454,
+    "w": 100,
+    "h": 36
+   }
+  },
+  {
+   "role": "button",
+   "title": "Open comments",
+   "frame": {
+    "x": 188,
+    "y": 573,
+    "w": 34,
+    "h": 20
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 112,
+    "y": 500,
+    "w": 18,
+    "h": 18
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 112,
+    "y": 537,
+    "w": 18,
+    "h": 18
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Original Database",
+   "frame": {
+    "x": 102,
+    "y": 373,
+    "w": 589,
+    "h": 35
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 112,
+    "y": 574,
+    "w": 18,
+    "h": 18
+   }
+  },
+  {
+   "role": "button",
+   "title": "Add Formulas",
+   "frame": {
+    "x": 96,
+    "y": 283,
+    "w": 123,
+    "h": 28
+   }
+  },
+  {
+   "role": "button",
+   "title": "3 more properties",
+   "frame": {
+    "x": 98,
+    "y": 202,
+    "w": 146,
+    "h": 34
+   }
+  },
+  {
+   "role": "cell",
+   "title": "Status",
+   "frame": {
+    "x": 98,
+    "y": 164,
+    "w": 160,
+    "h": 34
+   }
+  },
+  {
+   "role": "cell",
+   "title": "From",
+   "frame": {
+    "x": 98,
+    "y": 126,
+    "w": 160,
+    "h": 34
+   }
+  },
+  {
+   "role": "link",
+   "title": "cleftfairy",
+   "frame": {
+    "x": 272,
+    "y": 96,
+    "w": 57,
+    "h": 17
+   }
+  },
+  {
+   "role": "button",
+   "title": "Filter",
+   "frame": {
+    "x": 605,
+    "y": 420,
+    "w": 28,
+    "h": 28
+   }
+  },
+  {
+   "role": "cell",
+   "title": "For",
+   "frame": {
+    "x": 98,
+    "y": 88,
+    "w": 160,
+    "h": 34
+   }
+  },
+  {
+   "role": "button",
+   "title": "Sort",
+   "frame": {
+    "x": 633,
+    "y": 420,
+    "w": 28,
+    "h": 28
+   }
+  },
+  {
+   "role": "button",
+   "title": "Search",
+   "frame": {
+    "x": 661,
+    "y": 420,
+    "w": 28,
+    "h": 28
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Original Link",
+   "frame": {
+    "x": 102,
+    "y": 874,
+    "w": 589,
+    "h": 35
+   }
+  },
+  {
+   "role": "link",
+   "title": "Notion Examples",
+   "frame": {
+    "x": 115,
+    "y": 10,
+    "w": 139,
+    "h": 24
+   }
+  },
+  {
+   "role": "button",
+   "title": "🔁 Synced Database Views",
+   "frame": {
+    "x": 260,
+    "y": 10,
+    "w": 186,
+    "h": 24
+   }
+  },
+  {
+   "role": "link",
+   "title": "Ben Smith",
+   "frame": {
+    "x": 12,
+    "y": 10,
+    "w": 97,
+    "h": 24
+   }
+  },
+  {
+   "role": "image",
+   "title": "Page icon",
+   "frame": {
+    "x": 104,
+    "y": -68,
+    "w": 78,
+    "h": 102
+   }
+  },
+  {
+   "role": "image",
+   "title": "Callout icon",
+   "frame": {
+    "x": 768,
+    "y": 441,
+    "w": 20,
+    "h": 26
+   }
+  },
+  {
+   "role": "row",
+   "title": "Status",
+   "frame": {
+    "x": 98,
+    "y": 164,
+    "w": 1246,
+    "h": 34
+   }
+  },
+  {
+   "role": "table",
+   "title": "Page properties",
+   "frame": {
+    "x": 98,
+    "y": 88,
+    "w": 1246,
+    "h": 110
+   }
+  },
+  {
+   "role": "row",
+   "title": "From",
+   "frame": {
+    "x": 98,
+    "y": 126,
+    "w": 1246,
+    "h": 34
+   }
+  },
+  {
+   "role": "row",
+   "title": "For",
+   "frame": {
+    "x": 98,
+    "y": 88,
+    "w": 1246,
+    "h": 34
+   }
+  },
+  {
+   "role": "tab",
+   "title": "Table",
+   "frame": {
+    "x": 781,
+    "y": 643,
+    "w": 85,
+    "h": 32
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 789,
+    "y": 725,
+    "w": 18,
+    "h": 18
+   }
+  },
+  {
+   "role": "button",
+   "title": "Name",
+   "frame": {
+    "x": 781,
+    "y": 679,
+    "w": 100,
+    "h": 36
+   }
+  },
+  {
+   "role": "cell",
+   "title": "Archive",
+   "frame": {
+    "x": 262,
+    "y": 164,
+    "w": 1082,
+    "h": 34
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 789,
+    "y": 762,
+    "w": 18,
+    "h": 18
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Synced Database Views",
+   "frame": {
+    "x": 96,
+    "y": 32,
+    "w": 1248,
+    "h": 48
+   }
+  },
+  {
+   "role": "cell",
+   "title": "Reddit",
+   "frame": {
+    "x": 262,
+    "y": 126,
+    "w": 1082,
+    "h": 34
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 789,
+    "y": 799,
+    "w": 18,
+    "h": 18
+   }
+  },
+  {
+   "role": "banner",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 44
+   }
+  },
+  {
+   "role": "cell",
+   "title": "cleftfairy",
+   "frame": {
+    "x": 262,
+    "y": 88,
+    "w": 1082,
+    "h": 34
+   }
+  },
+  {
+   "role": "button",
+   "title": "Open comments",
+   "frame": {
+    "x": 865,
+    "y": 724,
+    "w": 34,
+    "h": 20
+   }
+  },
+  {
+   "role": "tab",
+   "title": "Board",
+   "frame": {
+    "x": 867,
+    "y": 643,
+    "w": 89,
+    "h": 32
+   }
+  },
+  {
+   "role": "button",
+   "title": "Open comments",
+   "frame": {
+    "x": 865,
+    "y": 761,
+    "w": 34,
+    "h": 20
+   }
+  },
+  {
+   "role": "button",
+   "title": "Open comments",
+   "frame": {
+    "x": 865,
+    "y": 798,
+    "w": 34,
+    "h": 20
+   }
+  },
+  {
+   "role": "button",
+   "title": "Status",
+   "frame": {
+    "x": 881,
+    "y": 679,
+    "w": 100,
+    "h": 36
+   }
+  },
+  {
+   "role": "tablist",
+   "frame": {
+    "x": 781,
+    "y": 639,
+    "w": 462,
+    "h": 40
+   }
+  },
+  {
+   "role": "tab",
+   "title": "Calendar",
+   "frame": {
+    "x": 958,
+    "y": 643,
+    "w": 109,
+    "h": 32
+   }
+  },
+  {
+   "role": "heading",
+   "title": "Linked Version as a Child Block",
+   "frame": {
+    "x": 749,
+    "y": 373,
+    "w": 589,
+    "h": 35
+   }
+  },
+  {
+   "role": "button",
+   "title": "Date",
+   "frame": {
+    "x": 981,
+    "y": 679,
+    "w": 100,
+    "h": 36
+   }
+  }
+ ],
+ "_meta": {
+  "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
+  "totalNodesInViewport": 62
+ }
+}

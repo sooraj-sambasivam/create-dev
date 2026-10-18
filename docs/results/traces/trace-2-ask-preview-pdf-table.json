@@ -1,0 +1,90 @@
+{
+ "note": "Which one? path: a PDF has no AX/DOM; Perceptron/Gemini/Claude have no key on this server, Jev's box did not clear the 0.4 bar, so the pointer asks instead of guessing.",
+ "target": {
+  "id": "n01-pdf-schedule-table",
+  "app": "Preview (PDF, rendered)",
+  "kind": "table",
+  "utterance": "track this schedule",
+  "groundTruthBox": {
+   "x": 370,
+   "y": 145,
+   "w": 701,
+   "h": 205
+  },
+  "cursor": {
+   "x": 780,
+   "y": 252
+  }
+ },
+ "wallMs": 102,
+ "verdict": "asked 'Which one?'",
+ "iou": 0,
+ "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+ "result": null,
+ "trace": {
+  "id": "tr_mvdj0nspskhw35",
+  "startedAt": 1792309866261,
+  "input": {
+   "source": "app",
+   "hasImage": true,
+   "imageBytes": 60610,
+   "imageSize": {
+    "w": 1440,
+    "h": 900
+   },
+   "cursor": {
+    "x": 780,
+    "y": 252
+   },
+   "hasAx": false,
+   "hasDom": false,
+   "utteranceChars": 19
+  },
+  "stages": [
+   {
+    "stage": "capture",
+    "provider": "app",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "ax",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "dom",
+    "ms": 0,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "perceptron",
+    "ms": 0,
+    "ok": false,
+    "error": "PERCEPTRON_API_KEY not set"
+   },
+   {
+    "stage": "locate",
+    "provider": "jev",
+    "ms": 99,
+    "ok": true
+   },
+   {
+    "stage": "locate",
+    "provider": "gemini",
+    "ms": 0,
+    "ok": false,
+    "error": "GEMINI_API_KEY not set"
+   },
+   {
+    "stage": "locate",
+    "provider": "fuse",
+    "ms": 0,
+    "ok": true
+   }
+  ]
+ }
+}

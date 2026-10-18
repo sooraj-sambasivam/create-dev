@@ -30,12 +30,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.onNewItems = { [weak self] _ in self?.peek() }
         store.start()
         capture.store = store
+        store.onPick = { [weak self] i in self?.capture.pick(i) }
+        capture.onPeek = { [weak self] s in self?.peek(seconds: s) }
+        AXProbe.ensureTrust(prompt: true)   // one-time Accessibility grant
         capture.onStatus = { [weak self] text in
             self?.store.status = text
             if text != nil { self?.peek(seconds: 4) }
         }
 
-        // Hover + Option-hold are polled: no event-tap, no Accessibility permission needed.
+        // Hover + Option-hold are polled (no event-tap). Accessibility is used only for the AX probe at the cursor.
         tick = Timer.scheduledTimer(withTimeInterval: 0.06, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.onTick() }
         }

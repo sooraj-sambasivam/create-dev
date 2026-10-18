@@ -171,6 +171,16 @@ try {
   }
 
   await liftFlow("route44", "route-44-schedule.html", "#timetable tbody tr:nth-child(5)", /^Schedule · 12 rows × 4 cols$/, 12, false);
+  await step("trace: hover->label and command->done stages were produced", async () => {
+    const r = await swc.ev(`globalThis.__createTraces`);
+    const hover = r.find((t) => t.kind === "client" && t.provider === "client:hover-label");
+    const done = r.find((t) => t.kind === "client" && t.provider === "client:command-done" && t.ok);
+    if (!hover) return "no hover->label trace; got " + JSON.stringify(r.slice(-5));
+    if (!done) return "no command->done trace; got " + JSON.stringify(r.slice(-5));
+    console.log(`  hover->label ${hover.ms} ms (target < 300), command->done ${done.ms} ms`);
+    if (!(hover.ms < 300)) return `hover->label ${hover.ms} ms is over the 300 ms target`;
+  });
+
   await liftFlow("pricing", "pricing.html", ".plans .card:nth-child(2) h3", /^Cards · 3 plans$/, 3, true, "a pricing tracker");
 
   // Circle to capture: Option + freehand loop around the three plan cards -> container -> app with 3 rows.
