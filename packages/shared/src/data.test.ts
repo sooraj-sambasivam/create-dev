@@ -29,11 +29,15 @@ describe("DataSchema", () => {
 
 describe("sanitize data nodes", () => {
   const tree = [{ id: "box", type: "container", children: [base, { id: "t", type: "text", text: "hi" }] }];
-  it("drops data nodes when no routes are given", () => {
+  it("drops data nodes when the route list is empty", () => {
     const notes: string[] = [];
-    const out = sanitizeNodes(tree, notes) as { children: unknown[] }[];
+    const out = sanitizeNodes(tree, notes, new Set(), []) as { children: unknown[] }[];
     expect(out[0].children).toHaveLength(1);
     expect(notes.length).toBe(1);
+  });
+  it("keeps data nodes when no route list is passed (refine callers)", () => {
+    const out = sanitizeNodes(tree) as { children: unknown[] }[];
+    expect(out[0].children).toHaveLength(2);
   });
   it("drops data nodes with unknown routes", () => {
     const out = sanitizeNodes(tree, [], new Set(), ["/other"]) as { children: unknown[] }[];
@@ -49,7 +53,8 @@ describe("sanitize data nodes", () => {
   });
   it("sanitizeScreen threads routes", () => {
     const screen = { title: "t", children: [base] };
-    expect(ScreenSchema.parse(sanitizeScreen(screen)).children).toHaveLength(0);
+    expect(ScreenSchema.parse(sanitizeScreen(screen, [], [])).children).toHaveLength(0);
+    expect(ScreenSchema.parse(sanitizeScreen(screen)).children).toHaveLength(1);
     expect(ScreenSchema.parse(sanitizeScreen(screen, [], ["/orders/today"])).children).toHaveLength(1);
   });
 });
