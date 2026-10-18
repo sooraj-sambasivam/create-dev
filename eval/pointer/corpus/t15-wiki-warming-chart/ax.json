@@ -1,6 +1,38 @@
 {
  "role": "AXWebArea",
  "title": "Common Era global temperature chart",
+ "ancestors": [
+  {
+   "tag": "figure",
+   "rect": {
+    "x": 826,
+    "y": 317,
+    "w": 350,
+    "h": 352
+   },
+   "kind": "chart"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 264,
+    "y": 230,
+    "w": 912,
+    "h": 459
+   },
+   "kind": "section"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 264,
+    "y": 140,
+    "w": 912,
+    "h": 2401
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

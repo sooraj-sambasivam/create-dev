@@ -1,6 +1,49 @@
 {
  "role": "AXWebArea",
  "title": "first departure time cell",
+ "ancestors": [
+  {
+   "tag": "tr",
+   "rect": {
+    "x": -505,
+    "y": 420,
+    "w": 21601,
+    "h": 60
+   },
+   "kind": "row"
+  },
+  {
+   "tag": "table",
+   "rect": {
+    "x": -505,
+    "y": 420,
+    "w": 21601,
+    "h": 1621
+   },
+   "kind": "table"
+  },
+  {
+   "tag": "div",
+   "role": "tabpanel",
+   "rect": {
+    "x": 25,
+    "y": 238,
+    "w": 1390,
+    "h": 1803
+   },
+   "kind": "card"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 24,
+    "y": 63,
+    "w": 1392,
+    "h": 2099
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

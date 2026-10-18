@@ -1,0 +1,5601 @@
+{
+  "startedAt": "2026-10-18T08:02:22.448Z",
+  "api": "http://localhost:3001",
+  "mock": true,
+  "healthFlags": {
+    "hasAnthropic": false,
+    "hasElevenLabs": false,
+    "hasTypesafe": true,
+    "hasMongo": false,
+    "hasOpenRouter": false,
+    "hasTinker": true,
+    "hasGemini": false,
+    "hasPerceptron": true,
+    "hasYoutube": false
+  },
+  "concurrency": 3,
+  "timeoutMs": 10000,
+  "targetCount": 30,
+  "pricing": {
+    "perceptron": {
+      "perCall": 0.002,
+      "perMTokIn": 0.5,
+      "perMTokOut": 1.5
+    },
+    "jev": {
+      "perCall": 0.001,
+      "perMTokIn": 0.3,
+      "perMTokOut": 0.9
+    },
+    "gemini": {
+      "perCall": 0.0015,
+      "perMTokIn": 0.3,
+      "perMTokOut": 2.5
+    },
+    "claude": {
+      "perCall": 0.006,
+      "perMTokIn": 3,
+      "perMTokOut": 15
+    },
+    "dom": {
+      "perCall": 0
+    },
+    "ax": {
+      "perCall": 0
+    },
+    "fused": {
+      "perCall": 0.004
+    }
+  },
+  "stageBudgetMs": {
+    "capture": 120,
+    "locate": 300,
+    "read": 1500,
+    "intent": 300,
+    "act": 800
+  },
+  "providers": {
+    "dom": {
+      "status": "ran",
+      "summary": {
+        "calls": 22,
+        "top1": 17,
+        "top1Pct": 0.7727272727272727,
+        "meanIoU": 0.7521017646480125,
+        "p50": 2,
+        "p95": 11,
+        "errors": 0,
+        "asks": 0,
+        "silentFailures": 0,
+        "usdPer100": 0
+      },
+      "rows": [
+        {
+          "target": "n01-pdf-schedule-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "dom",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n02-pdf-schedule-arrival",
+          "app": "Preview (PDF, rendered)",
+          "provider": "dom",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n03-pdf-pricing-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "dom",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n04-pdf-pricing-pro-price",
+          "app": "Preview (PDF, rendered)",
+          "provider": "dom",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n05-pdf-revenue-chart",
+          "app": "Preview (PDF, rendered)",
+          "provider": "dom",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n06-pdf-revenue-q4-bar",
+          "app": "Preview (PDF, rendered)",
+          "provider": "dom",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n07-pdf-invoice-items",
+          "app": "Preview (PDF, rendered)",
+          "provider": "dom",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n08-pdf-invoice-total",
+          "app": "Preview (PDF, rendered)",
+          "provider": "dom",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "t01-transit-timetable",
+          "app": "Chromium (Sound Transit)",
+          "provider": "dom",
+          "ms": 11,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 25,
+              "y": 420,
+              "w": 1415,
+              "h": 60
+            },
+            "label": "row: :",
+            "kind": "table",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 1,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t02-transit-time-cell",
+          "app": "Chromium (Sound Transit)",
+          "provider": "dom",
+          "ms": 11,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 1285,
+              "y": 442,
+              "w": 100,
+              "h": 24
+            },
+            "label": "5:53 a.m.",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.25,
+          "top1": false
+        },
+        {
+          "target": "t03-transit-view-toggle",
+          "app": "Chromium (Sound Transit)",
+          "provider": "dom",
+          "ms": 11,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 1249,
+              "y": 426,
+              "w": 134,
+              "h": 48
+            },
+            "label": "Point to point",
+            "kind": "button",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t04-gsheet-class-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "dom",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 36,
+              "w": 772,
+              "h": 709
+            },
+            "label": "table (table)",
+            "kind": "table",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.9804469273743017,
+          "top1": true
+        },
+        {
+          "target": "t05-gsheet-class-major-header",
+          "app": "Chromium (Google Sheets)",
+          "provider": "dom",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 530,
+              "y": 60,
+              "w": 121,
+              "h": 35
+            },
+            "label": "Major",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.6666666666666666,
+          "top1": true
+        },
+        {
+          "target": "t06-gsheet-sales-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "dom",
+          "ms": 5,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 36,
+              "w": 332,
+              "h": 233
+            },
+            "label": "table (table)",
+            "kind": "table",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.9416666666666667,
+          "top1": true
+        },
+        {
+          "target": "t07-gsheet-sales-total",
+          "app": "Chromium (Google Sheets)",
+          "provider": "dom",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 130,
+              "y": 248,
+              "w": 101,
+              "h": 21
+            },
+            "label": "$1,020",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.5,
+          "top1": true
+        },
+        {
+          "target": "t08-gsheet-sales-share-c",
+          "app": "Chromium (Google Sheets)",
+          "provider": "dom",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 231,
+              "y": 206,
+              "w": 101,
+              "h": 21
+            },
+            "label": "43.1%",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.5,
+          "top1": true
+        },
+        {
+          "target": "t09-notion-table",
+          "app": "Chromium (Notion)",
+          "provider": "dom",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 96,
+              "y": 392,
+              "w": 601,
+              "h": 159
+            },
+            "label": "table (div)",
+            "kind": "table",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.9811320754716981,
+          "top1": true
+        },
+        {
+          "target": "t10-notion-status-header",
+          "app": "Chromium (Notion)",
+          "provider": "dom",
+          "ms": 1,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 236,
+              "y": 464,
+              "w": 41,
+              "h": 17
+            },
+            "label": "Status",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.19361111111111112,
+          "top1": false
+        },
+        {
+          "target": "t11-notion-entry-row",
+          "app": "Chromium (Notion)",
+          "provider": "dom",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 104,
+              "y": 454,
+              "w": 300,
+              "h": 36
+            },
+            "label": "row (div)",
+            "kind": "table",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t12-wiki-companies-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "dom",
+          "ms": 1,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 264,
+              "y": 433,
+              "w": 911,
+              "h": 33
+            },
+            "label": "row: 713",
+            "kind": "table",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t13-wiki-companies-revenue-header",
+          "app": "Chromium (Wikipedia)",
+          "provider": "dom",
+          "ms": 1,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 653,
+              "y": 426,
+              "w": 80,
+              "h": 46
+            },
+            "label": "Revenue",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t14-wiki-seattle-temp-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "dom",
+          "ms": 1,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 264,
+              "y": 256,
+              "w": 912,
+              "h": 644
+            },
+            "label": "table (table)",
+            "kind": "table",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.07135025062656641,
+          "top1": false
+        },
+        {
+          "target": "t15-wiki-warming-chart",
+          "app": "Chromium (Wikipedia)",
+          "provider": "dom",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 826,
+              "y": 317,
+              "w": 350,
+              "h": 352
+            },
+            "label": "chart (figure)",
+            "kind": "chart",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.7134253246753247,
+          "top1": true
+        },
+        {
+          "target": "t16-slack-pricing-pro-price",
+          "app": "Chromium (Slack)",
+          "provider": "dom",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 505,
+              "y": 424,
+              "w": 135,
+              "h": 52
+            },
+            "label": "$4.38 USD",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t17-slack-pricing-cta",
+          "app": "Chromium (Slack)",
+          "provider": "dom",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 429,
+              "y": 421,
+              "w": 274,
+              "h": 58
+            },
+            "label": "GET STARTED",
+            "kind": "button",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t18-vercel-pricing-pro-price",
+          "app": "Chromium (Vercel)",
+          "provider": "dom",
+          "ms": 1,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 520,
+              "y": 422,
+              "w": 98,
+              "h": 56
+            },
+            "label": "$20",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t19-notion-pricing-plus",
+          "app": "Chromium (Notion)",
+          "provider": "dom",
+          "ms": 7,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 433,
+              "y": 476,
+              "w": 40,
+              "h": 28
+            },
+            "label": "$10",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t20-notion-pricing-cta",
+          "app": "Chromium (Notion)",
+          "provider": "dom",
+          "ms": 6,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 1299,
+              "y": 22,
+              "w": 102,
+              "h": 20
+            },
+            "label": "Get Notion free",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.65
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.4292929292929293,
+          "top1": false
+        },
+        {
+          "target": "t21-owid-life-expectancy-chart",
+          "app": "Chromium (Our World in Data)",
+          "provider": "dom",
+          "ms": 6,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 80,
+              "y": 100,
+              "w": 1280,
+              "h": 680
+            },
+            "label": "chart (figure)",
+            "kind": "chart",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t22-owid-chart-title",
+          "app": "Chromium (Our World in Data)",
+          "provider": "dom",
+          "ms": 1,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 97,
+              "y": 117,
+              "w": 925,
+              "h": 30
+            },
+            "label": "Life expectancy",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.3186468703710083,
+          "top1": false
+        }
+      ]
+    },
+    "ax": {
+      "status": "ran",
+      "summary": {
+        "calls": 22,
+        "top1": 14,
+        "top1Pct": 0.6363636363636364,
+        "meanIoU": 0.6524402051010715,
+        "p50": 3,
+        "p95": 6,
+        "errors": 0,
+        "asks": 0,
+        "silentFailures": 0,
+        "usdPer100": 0
+      },
+      "rows": [
+        {
+          "target": "n01-pdf-schedule-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "ax",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n02-pdf-schedule-arrival",
+          "app": "Preview (PDF, rendered)",
+          "provider": "ax",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n03-pdf-pricing-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "ax",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n04-pdf-pricing-pro-price",
+          "app": "Preview (PDF, rendered)",
+          "provider": "ax",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n05-pdf-revenue-chart",
+          "app": "Preview (PDF, rendered)",
+          "provider": "ax",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n06-pdf-revenue-q4-bar",
+          "app": "Preview (PDF, rendered)",
+          "provider": "ax",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n07-pdf-invoice-items",
+          "app": "Preview (PDF, rendered)",
+          "provider": "ax",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "n08-pdf-invoice-total",
+          "app": "Preview (PDF, rendered)",
+          "provider": "ax",
+          "skipped": "no input for this target"
+        },
+        {
+          "target": "t01-transit-timetable",
+          "app": "Chromium (Sound Transit)",
+          "provider": "ax",
+          "ms": 6,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 25,
+              "y": 420,
+              "w": 1415,
+              "h": 50
+            },
+            "label": "table (row)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.8333333333333334,
+          "top1": true
+        },
+        {
+          "target": "t02-transit-time-cell",
+          "app": "Chromium (Sound Transit)",
+          "provider": "ax",
+          "ms": 6,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 1255,
+              "y": 420,
+              "w": 160,
+              "h": 60
+            },
+            "label": "This trip arrives Lynnwood City Center at 5:53 a.m.",
+            "kind": "other",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t03-transit-view-toggle",
+          "app": "Chromium (Sound Transit)",
+          "provider": "ax",
+          "ms": 6,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 1249,
+              "y": 426,
+              "w": 134,
+              "h": 48
+            },
+            "label": "View schedule in Point to point format",
+            "kind": "button",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t04-gsheet-class-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "ax",
+          "ms": 1,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 36,
+              "w": 772,
+              "h": 709
+            },
+            "label": "table (table)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.9804469273743017,
+          "top1": true
+        },
+        {
+          "target": "t05-gsheet-class-major-header",
+          "app": "Chromium (Google Sheets)",
+          "provider": "ax",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 60,
+              "w": 772,
+              "h": 35
+            },
+            "label": "row (tr)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.57
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.12157749309218789,
+          "top1": false
+        },
+        {
+          "target": "t06-gsheet-sales-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "ax",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 36,
+              "w": 332,
+              "h": 233
+            },
+            "label": "table (table)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.9416666666666667,
+          "top1": true
+        },
+        {
+          "target": "t07-gsheet-sales-total",
+          "app": "Chromium (Google Sheets)",
+          "provider": "ax",
+          "ms": 2,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 248,
+              "w": 332,
+              "h": 21
+            },
+            "label": "row (tr)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.57
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.18413855970829535,
+          "top1": false
+        },
+        {
+          "target": "t08-gsheet-sales-share-c",
+          "app": "Chromium (Google Sheets)",
+          "provider": "ax",
+          "ms": 1,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 206,
+              "w": 332,
+              "h": 21
+            },
+            "label": "row (tr)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.57
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.18413855970829535,
+          "top1": false
+        },
+        {
+          "target": "t09-notion-table",
+          "app": "Chromium (Notion)",
+          "provider": "ax",
+          "ms": 5,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 96,
+              "y": 392,
+              "w": 601,
+              "h": 159
+            },
+            "label": "table (div)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.9811320754716981,
+          "top1": true
+        },
+        {
+          "target": "t10-notion-status-header",
+          "app": "Chromium (Notion)",
+          "provider": "ax",
+          "ms": 4,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 204,
+              "y": 454,
+              "w": 100,
+              "h": 36
+            },
+            "label": "Status",
+            "kind": "button",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t11-notion-entry-row",
+          "app": "Chromium (Notion)",
+          "provider": "ax",
+          "ms": 4,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 104,
+              "y": 454,
+              "w": 300,
+              "h": 36
+            },
+            "label": "row (div)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t12-wiki-companies-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "ax",
+          "ms": 4,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 264,
+              "y": 433,
+              "w": 911,
+              "h": 33
+            },
+            "label": "table (row)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t13-wiki-companies-revenue-header",
+          "app": "Chromium (Wikipedia)",
+          "provider": "ax",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 653,
+              "y": 426,
+              "w": 80,
+              "h": 46
+            },
+            "label": "Revenue",
+            "kind": "other",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t14-wiki-seattle-temp-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "ax",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 264,
+              "y": 256,
+              "w": 912,
+              "h": 644
+            },
+            "label": "table (table)",
+            "kind": "table",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.07135025062656641,
+          "top1": false
+        },
+        {
+          "target": "t15-wiki-warming-chart",
+          "app": "Chromium (Wikipedia)",
+          "provider": "ax",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 826,
+              "y": 317,
+              "w": 350,
+              "h": 352
+            },
+            "label": "chart (figure)",
+            "kind": "chart",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.7134253246753247,
+          "top1": true
+        },
+        {
+          "target": "t16-slack-pricing-pro-price",
+          "app": "Chromium (Slack)",
+          "provider": "ax",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 105,
+              "y": 291,
+              "w": 1230,
+              "h": 609
+            },
+            "label": "section (section)",
+            "kind": "other",
+            "source": "ax",
+            "confidence": 0.57
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.009371620809804157,
+          "top1": false
+        },
+        {
+          "target": "t17-slack-pricing-cta",
+          "app": "Chromium (Slack)",
+          "provider": "ax",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 429,
+              "y": 421,
+              "w": 274,
+              "h": 58
+            },
+            "label": "GET STARTED",
+            "kind": "button",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t18-vercel-pricing-pro-price",
+          "app": "Chromium (Vercel)",
+          "provider": "ax",
+          "ms": 4,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 33,
+              "w": 1440,
+              "h": 867
+            },
+            "label": "other (main)",
+            "kind": "other",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.0043957452261950535,
+          "top1": false
+        },
+        {
+          "target": "t19-notion-pricing-plus",
+          "app": "Chromium (Notion)",
+          "provider": "ax",
+          "ms": 4,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 433,
+              "y": 440,
+              "w": 242,
+              "h": 460
+            },
+            "label": "Plus*",
+            "kind": "list",
+            "source": "ax",
+            "confidence": 0.57
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.01006108515989939,
+          "top1": false
+        },
+        {
+          "target": "t20-notion-pricing-cta",
+          "app": "Chromium (Notion)",
+          "provider": "ax",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 1284,
+              "y": 14,
+              "w": 132,
+              "h": 36
+            },
+            "label": "Get Notion free",
+            "kind": "button",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t21-owid-life-expectancy-chart",
+          "app": "Chromium (Our World in Data)",
+          "provider": "ax",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 80,
+              "y": 100,
+              "w": 1280,
+              "h": 680
+            },
+            "label": "chart (figure)",
+            "kind": "chart",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t22-owid-chart-title",
+          "app": "Chromium (Our World in Data)",
+          "provider": "ax",
+          "ms": 3,
+          "costUsd": 0,
+          "result": {
+            "box": {
+              "x": 97,
+              "y": 117,
+              "w": 925,
+              "h": 30
+            },
+            "label": "Life expectancy",
+            "kind": "text",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.3186468703710083,
+          "top1": false
+        }
+      ]
+    },
+    "perceptron": {
+      "status": "ran",
+      "summary": {
+        "calls": 30,
+        "top1": 2,
+        "top1Pct": 0.06666666666666667,
+        "meanIoU": 0.06706641611867645,
+        "p50": 4004,
+        "p95": 4008,
+        "errors": 0,
+        "asks": 26,
+        "silentFailures": 0,
+        "usdPer100": 0.20000000000000012
+      },
+      "rows": [
+        {
+          "target": "n01-pdf-schedule-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "perceptron",
+          "ms": 4006,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4002,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4002,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n02-pdf-schedule-arrival",
+          "app": "Preview (PDF, rendered)",
+          "provider": "perceptron",
+          "ms": 4008,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n03-pdf-pricing-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "perceptron",
+          "ms": 4008,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4000,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4000,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n04-pdf-pricing-pro-price",
+          "app": "Preview (PDF, rendered)",
+          "provider": "perceptron",
+          "ms": 4006,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4000,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4000,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n05-pdf-revenue-chart",
+          "app": "Preview (PDF, rendered)",
+          "provider": "perceptron",
+          "ms": 4002,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4000,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4000,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n06-pdf-revenue-q4-bar",
+          "app": "Preview (PDF, rendered)",
+          "provider": "perceptron",
+          "ms": 4004,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 3999,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 3999,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n07-pdf-invoice-items",
+          "app": "Preview (PDF, rendered)",
+          "provider": "perceptron",
+          "ms": 4004,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n08-pdf-invoice-total",
+          "app": "Preview (PDF, rendered)",
+          "provider": "perceptron",
+          "ms": 4003,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t01-transit-timetable",
+          "app": "Chromium (Sound Transit)",
+          "provider": "perceptron",
+          "ms": 4003,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4000,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4000,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t02-transit-time-cell",
+          "app": "Chromium (Sound Transit)",
+          "provider": "perceptron",
+          "ms": 4005,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t03-transit-view-toggle",
+          "app": "Chromium (Sound Transit)",
+          "provider": "perceptron",
+          "ms": 4003,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t04-gsheet-class-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "perceptron",
+          "ms": 2444,
+          "costUsd": 0.002,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 28,
+              "w": 772,
+              "h": 714
+            },
+            "label": "table",
+            "kind": "table",
+            "source": "perceptron",
+            "confidence": 0.85
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 2439,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 2439,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0.9929971988795518,
+          "top1": true
+        },
+        {
+          "target": "t05-gsheet-class-major-header",
+          "app": "Chromium (Google Sheets)",
+          "provider": "perceptron",
+          "ms": 2419,
+          "costUsd": 0.002,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 28,
+              "w": 772,
+              "h": 714
+            },
+            "label": "table",
+            "kind": "table",
+            "source": "perceptron",
+            "confidence": 0.85
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 2416,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 2416,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0.007683125063496901,
+          "top1": false
+        },
+        {
+          "target": "t06-gsheet-sales-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "perceptron",
+          "ms": 3956,
+          "costUsd": 0.002,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 27,
+              "w": 333,
+              "h": 236
+            },
+            "label": "table",
+            "kind": "table",
+            "source": "perceptron",
+            "confidence": 0.85
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 3952,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 3952,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0.9843233063572047,
+          "top1": true
+        },
+        {
+          "target": "t07-gsheet-sales-total",
+          "app": "Chromium (Google Sheets)",
+          "provider": "perceptron",
+          "ms": 4003,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t08-gsheet-sales-share-c",
+          "app": "Chromium (Google Sheets)",
+          "provider": "perceptron",
+          "ms": 3778,
+          "costUsd": 0.002,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 27,
+              "w": 333,
+              "h": 236
+            },
+            "label": "table",
+            "kind": "table",
+            "source": "perceptron",
+            "confidence": 0.85
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 3776,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 3776,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0.0269888532600397,
+          "top1": false
+        },
+        {
+          "target": "t09-notion-table",
+          "app": "Chromium (Notion)",
+          "provider": "perceptron",
+          "ms": 4007,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4002,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4002,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t10-notion-status-header",
+          "app": "Chromium (Notion)",
+          "provider": "perceptron",
+          "ms": 4006,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4004,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4004,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t11-notion-entry-row",
+          "app": "Chromium (Notion)",
+          "provider": "perceptron",
+          "ms": 4004,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4002,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4002,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t12-wiki-companies-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "perceptron",
+          "ms": 4006,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4002,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4002,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t13-wiki-companies-revenue-header",
+          "app": "Chromium (Wikipedia)",
+          "provider": "perceptron",
+          "ms": 4004,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t14-wiki-seattle-temp-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "perceptron",
+          "ms": 4004,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t15-wiki-warming-chart",
+          "app": "Chromium (Wikipedia)",
+          "provider": "perceptron",
+          "ms": 4009,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t16-slack-pricing-pro-price",
+          "app": "Chromium (Slack)",
+          "provider": "perceptron",
+          "ms": 4003,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4000,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4000,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t17-slack-pricing-cta",
+          "app": "Chromium (Slack)",
+          "provider": "perceptron",
+          "ms": 4003,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t18-vercel-pricing-pro-price",
+          "app": "Chromium (Vercel)",
+          "provider": "perceptron",
+          "ms": 4008,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t19-notion-pricing-plus",
+          "app": "Chromium (Notion)",
+          "provider": "perceptron",
+          "ms": 4005,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t20-notion-pricing-cta",
+          "app": "Chromium (Notion)",
+          "provider": "perceptron",
+          "ms": 4003,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t21-owid-life-expectancy-chart",
+          "app": "Chromium (Our World in Data)",
+          "provider": "perceptron",
+          "ms": 4005,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t22-owid-chart-title",
+          "app": "Chromium (Our World in Data)",
+          "provider": "perceptron",
+          "ms": 4003,
+          "costUsd": 0.002,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        }
+      ]
+    },
+    "jev": {
+      "status": "ran",
+      "summary": {
+        "calls": 30,
+        "top1": 2,
+        "top1Pct": 0.06666666666666667,
+        "meanIoU": 0.11016979011114927,
+        "p50": 116,
+        "p95": 158,
+        "errors": 0,
+        "asks": 17,
+        "silentFailures": 0,
+        "usdPer100": 0.10000000000000006
+      },
+      "rows": [
+        {
+          "target": "n01-pdf-schedule-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "jev",
+          "ms": 158,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 374.4,
+              "y": 207,
+              "w": 604.8,
+              "h": 99
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 156,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.41665356111478374,
+          "top1": false
+        },
+        {
+          "target": "n02-pdf-schedule-arrival",
+          "app": "Preview (PDF, rendered)",
+          "provider": "jev",
+          "ms": 141,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 374.4,
+              "y": 306,
+              "w": 259.2,
+              "h": 54
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.87
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 137,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.10272468921303199,
+          "top1": false
+        },
+        {
+          "target": "n03-pdf-pricing-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "jev",
+          "ms": 138,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 388.8,
+              "y": 180,
+              "w": 576,
+              "h": 90
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 134,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.3589878536902899,
+          "top1": false
+        },
+        {
+          "target": "n04-pdf-pricing-pro-price",
+          "app": "Preview (PDF, rendered)",
+          "provider": "jev",
+          "ms": 94,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 388.8,
+              "y": 162,
+              "w": 547.2,
+              "h": 72
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 93,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.13249269005847952,
+          "top1": false
+        },
+        {
+          "target": "n05-pdf-revenue-chart",
+          "app": "Preview (PDF, rendered)",
+          "provider": "jev",
+          "ms": 84,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 82,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n06-pdf-revenue-q4-bar",
+          "app": "Preview (PDF, rendered)",
+          "provider": "jev",
+          "ms": 86,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 85,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n07-pdf-invoice-items",
+          "app": "Preview (PDF, rendered)",
+          "provider": "jev",
+          "ms": 104,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 103,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n08-pdf-invoice-total",
+          "app": "Preview (PDF, rendered)",
+          "provider": "jev",
+          "ms": 101,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 100,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t01-transit-timetable",
+          "app": "Chromium (Sound Transit)",
+          "provider": "jev",
+          "ms": 108,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 345.6,
+              "y": 414,
+              "w": 302.4,
+              "h": 54
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.79
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 106,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.16739088317511275,
+          "top1": false
+        },
+        {
+          "target": "t02-transit-time-cell",
+          "app": "Chromium (Sound Transit)",
+          "provider": "jev",
+          "ms": 122,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 120,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t03-transit-view-toggle",
+          "app": "Chromium (Sound Transit)",
+          "provider": "jev",
+          "ms": 119,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 116,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t04-gsheet-class-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "jev",
+          "ms": 136,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 288,
+              "y": 306,
+              "w": 57.6,
+              "h": 18
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.86
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 134,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.0018942245152992253,
+          "top1": false
+        },
+        {
+          "target": "t05-gsheet-class-major-header",
+          "app": "Chromium (Google Sheets)",
+          "provider": "jev",
+          "ms": 124,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 518.4,
+              "y": 45,
+              "w": 129.6,
+              "h": 54
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.84
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 122,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.5814117183320664,
+          "top1": true
+        },
+        {
+          "target": "t06-gsheet-sales-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "jev",
+          "ms": 91,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 43.2,
+              "y": 135,
+              "w": 230.4,
+              "h": 63
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.88
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 89,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.18764155333781482,
+          "top1": false
+        },
+        {
+          "target": "t07-gsheet-sales-total",
+          "app": "Chromium (Google Sheets)",
+          "provider": "jev",
+          "ms": 87,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 43.2,
+              "y": 225,
+              "w": 187.2,
+              "h": 36
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.84
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 85,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.2930445696272729,
+          "top1": false
+        },
+        {
+          "target": "t08-gsheet-sales-share-c",
+          "app": "Chromium (Google Sheets)",
+          "provider": "jev",
+          "ms": 80,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 72,
+              "y": 180,
+              "w": 244.8,
+              "h": 54
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 79,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.13308810494593157,
+          "top1": false
+        },
+        {
+          "target": "t09-notion-table",
+          "app": "Chromium (Notion)",
+          "provider": "jev",
+          "ms": 107,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 105,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t10-notion-status-header",
+          "app": "Chromium (Notion)",
+          "provider": "jev",
+          "ms": 116,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 113,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t11-notion-entry-row",
+          "app": "Chromium (Notion)",
+          "provider": "jev",
+          "ms": 100,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 98,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t12-wiki-companies-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "jev",
+          "ms": 118,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 662.4,
+              "y": 414,
+              "w": 43.2,
+              "h": 54
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 115,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.04603134626189052,
+          "top1": false
+        },
+        {
+          "target": "t13-wiki-companies-revenue-header",
+          "app": "Chromium (Wikipedia)",
+          "provider": "jev",
+          "ms": 146,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 143,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t14-wiki-seattle-temp-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "jev",
+          "ms": 165,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 1,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 161,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t15-wiki-warming-chart",
+          "app": "Chromium (Wikipedia)",
+          "provider": "jev",
+          "ms": 145,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 835.2,
+              "y": 324,
+              "w": 345.6,
+              "h": 306
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 1,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 140,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.7913680245401494,
+          "top1": true
+        },
+        {
+          "target": "t16-slack-pricing-pro-price",
+          "app": "Chromium (Slack)",
+          "provider": "jev",
+          "ms": 129,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 126,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t17-slack-pricing-cta",
+          "app": "Chromium (Slack)",
+          "provider": "jev",
+          "ms": 119,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 117,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t18-vercel-pricing-pro-price",
+          "app": "Chromium (Vercel)",
+          "provider": "jev",
+          "ms": 102,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 100,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t19-notion-pricing-plus",
+          "app": "Chromium (Notion)",
+          "provider": "jev",
+          "ms": 113,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 110,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t20-notion-pricing-cta",
+          "app": "Chromium (Notion)",
+          "provider": "jev",
+          "ms": 116,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 113,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t21-owid-life-expectancy-chart",
+          "app": "Chromium (Our World in Data)",
+          "provider": "jev",
+          "ms": 134,
+          "costUsd": 0.001,
+          "result": {
+            "box": {
+              "x": 72,
+              "y": 333,
+              "w": 820.8,
+              "h": 99
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.88
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 132,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.09236448452235557,
+          "top1": false
+        },
+        {
+          "target": "t22-owid-chart-title",
+          "app": "Chromium (Our World in Data)",
+          "provider": "jev",
+          "ms": 109,
+          "costUsd": 0.001,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 107,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        }
+      ]
+    },
+    "gemini": {
+      "status": "no-key",
+      "flag": "hasGemini"
+    },
+    "claude": {
+      "status": "no-key",
+      "flag": "hasAnthropic"
+    },
+    "fused": {
+      "status": "ran",
+      "summary": {
+        "calls": 30,
+        "top1": 8,
+        "top1Pct": 0.26666666666666666,
+        "meanIoU": 0.24763261503502243,
+        "p50": 6,
+        "p95": 4003,
+        "errors": 14,
+        "asks": 4,
+        "silentFailures": 0,
+        "usdPer100": 0.21333333333333343
+      },
+      "rows": [
+        {
+          "target": "n01-pdf-schedule-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "fused",
+          "ms": 377,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 374.4,
+              "y": 198,
+              "w": 604.8,
+              "h": 99
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 0,
+              "ok": false,
+              "error": "skipped: fusion did not wait"
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 125,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "gemini",
+              "ms": 0,
+              "ok": false,
+              "error": "GEMINI_API_KEY not set"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.41665356111478374,
+          "top1": false
+        },
+        {
+          "target": "n02-pdf-schedule-arrival",
+          "app": "Preview (PDF, rendered)",
+          "provider": "fused",
+          "ms": 371,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 374.4,
+              "y": 297,
+              "w": 259.2,
+              "h": 63
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.86
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 0,
+              "ok": false,
+              "error": "skipped: fusion did not wait"
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 116,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "gemini",
+              "ms": 0,
+              "ok": false,
+              "error": "GEMINI_API_KEY not set"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.08877792133719764,
+          "top1": false
+        },
+        {
+          "target": "n03-pdf-pricing-table",
+          "app": "Preview (PDF, rendered)",
+          "provider": "fused",
+          "ms": 370,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 388.8,
+              "y": 180,
+              "w": 561.6,
+              "h": 90
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 0,
+              "ok": false,
+              "error": "skipped: fusion did not wait"
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 115,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "gemini",
+              "ms": 0,
+              "ok": false,
+              "error": "GEMINI_API_KEY not set"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.35001315734803273,
+          "top1": false
+        },
+        {
+          "target": "n04-pdf-pricing-pro-price",
+          "app": "Preview (PDF, rendered)",
+          "provider": "fused",
+          "ms": 343,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 388.8,
+              "y": 171,
+              "w": 547.2,
+              "h": 63
+            },
+            "label": "table or chart",
+            "kind": "table",
+            "source": "jev",
+            "confidence": 0.9
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 0,
+              "ok": false,
+              "error": "skipped: fusion did not wait"
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 91,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "gemini",
+              "ms": 0,
+              "ok": false,
+              "error": "GEMINI_API_KEY not set"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.15142021720969087,
+          "top1": false
+        },
+        {
+          "target": "n05-pdf-revenue-chart",
+          "app": "Preview (PDF, rendered)",
+          "provider": "fused",
+          "ms": 337,
+          "costUsd": 0.004,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 0,
+              "ok": false,
+              "error": "skipped: fusion did not wait"
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 84,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "gemini",
+              "ms": 0,
+              "ok": false,
+              "error": "GEMINI_API_KEY not set"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n06-pdf-revenue-q4-bar",
+          "app": "Preview (PDF, rendered)",
+          "provider": "fused",
+          "ms": 337,
+          "costUsd": 0.004,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 0,
+              "ok": false,
+              "error": "skipped: fusion did not wait"
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 85,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "gemini",
+              "ms": 0,
+              "ok": false,
+              "error": "GEMINI_API_KEY not set"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n07-pdf-invoice-items",
+          "app": "Preview (PDF, rendered)",
+          "provider": "fused",
+          "ms": 4003,
+          "costUsd": 0.004,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 4001,
+              "ok": false,
+              "error": "timeout after 4000ms"
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 88,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "gemini",
+              "ms": 0,
+              "ok": false,
+              "error": "GEMINI_API_KEY not set"
+            },
+            {
+              "stage": "locate",
+              "provider": "claude",
+              "ms": 0,
+              "ok": false,
+              "error": "Claude vision unavailable"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "budget",
+              "ms": 4001,
+              "ok": false,
+              "error": "over 300ms budget"
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "n08-pdf-invoice-total",
+          "app": "Preview (PDF, rendered)",
+          "provider": "fused",
+          "ms": 341,
+          "costUsd": 0.004,
+          "result": null,
+          "ask": "Which one? I could not find a confident match under the pointer. Move closer or name it.",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "perceptron",
+              "ms": 0,
+              "ok": false,
+              "error": "skipped: fusion did not wait"
+            },
+            {
+              "stage": "locate",
+              "provider": "jev",
+              "ms": 88,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "gemini",
+              "ms": 0,
+              "ok": false,
+              "error": "GEMINI_API_KEY not set"
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0,
+          "top1": false
+        },
+        {
+          "target": "t01-transit-timetable",
+          "app": "Chromium (Sound Transit)",
+          "provider": "fused",
+          "ms": 2,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 25,
+              "y": 420,
+              "w": 1415,
+              "h": 50
+            },
+            "label": "table (row)",
+            "kind": "table",
+            "source": "fused",
+            "confidence": 1
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.8333333333333334,
+          "top1": true
+        },
+        {
+          "target": "t02-transit-time-cell",
+          "app": "Chromium (Sound Transit)",
+          "provider": "fused",
+          "ms": 6,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 1255,
+              "y": 420,
+              "w": 160,
+              "h": 60
+            },
+            "label": "This trip arrives Lynnwood City Center at 5:53 a.m.",
+            "kind": "other",
+            "source": "ax",
+            "confidence": 0.95
+          },
+          "ask": "Which one? (A: This trip arrives Lynnwood City Center a (other) or B: 5:53 a.m. (text))",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t03-transit-view-toggle",
+          "app": "Chromium (Sound Transit)",
+          "provider": "fused",
+          "ms": 2,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 1249,
+              "y": 426,
+              "w": 134,
+              "h": 48
+            },
+            "label": "View schedule in Point to point format",
+            "kind": "button",
+            "source": "fused",
+            "confidence": 1
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 1,
+          "top1": true
+        },
+        {
+          "target": "t04-gsheet-class-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "fused",
+          "ms": 3,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 36,
+              "w": 772,
+              "h": 709
+            },
+            "label": "table (table)",
+            "kind": "table",
+            "source": "fused",
+            "confidence": 1
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.9804469273743017,
+          "top1": true
+        },
+        {
+          "target": "t05-gsheet-class-major-header",
+          "app": "Chromium (Google Sheets)",
+          "provider": "fused",
+          "ms": 2,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 530,
+              "y": 60,
+              "w": 121,
+              "h": 35
+            },
+            "label": "Major",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": "Which one? (A: Major (text) or B: row (tr) (table))",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.6666666666666666,
+          "top1": true
+        },
+        {
+          "target": "t06-gsheet-sales-table",
+          "app": "Chromium (Google Sheets)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 0,
+              "y": 36,
+              "w": 332,
+              "h": 233
+            },
+            "label": "table (table)",
+            "kind": "table",
+            "source": "fused",
+            "confidence": 1
+          },
+          "ask": null,
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.9416666666666667,
+          "top1": true
+        },
+        {
+          "target": "t07-gsheet-sales-total",
+          "app": "Chromium (Google Sheets)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 130,
+              "y": 248,
+              "w": 101,
+              "h": 21
+            },
+            "label": "$1,020",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": "Which one? (A: $1,020 (text) or B: row (tr) (table))",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.5,
+          "top1": true
+        },
+        {
+          "target": "t08-gsheet-sales-share-c",
+          "app": "Chromium (Google Sheets)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0.004,
+          "result": {
+            "box": {
+              "x": 231,
+              "y": 206,
+              "w": 101,
+              "h": 21
+            },
+            "label": "43.1%",
+            "kind": "text",
+            "source": "dom",
+            "confidence": 0.9
+          },
+          "ask": "Which one? (A: 43.1% (text) or B: row (tr) (table))",
+          "traceStages": [
+            {
+              "stage": "capture",
+              "provider": "app",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "ax",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "dom",
+              "ms": 0,
+              "ok": true
+            },
+            {
+              "stage": "locate",
+              "provider": "fuse",
+              "ms": 0,
+              "ok": true
+            }
+          ],
+          "iou": 0.5,
+          "top1": true
+        },
+        {
+          "target": "t09-notion-table",
+          "app": "Chromium (Notion)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t10-notion-status-header",
+          "app": "Chromium (Notion)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t11-notion-entry-row",
+          "app": "Chromium (Notion)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t12-wiki-companies-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t13-wiki-companies-revenue-header",
+          "app": "Chromium (Wikipedia)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t14-wiki-seattle-temp-row",
+          "app": "Chromium (Wikipedia)",
+          "provider": "fused",
+          "ms": 3,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t15-wiki-warming-chart",
+          "app": "Chromium (Wikipedia)",
+          "provider": "fused",
+          "ms": 2,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t16-slack-pricing-pro-price",
+          "app": "Chromium (Slack)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t17-slack-pricing-cta",
+          "app": "Chromium (Slack)",
+          "provider": "fused",
+          "ms": 2,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t18-vercel-pricing-pro-price",
+          "app": "Chromium (Vercel)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t19-notion-pricing-plus",
+          "app": "Chromium (Notion)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t20-notion-pricing-cta",
+          "app": "Chromium (Notion)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t21-owid-life-expectancy-chart",
+          "app": "Chromium (Our World in Data)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        },
+        {
+          "target": "t22-owid-chart-title",
+          "app": "Chromium (Our World in Data)",
+          "provider": "fused",
+          "ms": 1,
+          "costUsd": 0,
+          "error": "HTTP 429: Too many requests. Try again in a moment.",
+          "top1": false,
+          "iou": 0
+        }
+      ]
+    }
+  },
+  "stages": {
+    "locate": {
+      "endpoint": "POST /api/locate (fused)",
+      "budgetMs": 300,
+      "n": 10,
+      "p50": null,
+      "p95": null,
+      "errors": 10
+    },
+    "read": {
+      "endpoint": "POST /api/extract",
+      "budgetMs": 1500,
+      "n": 10,
+      "p50": 1,
+      "p95": 1,
+      "errors": 0
+    },
+    "intent": {
+      "endpoint": "POST /api/route-intent",
+      "budgetMs": 300,
+      "n": 10,
+      "p50": 75,
+      "p95": 115,
+      "errors": 0
+    }
+  },
+  "chain": {
+    "n": 10,
+    "p50": 77,
+    "p95": 117,
+    "silentFailures": 0,
+    "rows": [
+      {
+        "target": "n01-pdf-schedule-table",
+        "locate": {
+          "ms": 4,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 56
+        },
+        "totalMs": 61,
+        "silentFailure": false
+      },
+      {
+        "target": "n02-pdf-schedule-arrival",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 115
+        },
+        "totalMs": 117,
+        "silentFailure": false
+      },
+      {
+        "target": "n03-pdf-pricing-table",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 79
+        },
+        "totalMs": 81,
+        "silentFailure": false
+      },
+      {
+        "target": "n04-pdf-pricing-pro-price",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 72
+        },
+        "totalMs": 74,
+        "silentFailure": false
+      },
+      {
+        "target": "n05-pdf-revenue-chart",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 66
+        },
+        "totalMs": 68,
+        "silentFailure": false
+      },
+      {
+        "target": "n06-pdf-revenue-q4-bar",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 91
+        },
+        "totalMs": 93,
+        "silentFailure": false
+      },
+      {
+        "target": "n07-pdf-invoice-items",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 108
+        },
+        "totalMs": 110,
+        "silentFailure": false
+      },
+      {
+        "target": "n08-pdf-invoice-total",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 64
+        },
+        "totalMs": 66,
+        "silentFailure": false
+      },
+      {
+        "target": "t01-transit-timetable",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 75
+        },
+        "totalMs": 77,
+        "silentFailure": false
+      },
+      {
+        "target": "t02-transit-time-cell",
+        "locate": {
+          "ms": 1,
+          "error": "HTTP 429: Too many requests. Try again in a moment."
+        },
+        "read": {
+          "ms": 1
+        },
+        "intent": {
+          "ms": 75
+        },
+        "totalMs": 77,
+        "silentFailure": false
+      }
+    ]
+  }
+}

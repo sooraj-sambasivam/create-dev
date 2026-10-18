@@ -12,6 +12,8 @@ export interface ImageCtx {
   decoded: { w: number; h: number } | null;
   /** Coordinate space of the input: input.imageSize, else decoded size. */
   coord: { w: number; h: number } | null;
+  /** Downscaled copy of the same frame from input.imageSmall (PNG/JPEG only), when supplied and readable. */
+  small?: { bytes: Buffer; mime: "image/png" | "image/jpeg"; decoded: { w: number; h: number } } | null;
 }
 
 export interface LocateDeps {

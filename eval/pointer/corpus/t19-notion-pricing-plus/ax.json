@@ -1,6 +1,28 @@
 {
  "role": "AXWebArea",
  "title": "Plus plan price",
+ "ancestors": [
+  {
+   "tag": "section",
+   "rect": {
+    "x": 125,
+    "y": 294,
+    "w": 583,
+    "h": 706
+   },
+   "kind": "section"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 125,
+    "y": 242,
+    "w": 1190,
+    "h": 1159
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,
@@ -475,6 +497,6 @@
  ],
  "_meta": {
   "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
-  "totalNodesInViewport": 97
+  "totalNodesInViewport": 99
  }
 }

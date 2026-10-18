@@ -53,6 +53,16 @@ function pngSize(buf) {
   return null;
 }
 
+// Jev only accepts 280-1568px. Use the corpus's shot_small.png (next to the shot) as the downscaled copy when it fits.
+function smallCopy(dir, t) {
+  const p = join(dir, dirname(t.screenshot), "shot_small.png");
+  if (!existsSync(p)) return undefined;
+  const buf = readFileSync(p);
+  const s = pngSize(buf);
+  if (!s || Math.min(s.w, s.h) < 280 || Math.max(s.w, s.h) > 1568) return undefined;
+  return `data:image/png;base64,${buf.toString("base64")}`;
+}
+
 function loadCorpus() {
   if (!existsSync(MANIFEST)) {
     console.error(`No corpus manifest at ${MANIFEST}. Record targets first (see header of eval/pointer/run.mjs).`);
@@ -73,13 +83,24 @@ function loadCorpus() {
       ...t,
       imageSize: t.imageSize ?? pngSize(buf),
       image: `data:image/${mime};base64,${buf.toString("base64")}`,
+      imageSmall: smallCopy(dir, t),
       axTree: t.ax ? JSON.parse(readFileSync(join(dir, t.ax), "utf8")) : undefined,
       domInfo: t.dom ? JSON.parse(readFileSync(join(dir, t.dom), "utf8")) : undefined,
     };
   });
 }
 
+// The server rate-limits /api/locate to 120/min per IP; a full eval exceeds that, so wait out 429s (the wait is not counted as latency).
 async function call(path, body) {
+  for (let i = 0; i < 8; i++) {
+    const r = await callOnce(path, body);
+    if (!/^HTTP 429/.test(r.error ?? "")) return r;
+    await new Promise((res) => setTimeout(res, 10000));
+  }
+  return callOnce(path, body);
+}
+
+async function callOnce(path, body) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   const t0 = performance.now();
@@ -111,7 +132,8 @@ function buildInput(provider, t) {
   const base = { source: "app", cursor: t.cursor, imageSize: t.imageSize, hint: t.hint, utterance: t.utterance };
   if (provider === "dom") return t.domInfo ? { ...base, dom: t.domInfo } : null;
   if (provider === "ax") return t.axTree ? { ...base, ax: t.axTree } : null;
-  if (provider === "fused") return { ...base, image: t.image, ax: t.axTree, dom: t.domInfo };
+  if (provider === "fused") return { ...base, image: t.image, ...(t.imageSmall ? { imageSmall: t.imageSmall } : {}), ax: t.axTree, dom: t.domInfo };
+  if (provider === "jev") return { ...base, image: t.image, ...(t.imageSmall ? { imageSmall: t.imageSmall } : {}) };
   return { ...base, image: t.image };
 }
 

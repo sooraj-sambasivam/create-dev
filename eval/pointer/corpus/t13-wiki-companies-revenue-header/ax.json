@@ -1,6 +1,38 @@
 {
  "role": "AXWebArea",
  "title": "Revenue column header",
+ "ancestors": [
+  {
+   "tag": "tr",
+   "rect": {
+    "x": 264,
+    "y": 426,
+    "w": 911,
+    "h": 46
+   },
+   "kind": "row"
+  },
+  {
+   "tag": "table",
+   "rect": {
+    "x": 264,
+    "y": 426,
+    "w": 912,
+    "h": 2243
+   },
+   "kind": "table"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 264,
+    "y": 360,
+    "w": 912,
+    "h": 2309
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

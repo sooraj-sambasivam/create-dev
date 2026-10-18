@@ -1,6 +1,48 @@
 {
  "role": "AXWebArea",
  "title": "Seattle mean daily maximum temperature row",
+ "ancestors": [
+  {
+   "tag": "tr",
+   "rect": {
+    "x": 265,
+    "y": 427,
+    "w": 911,
+    "h": 46
+   },
+   "kind": "row"
+  },
+  {
+   "tag": "table",
+   "rect": {
+    "x": 264,
+    "y": 256,
+    "w": 912,
+    "h": 907
+   },
+   "kind": "table"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 264,
+    "y": -843,
+    "w": 912,
+    "h": 2006
+   },
+   "kind": "section"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 264,
+    "y": -2216,
+    "w": 912,
+    "h": 3379
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,
@@ -12,7 +54,7 @@
    "role": "table",
    "frame": {
     "x": 264,
-    "y": -30,
+    "y": 256,
     "w": 912,
     "h": 907
    }
@@ -22,7 +64,7 @@
    "title": "Climate",
    "frame": {
     "x": 264,
-    "y": -1129,
+    "y": -843,
     "w": 912,
     "h": 2006
    }
@@ -32,7 +74,7 @@
    "title": "Geography",
    "frame": {
     "x": 264,
-    "y": -2502,
+    "y": -2216,
     "w": 912,
     "h": 3379
    }
@@ -41,9 +83,38 @@
    "role": "main",
    "frame": {
     "x": 264,
-    "y": -8793,
+    "y": -8507,
     "w": 1132,
     "h": 48479
+   }
+  },
+  {
+   "role": "link",
+   "title": "Hanukkah Eve Wind Storm of 2006",
+   "frame": {
+    "x": 657,
+    "y": 84,
+    "w": 250,
+    "h": 17
+   }
+  },
+  {
+   "role": "paragraph",
+   "frame": {
+    "x": 264,
+    "y": 2,
+    "w": 912,
+    "h": 130
+   }
+  },
+  {
+   "role": "link",
+   "title": "Columbus Day storm of 1962",
+   "frame": {
+    "x": 350,
+    "y": 58,
+    "w": 207,
+    "h": 17
    }
   },
   {
@@ -453,39 +524,10 @@
     "w": 164,
     "h": 70
    }
-  },
-  {
-   "role": "link",
-   "title": "History",
-   "frame": {
-    "x": 60,
-    "y": 89,
-    "w": 164,
-    "h": 28
-   }
-  },
-  {
-   "role": "listitem",
-   "frame": {
-    "x": 48,
-    "y": 89,
-    "w": 176,
-    "h": 28
-   }
-  },
-  {
-   "role": "navigation",
-   "title": "Appearance",
-   "frame": {
-    "x": 1200,
-    "y": 24,
-    "w": 196,
-    "h": 428
-   }
   }
  ],
  "_meta": {
   "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
-  "totalNodesInViewport": 61
+  "totalNodesInViewport": 63
  }
 }

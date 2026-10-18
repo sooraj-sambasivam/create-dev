@@ -1,6 +1,29 @@
 {
  "role": "AXWebArea",
  "title": "Point to point view toggle",
+ "ancestors": [
+  {
+   "tag": "div",
+   "role": "tabpanel",
+   "rect": {
+    "x": 25,
+    "y": 358,
+    "w": 1390,
+    "h": 1803
+   },
+   "kind": "card"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 24,
+    "y": 183,
+    "w": 1392,
+    "h": 2099
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

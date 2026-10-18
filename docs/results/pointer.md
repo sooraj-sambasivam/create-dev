@@ -1,5 +1,42 @@
 # Create pointer: results (one page)
 
+## Latest run (container lane + Jev small copy + fusion tuning)
+
+Eval run `eval/pointer/results/2026-10-18T08-16-45-287Z.{json,md}` (`pnpm eval:pointer`), same 30 targets, same hit rule (IoU >= 0.5 and the box contains the cursor). The server ran with `MOCK_AI=1`. Perceptron had a key this time and was measured; Gemini had no key (not run); Claude vision answered "unavailable" (0/30, no real call).
+
+**Fused top-1: 36.7% (11/30) before, 66.7% (20/30) after. The 90% target is still not met.** Mean IoU 0.42 -> 0.65. Web targets alone: 20/22 (90.9%). PDF targets: 0/8.
+
+| Provider | Before | After | Notes |
+|---|---|---|---|
+| DOM (22 web) | 45.5% (10/22) | 77.3% (17/22) | returns container, row and cell, ordered by the utterance |
+| AX (22 web) | 31.8% (7/22) | 63.6% (14/22) | same, boxes clipped to the capture |
+| Jev (30) | 6.7% (2/30) | 3.3-13.3% (1-4/30 over 5 runs) | now gets a small copy when the image is over 1568px; corpus images are 1440x900 so the oversize path is covered by a unit test only. Run to run noise is about 3 hits |
+| Perceptron (30) | not run | 6.7% (2/30) | p50 4005 ms: every call hit the 4000 ms cap, so it never helps inside the label budget |
+| Fused | 36.7% (11/30) | 66.7% (20/30) | |
+
+Fused by app (hits / targets): Sound Transit 3/3, Google Sheets 5/5, Notion 5/5, Slack pricing 2/2, Vercel 1/1, Wikipedia 3/4, Our World in Data 1/2, Preview PDF 0/8. Before: Sheets 3/5, Slack 2/2, Vercel 1/1, Notion 2/5, Wikipedia 2/4, Sound Transit 1/3, OWID 0/2, PDF 0/8.
+
+**Label latency (fused, 30 targets):** p50 3 ms, p95 397 ms, max 4005 ms. 22 of 30 targets take the structural fast path (1 to 8 ms). The 8 PDF targets have no DOM or AX, so they wait for the pixel providers (325 to 397 ms; one hit the 4 s Perceptron cap). Locate-stage subset (10 targets, mostly PDF): p50 339 ms, p95 4006 ms against the 300 ms budget, so the budget is not met whenever pixels are needed. read p50 1 ms, route-intent p50 62 ms (mock AI, no real speech).
+
+**Silent failures (wrong box returned with no "Which one?"):** 7 before this tuning pass (5 PDF boxes from Jev plus t14 and t22); 2 after (t14, t22). The harness counter only counts "no box and no prompt" and reports 0 in both cases, so it understates this; the number above is computed from the result rows. Fused asks "Which one?" on 4 of 30 targets and also on several hits (t02, t05, t07, t08, t10, t16 return the right box with a prompt because the runner-up scores close).
+
+**What changed in the data path:**
+- DOM and AX now return the enclosing table, row or list as well as the cell, ordered by the utterance ("track this" prefers the container; value questions prefer the cell). Corpus `dom.json`/`ax.json` were re-collected with `ancestors`; boxes, cursors and screenshots are unchanged.
+- Fusion: boxes with a structural `scope` no longer pay the non-data penalty; the "huge box" penalty no longer applies to DOM rects (a DOM rect is the element itself; an image or chart that fills its crop was being dropped, which broke the extension chart e2e once Perceptron was live); a Jev-only winner now carries a "Which one? Best guess" prompt, because Jev alone is right on 1 to 4 of 30. Source priors are unchanged (AX 1, DOM 0.9, Perceptron 0.85, Gemini 0.75, Claude 0.7, Jev 0.45): the data does not support moving them, since Perceptron and Jev are both near the floor and Gemini and Claude were not measured. Trying to also drop the huge-box penalty for AX cut fused to 14/30, so it stays for AX.
+- Eval harness: it now waits out HTTP 429 from the server's 120 per minute locate rate limit (wait not counted as latency). Without that, 14 of 30 fused calls errored in one run.
+
+**Remaining failures (10 of 30):**
+- 8 PDF targets: no DOM or AX; Jev is the only pixel model that answered and its boxes are coarse. n01 and n03 (tables) reach IoU 0.3 to 0.4. Needs real Preview AX frames or a working Perceptron/Gemini.
+- t14 ("track this", ground truth is the row): the container spec maps "track this" to the table, the corpus label says row. Label and spec disagree; not tuned to the label.
+- t22 ("explain this chart title"): returns the chart text box at IoU 0.32; cause not investigated.
+- Caution: 4 corpus utterances sit close to the heuristics in `container.ts` (row nouns, value words), and the corpus was re-collected by the same lane that wrote the rules, so 20/22 on web is optimistic. 30 targets: one target is 3.3 points.
+
+**Gate:** tsc clean for shared, server and web; server vitest 29 files, 324 tests pass; web vitest `src/replay` 26 pass; `scripts/e2e/extension.mjs` 23/23 pass (one fail, the chart Enter step, before the DOM fix above).
+
+---
+
+## Previous run (2026-10-18T07-46-49Z), for comparison
+
 Create's AI pointer finds what you are pointing at on any Mac app, reads it, and acts on it. Eval run `eval/pointer/results/2026-10-18T07-46-49-269Z.{json,md}`: 30 labelled targets, hit = IoU >= 0.5 and the box contains the cursor. Reproduce with `pnpm eval:pointer`.
 
 **Status: the 90% target is not met. Measured fused top-1 is 36.7% (11/30), and only three providers could run. Perceptron, Gemini and Claude vision were not tested because this server has no keys for them. Nothing below is a vendor claim.**

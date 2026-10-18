@@ -251,6 +251,25 @@
    }
   },
   {
+   "role": "button",
+   "title": "Chat with us",
+   "frame": {
+    "x": 1260,
+    "y": 836,
+    "w": 156,
+    "h": 40
+   }
+  },
+  {
+   "role": "image",
+   "frame": {
+    "x": 1276,
+    "y": 846,
+    "w": 20,
+    "h": 20
+   }
+  },
+  {
    "role": "listitem",
    "frame": {
     "x": 1040,
@@ -461,29 +480,10 @@
     "w": 84,
     "h": 24
    }
-  },
-  {
-   "role": "heading",
-   "title": "Essentials for staying organized.",
-   "frame": {
-    "x": 159,
-    "y": 403,
-    "w": 439,
-    "h": 80
-   }
-  },
-  {
-   "role": "paragraph",
-   "frame": {
-    "x": 433,
-    "y": 735,
-    "w": 242,
-    "h": 20
-   }
   }
  ],
  "_meta": {
   "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
-  "totalNodesInViewport": 84
+  "totalNodesInViewport": 86
  }
 }

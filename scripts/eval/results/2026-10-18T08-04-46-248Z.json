@@ -1,0 +1,231 @@
+{
+  "timestamp": "2026-10-18T08:04:46.249Z",
+  "base": "http://localhost:3002",
+  "mode": "real",
+  "health": {
+    "mock": false,
+    "model": "claude-sonnet-5-5",
+    "hasAnthropic": true,
+    "hasTypesafe": true
+  },
+  "strict": false,
+  "summary": {
+    "total": 12,
+    "pass": 12,
+    "warn": 0,
+    "fail": 0,
+    "pending": 0
+  },
+  "results": [
+    {
+      "id": "bakery-site",
+      "group": "non-technical",
+      "endpoint": "/api/generate",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 17511,
+      "reasons": [],
+      "info": {
+        "nodes": 50,
+        "types": [
+          "button",
+          "container",
+          "heading",
+          "icon",
+          "image",
+          "link",
+          "map",
+          "table",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "wedding-rsvp-form",
+      "group": "non-technical",
+      "endpoint": "/api/generate",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 19183,
+      "reasons": [],
+      "info": {
+        "nodes": 45,
+        "types": [
+          "badge",
+          "button",
+          "container",
+          "heading",
+          "icon",
+          "image",
+          "link",
+          "map",
+          "select",
+          "text",
+          "textbox"
+        ]
+      }
+    },
+    {
+      "id": "portfolio",
+      "group": "non-technical",
+      "endpoint": "/api/generate",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 25615,
+      "reasons": [],
+      "info": {
+        "nodes": 33,
+        "types": [
+          "badge",
+          "button",
+          "container",
+          "heading",
+          "image",
+          "link",
+          "list",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "saas-pricing-data",
+      "group": "technical",
+      "endpoint": "/api/generate",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 21216,
+      "reasons": [],
+      "info": {
+        "nodes": 37,
+        "types": [
+          "accordion",
+          "badge",
+          "button",
+          "container",
+          "data",
+          "heading",
+          "link",
+          "list",
+          "table",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "ops-dashboard",
+      "group": "technical",
+      "endpoint": "/api/generate",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 11324,
+      "reasons": [],
+      "info": {
+        "nodes": 12,
+        "types": [
+          "container",
+          "data",
+          "heading",
+          "table",
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "edit-bigger-heading",
+      "group": "edit",
+      "endpoint": "/api/edit-node",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 2087,
+      "reasons": [],
+      "info": {
+        "nodes": 1,
+        "types": [
+          "heading"
+        ]
+      }
+    },
+    {
+      "id": "edit-button-green",
+      "group": "edit",
+      "endpoint": "/api/edit-node",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 2227,
+      "reasons": [],
+      "info": {
+        "nodes": 1,
+        "types": [
+          "button"
+        ]
+      }
+    },
+    {
+      "id": "edit-delete-text",
+      "group": "edit",
+      "endpoint": "/api/edit-node",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 1921,
+      "reasons": [],
+      "info": {
+        "nodes": 0,
+        "types": []
+      }
+    },
+    {
+      "id": "intent-pointer-resize",
+      "group": "pointer",
+      "endpoint": "/api/route-intent",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 131,
+      "reasons": [],
+      "info": {
+        "engine": "jev",
+        "action": "resize",
+        "targetId": "hero-title"
+      }
+    },
+    {
+      "id": "intent-chatter-not-command",
+      "group": "pointer",
+      "endpoint": "/api/route-intent",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 158,
+      "reasons": [],
+      "info": {
+        "engine": "jev",
+        "action": "none",
+        "targetId": null
+      }
+    },
+    {
+      "id": "ask-what-does-this-mean",
+      "group": "chat",
+      "endpoint": "/api/ask",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 3141,
+      "reasons": [],
+      "info": {
+        "answer": "That's **MRR, or Monthly Recurring Revenue**: the predictable revenue your subscriptions bring in each month, normally e",
+        "provider": "claude"
+      }
+    },
+    {
+      "id": "ask-explain-figure-no-pointer",
+      "group": "chat",
+      "endpoint": "/api/ask",
+      "status": "PASS",
+      "httpStatus": 200,
+      "ms": 4558,
+      "reasons": [],
+      "info": {
+        "answer": "It depends on whether that's monthly or annual churn. The page just says \"Churn 2.4%\" without a period.\n\n- **If monthly:",
+        "provider": "claude"
+      }
+    }
+  ]
+}

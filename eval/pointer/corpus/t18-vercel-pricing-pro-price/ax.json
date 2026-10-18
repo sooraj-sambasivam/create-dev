@@ -1,6 +1,18 @@
 {
  "role": "AXWebArea",
  "title": "Pro plan price $20/mo",
+ "ancestors": [
+  {
+   "tag": "section",
+   "rect": {
+    "x": 24,
+    "y": 281,
+    "w": 1392,
+    "h": 779
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

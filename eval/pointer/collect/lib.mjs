@@ -74,8 +74,37 @@ export async function axNearCursor(b, cursor, title) {
   // nodes containing the cursor first (innermost first), then nearest
   const contains = (n) => cursor.x >= n.frame.x && cursor.x <= n.frame.x + n.frame.w && cursor.y >= n.frame.y && cursor.y <= n.frame.y + n.frame.h;
   out.sort((a, c) => (contains(c) - contains(a)) || (contains(a) && contains(c) ? a.frame.w * a.frame.h - c.frame.w * c.frame.h : d(a) - d(c)));
-  return { role: "AXWebArea", title, frame: { x: 0, y: 0, w: VIEW.w, h: VIEW.h }, children: out.slice(0, 50), _meta: { source: "CDP Accessibility.getFullAXTree + DOM.getBoxModel", totalNodesInViewport: out.length } };
+  // Ancestors of the element under the cursor, so a flat AX list still knows its row/table/list/chart.
+  const ancestors = await b.ev(`(()=>{let e=document.elementFromPoint(${cursor.x},${cursor.y});if(!e)return [];let off={x:0,y:0};if(e.tagName==='IFRAME'){try{const r=e.getBoundingClientRect();const e2=e.contentDocument.elementFromPoint(${cursor.x}-r.x,${cursor.y}-r.y);if(e2){e=e2;off={x:r.x,y:r.y}}}catch{}}return ${ANCESTORS_JS}(e,off)})()`).catch(() => []);
+  return { role: "AXWebArea", title, ...(ancestors?.length ? { ancestors } : {}), frame: { x: 0, y: 0, w: VIEW.w, h: VIEW.h }, children: out.slice(0, 50), _meta: { source: "CDP Accessibility.getFullAXTree + DOM.getBoxModel", totalNodesInViewport: out.length } };
 }
+
+// In-page: enclosing structure of an element, nearest first (max 6). Mirrors containerAncestors() in apps/extension/content.js; rects get `off` (iframe origin) added.
+export const ANCESTORS_JS = `((el,off)=>{
+  const out=[];off=off||{x:0,y:0};
+  const kindOf=e=>{const t=e.tagName.toLowerCase(),role=(e.getAttribute('role')||'').toLowerCase();
+    if(t==='table'||role==='table'||role==='grid'||role==='treegrid')return 'table';
+    if(t==='tr'||t==='li'||role==='row'||role==='listitem')return 'row';
+    if(t==='ul'||t==='ol'||t==='dl'||role==='list'||role==='listbox')return 'list';
+    if(t==='figure'||t==='svg'||t==='canvas'||role==='graphics-document')return 'chart';
+    if(t==='section'||role==='region')return 'section';
+    const cls=typeof e.className==='string'?e.className.trim():'';
+    const toks=cls?cls.split(/\\s+/):[];
+    if(toks.some(k=>/(^|-)row$/.test(k)))return 'row';
+    if(toks.some(k=>/(^|-)(table|grid)(-view)?$/.test(k)))return 'table';
+    if(cls&&e.parentElement&&e.parentElement!==e.ownerDocument.body){
+      const same=[...e.parentElement.children].filter(c=>c.tagName===e.tagName&&c.className===e.className);
+      const r=e.getBoundingClientRect();
+      if(same.length>=3&&same.length<=24&&r.width>120&&r.height>60&&(e.textContent||'').trim())return 'card';
+    }
+    return null};
+  for(let cur=el.parentElement;cur&&cur!==cur.ownerDocument.body&&cur!==cur.ownerDocument.documentElement&&out.length<6;cur=cur.parentElement){
+    const kind=kindOf(cur);if(!kind)continue;
+    const r=cur.getBoundingClientRect();if(r.width<2||r.height<2)continue;
+    const role=cur.getAttribute('role');
+    out.push({tag:cur.tagName.toLowerCase().slice(0,40),...(role?{role:role.slice(0,80)}:{}),rect:{x:Math.round(r.left+off.x),y:Math.round(r.top+off.y),w:Math.round(r.width),h:Math.round(r.height)},kind});
+  }
+  return out})`;
 
 /** DomInfo for the element under the cursor plus a trimmed snapshot of its table/figure/section container. */
 export async function domAtCursor(b, cursor) {
@@ -87,7 +116,7 @@ export async function domAtCursor(b, cursor) {
     const cont=e.closest('table,figure,[role=table],[role=grid],section,main')||e.parentElement||e;
     const clean=cont.cloneNode(true);clean.querySelectorAll('script,style,svg path,noscript').forEach(n=>n.remove());
     let snap=clean.outerHTML.replace(/\\s+/g,' ');if(snap.length>50000)snap=snap.slice(0,50000);
-    return {tag:e.tagName.toLowerCase(),text:(e.innerText||e.alt||'').trim().slice(0,2000),rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)},selectorPath:path(e).slice(0,900),tableLike:!!e.closest('table,[role=table],[role=grid],[role=row]'),snapshot:snap};
+    return {tag:e.tagName.toLowerCase(),text:(e.innerText||e.alt||'').trim().slice(0,2000),rect:{x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height)},selectorPath:path(e).slice(0,900),tableLike:!!e.closest('table,[role=table],[role=grid],[role=row]'),ancestors:${ANCESTORS_JS}(e,o),snapshot:snap};
   })()`);
 }
 

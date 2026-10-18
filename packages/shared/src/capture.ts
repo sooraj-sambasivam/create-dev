@@ -13,12 +13,23 @@ export const CAPTURE_SOURCES = ["extension", "notch", "screen", "app"] as const;
 export const CaptureSourceSchema = z.enum(CAPTURE_SOURCES);
 export type CaptureSource = z.infer<typeof CaptureSourceSchema>;
 
+/** Enclosing structure of a pointed element, nearest first. Lets locate return the table/row/list/chart instead of just the cell. */
+export const CONTAINER_KINDS = ["table", "row", "list", "chart", "card", "section"] as const;
+export const ContainerKindSchema = z.enum(CONTAINER_KINDS);
+export type ContainerKind = z.infer<typeof ContainerKindSchema>;
+export const MAX_ANCESTORS = 6;
+export const AncestorSchema = z.object({ tag: Str(40), role: Str(80).optional(), rect: PixelBoxSchema, kind: ContainerKindSchema });
+export type Ancestor = z.infer<typeof AncestorSchema>;
+const AncestorsSchema = z.array(AncestorSchema).max(MAX_ANCESTORS);
+
 export interface AxNode {
   role: string;
   title?: string;
   value?: string;
   frame: PixelBox;
   children?: AxNode[];
+  /** Enclosing containers of this node, nearest first (max 6). */
+  ancestors?: Ancestor[];
 }
 const AX_MAX_DEPTH = 3;
 const AX_MAX_CHILDREN = 50;
@@ -28,6 +39,7 @@ const axLevel = (depth: number): z.ZodType<AxNode> =>
     title: Str(500).optional(),
     value: Str(2000).optional(),
     frame: PixelBoxSchema,
+    ancestors: AncestorsSchema.optional(),
     children: depth >= AX_MAX_DEPTH ? z.undefined().optional() : z.array(axLevel(depth + 1)).max(AX_MAX_CHILDREN).optional(),
   }) as z.ZodType<AxNode>;
 /** Accessibility node; `children` is allowed up to depth 3 (root = depth 0). */
@@ -39,6 +51,8 @@ export const DomInfoSchema = z.object({
   rect: PixelBoxSchema,
   selectorPath: Str(1000),
   tableLike: z.boolean().optional(),
+  /** Enclosing containers of `rect`'s element, nearest first (max 6). */
+  ancestors: AncestorsSchema.optional(),
   snapshot: Str(60_000).optional(),
 });
 export type DomInfo = z.infer<typeof DomInfoSchema>;
@@ -47,6 +61,8 @@ export const CaptureInputSchema = z.object({
   source: CaptureSourceSchema,
   image: Str(MAX_CAPTURE_IMAGE_CHARS).regex(/^data:image\/[a-z0-9.+-]+;base64,/i).optional(),
   imageSize: z.object({ w: z.number().int().positive().max(20_000), h: z.number().int().positive().max(20_000) }).optional(),
+  /** Optional downscaled copy of `image` (same framing, 280-1568px longest side) for models with size limits, e.g. Jev. Boxes come back as fractions, so no scale factor is needed. */
+  imageSmall: Str(MAX_CAPTURE_IMAGE_CHARS).regex(/^data:image\/[a-z0-9.+-]+;base64,/i).optional(),
   cursor: z.object({ x: Px, y: Px }).optional(),
   ax: AxNodeSchema.optional(),
   dom: DomInfoSchema.optional(),
@@ -63,12 +79,19 @@ export const LOCATE_SOURCES = ["ax", "dom", "perceptron", "jev", "gemini", "clau
 export const LocateSourceSchema = z.enum(LOCATE_SOURCES);
 export type LocateSource = z.infer<typeof LocateSourceSchema>;
 
+/** Which part of a structure a box covers: the whole container, one row, or one cell/element. */
+export const LOCATE_SCOPES = ["container", "row", "cell"] as const;
+export const LocateScopeSchema = z.enum(LOCATE_SCOPES);
+export type LocateScope = z.infer<typeof LocateScopeSchema>;
+
 export interface LocateResult {
   box: PixelBox;
   kind: LocateKind;
   label: string;
   source: LocateSource;
   confidence: number;
+  /** Set by structural providers (AX, DOM). */
+  scope?: LocateScope;
   candidates?: LocateResult[];
 }
 const locateLevel = (nested: boolean): z.ZodType<LocateResult> =>
@@ -78,6 +101,7 @@ const locateLevel = (nested: boolean): z.ZodType<LocateResult> =>
     label: Str(300),
     source: LocateSourceSchema,
     confidence: z.number().min(0).max(1),
+    scope: LocateScopeSchema.optional(),
     candidates: nested ? z.array(z.lazy(() => locateLevel(false))).max(10).optional() : z.undefined().optional(),
   }) as z.ZodType<LocateResult>;
 /** Candidates are one level deep (a candidate cannot carry its own candidates). */

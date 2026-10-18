@@ -9,5 +9,37 @@
  },
  "selectorPath": "div#bodyContent > div#mw-content-text > div.mw-content-ltr.mw-parser-output > section#mwATY > section#mwATk > figure#mwATw > a#mwAT0 > img#mwAT4",
  "tableLike": false,
+ "ancestors": [
+  {
+   "tag": "figure",
+   "rect": {
+    "x": 826,
+    "y": 317,
+    "w": 350,
+    "h": 352
+   },
+   "kind": "chart"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 264,
+    "y": 230,
+    "w": 912,
+    "h": 459
+   },
+   "kind": "section"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 264,
+    "y": 140,
+    "w": 912,
+    "h": 2401
+   },
+   "kind": "section"
+  }
+ ],
  "snapshot": "<figure class=\"mw-default-size\" typeof=\"mw:File/Thumb\" id=\"mwATw\"><a href=\"https://en.wikipedia.org/wiki/File:Common_Era_Temperature.svg\" class=\"mw-file-description\" id=\"mwAT0\"><img resource=\"https://en.wikipedia.org/wiki/File:Common_Era_Temperature.svg\" src=\"//thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Common_Era_Temperature.svg/500px-Common_Era_Temperature.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail\" decoding=\"async\" loading=\"lazy\" srcset=\"//thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Common_Era_Temperature.svg/960px-Common_Era_Temperature.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x\" data-file-width=\"960\" data-file-height=\"720\" data-file-type=\"drawing\" height=\"255\" width=\"340\" class=\"mw-file-element mw-file-upright\" style=\"--mw-file-upright: 1.35\" id=\"mwAT4\"></a><figcaption id=\"mwAT8\"><a rel=\"mw:WikiLink\" href=\"https://en.wikipedia.org/wiki/Global_surface_temperature\" title=\"Global surface temperature\" id=\"mwAUA\">Global surface temperature</a> reconstruction over the past 2000 years using proxy data from tree rings, corals, and ice cores in blue.<sup about=\"#mwt160\" class=\"mw-ref reference\" id=\"cite_ref-44\" rel=\"dc:references\" typeof=\"mw:Extension/ref\" data-mw=\"{&quot;name&quot;:&quot;ref&quot;,&quot;attrs&quot;:{},&quot;body&quot;:{&quot;id&quot;:&quot;mw-reference-text-cite_note-44&quot;}}\"><a href=\"#cite_note-44\" id=\"mwAUE\"><span class=\"mw-reflink-text\" id=\"mwAUI\"><span class=\"cite-bracket\" id=\"mwAUM\">[</span>44<span class=\"cite-bracket\" id=\"mwAUQ\">]</span></span></a></sup> Directly observed data is in red.<sup about=\"#mwt163\" class=\"mw-ref reference\" id=\"cite_ref-nasa_temperatures_45-0\" rel=\"dc:references\" typeof=\"mw:Extension/ref\" data-mw=\"{&quot;name&quot;:&quot;ref&quot;,&quot;attrs&quot;:{&quot;name&quot;:&quot;nasa temperatures&quot;},&quot;body&quot;:{&quot;id&quot;:&quot;mw-reference-text-cite_note-nasa_temperatures-45&quot;}}\"><a href=\"#cite_note-nasa_temperatures-45\" id=\"mwAUU\"><span class=\"mw-reflink-text\" id=\"mwAUY\"><span class=\"cite-bracket\" id=\"mwAUc\">[</span>45<span class=\"cite-bracket\" id=\"mwAUg\">]</span></span></a></sup></figcaption></figure>"
 }

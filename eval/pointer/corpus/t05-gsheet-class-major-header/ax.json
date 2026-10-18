@@ -1,6 +1,28 @@
 {
  "role": "AXWebArea",
  "title": "Major column header cell",
+ "ancestors": [
+  {
+   "tag": "tr",
+   "rect": {
+    "x": 0,
+    "y": 60,
+    "w": 772,
+    "h": 35
+   },
+   "kind": "row"
+  },
+  {
+   "tag": "table",
+   "rect": {
+    "x": 0,
+    "y": 36,
+    "w": 772,
+    "h": 709
+   },
+   "kind": "table"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,
@@ -12,9 +34,9 @@
    "role": "Iframe",
    "frame": {
     "x": 0,
-    "y": 29,
+    "y": 36,
     "w": 1440,
-    "h": 845
+    "h": 828
    }
   }
  ],

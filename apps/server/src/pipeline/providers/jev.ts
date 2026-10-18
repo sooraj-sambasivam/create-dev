@@ -11,9 +11,10 @@ export const locateJev: LocateProvider = async (ctx) => {
   if (!key) throw new Error("TYPESAFE_API_KEY not set");
   const img = ctx.image;
   if (!img?.decoded || !img.coord) throw new Error("image size unreadable");
-  const { w, h } = img.decoded;
-  if (Math.min(w, h) < JEV_MIN_SIDE || Math.max(w, h) > JEV_MAX_SIDE) throw new Error(`image ${w}x${h} outside Jev limits`);
-  if (img.mime !== "image/png" && img.mime !== "image/jpeg") throw new Error("Jev needs PNG or JPEG");
+  const fits = (d: { w: number; h: number }) => Math.min(d.w, d.h) >= JEV_MIN_SIDE && Math.max(d.w, d.h) <= JEV_MAX_SIDE;
+  // Prefer the client's downscaled copy: Jev boxes are 0-1 fractions, so they map back to the full frame unchanged.
+  const src = img.small && fits(img.small.decoded) ? img.small : fits(img.decoded) ? { bytes: img.bytes, mime: img.mime, decoded: img.decoded } : null;
+  if (!src) throw new Error(`image ${img.decoded.w}x${img.decoded.h} outside Jev limits`);
   const f = cursorFraction(ctx);
   const where = f ? `at x=${f.x.toFixed(3)}, y=${f.y.toFixed(3)} (fractions from the top-left)` : "";
   const request = {
@@ -27,7 +28,7 @@ export const locateJev: LocateProvider = async (ctx) => {
   };
   const form = new FormData();
   form.append("request", new Blob([JSON.stringify(request)], { type: "application/json" }), "request");
-  form.append("img", new Blob([new Uint8Array(img.bytes)], { type: img.mime }), "img");
+  form.append("img", new Blob([new Uint8Array(src.bytes)], { type: src.mime }), "img");
   const res = await timedFetch(ctx, JEV_IMAGE_URL, {
     method: "POST",
     headers: { authorization: `Bearer ${key}`, "TypeSafe-Danger-Zone-Images": "true" },

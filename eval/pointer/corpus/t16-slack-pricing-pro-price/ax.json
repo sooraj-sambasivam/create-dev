@@ -1,6 +1,18 @@
 {
  "role": "AXWebArea",
  "title": "Pro plan price",
+ "ancestors": [
+  {
+   "tag": "section",
+   "rect": {
+    "x": 105,
+    "y": 291,
+    "w": 1230,
+    "h": 903
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

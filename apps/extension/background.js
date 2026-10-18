@@ -49,7 +49,7 @@ async function captureCrop(tab, rect, viewport) {
   const sx = Math.round(rect.x * k), sy = Math.round(rect.y * k);
   const sw = Math.max(1, Math.min(bmp.width - sx, Math.round(rect.w * k)));
   const sh = Math.max(1, Math.min(bmp.height - sy, Math.round(rect.h * k)));
-  for (const [maxSide, type, quality] of [[1600, "image/png"], [1280, "image/jpeg", 0.85], [800, "image/jpeg", 0.75]]) {
+  for (const [maxSide, type, quality] of [[1568, "image/png"], [1280, "image/jpeg", 0.85], [800, "image/jpeg", 0.75]]) {
     const scale = Math.min(1, maxSide / Math.max(sw, sh));
     const w = Math.max(1, Math.round(sw * scale)), h = Math.max(1, Math.round(sh * scale));
     const canvas = new OffscreenCanvas(w, h);
@@ -86,7 +86,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     locate: async () => {
       const t0 = Date.now();
       try {
-        const input = { source: "extension", image: msg.image, ...(msg.imageSize ? { imageSize: msg.imageSize } : {}), ...(msg.cursor ? { cursor: msg.cursor } : {}), ...(msg.dom ? { dom: msg.dom } : {}), ...(msg.hint ? { hint: msg.hint } : {}) };
+        const input = { source: "extension", image: msg.image, ...(msg.imageSize ? { imageSize: msg.imageSize } : {}), ...(msg.cursor ? { cursor: msg.cursor } : {}), ...(msg.dom ? { dom: msg.dom } : {}), ...(msg.hint ? { hint: msg.hint } : {}), ...(msg.utterance ? { utterance: msg.utterance } : {}) };
         const r = await post("/api/locate", { input });
         keepTrace({ kind: "locate", ms: Date.now() - t0, ok: true, id: r.trace?.id, stages: r.trace?.stages?.length ?? 0, ask: r.ask || null });
         return { ok: true, result: r.result ?? null, ask: r.ask, traceId: r.trace?.id };

@@ -1,6 +1,28 @@
 {
  "role": "AXWebArea",
  "title": "Total sales cell $1,020",
+ "ancestors": [
+  {
+   "tag": "tr",
+   "rect": {
+    "x": 0,
+    "y": 248,
+    "w": 332,
+    "h": 21
+   },
+   "kind": "row"
+  },
+  {
+   "tag": "table",
+   "rect": {
+    "x": 0,
+    "y": 36,
+    "w": 332,
+    "h": 233
+   },
+   "kind": "table"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,
@@ -12,52 +34,14 @@
    "role": "Iframe",
    "frame": {
     "x": 0,
-    "y": 29,
+    "y": 36,
     "w": 1440,
-    "h": 845
-   }
-  },
-  {
-   "role": "cell",
-   "title": "Sheet2",
-   "frame": {
-    "x": 57,
-    "y": 874,
-    "w": 49,
-    "h": 26
-   }
-  },
-  {
-   "role": "row",
-   "frame": {
-    "x": 6,
-    "y": 874,
-    "w": 100,
-    "h": 26
-   }
-  },
-  {
-   "role": "table",
-   "frame": {
-    "x": 0,
-    "y": 874,
-    "w": 106,
-    "h": 26
-   }
-  },
-  {
-   "role": "cell",
-   "title": "Sheet1",
-   "frame": {
-    "x": 6,
-    "y": 874,
-    "w": 51,
-    "h": 26
+    "h": 828
    }
   }
  ],
  "_meta": {
   "source": "CDP Accessibility.getFullAXTree + DOM.getBoxModel",
-  "totalNodesInViewport": 5
+  "totalNodesInViewport": 1
  }
 }

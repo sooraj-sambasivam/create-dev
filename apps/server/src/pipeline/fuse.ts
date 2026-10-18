@@ -26,8 +26,9 @@ interface Cluster {
 
 export function score(r: LocateResult, cursor?: { x: number; y: number }, imageSize?: { w: number; h: number }): number {
   let s = SOURCE_PRIOR[r.source] * r.confidence;
-  if (imageSize && !DATA_KINDS.has(r.kind) && r.box.w * r.box.h > HUGE_AREA_SHARE * imageSize.w * imageSize.h) s *= HUGE_WEIGHT;
-  if (!DATA_KINDS.has(r.kind)) s *= NON_DATA_WEIGHT;
+  if (imageSize && r.source !== "dom" && !DATA_KINDS.has(r.kind) && r.box.w * r.box.h > HUGE_AREA_SHARE * imageSize.w * imageSize.h) s *= HUGE_WEIGHT;
+  // Structural providers state their scope on purpose (the cell is the right answer to a value question), so only unscoped boxes pay the non-data penalty.
+  if (!r.scope && !DATA_KINDS.has(r.kind)) s *= NON_DATA_WEIGHT;
   if (cursor && !contains(r.box, cursor)) s *= OFF_CURSOR_WEIGHT;
   return s;
 }
@@ -67,5 +68,7 @@ export function fuse(all: LocateResult[], cursor?: { x: number; y: number }, ima
     result.candidates = cands;
     return { result, ask: `Which one? (A: ${short(cands[0]!)} or B: ${short(cands[1]!)})`.slice(0, 300) };
   }
+  // Eval: Jev alone is right on 1-4 of 30 targets (coarse boxes), so a Jev-only winner is a guess; say so instead of failing silently.
+  if (top.best.r.source === "jev" && agree === 0) return { result, ask: `Which one? Best guess: ${short(result)}. Point closer or name it.`.slice(0, 300) };
   return { result };
 }

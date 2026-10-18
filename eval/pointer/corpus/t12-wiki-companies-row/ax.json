@@ -1,6 +1,38 @@
 {
  "role": "AXWebArea",
  "title": "Walmart row in largest companies table",
+ "ancestors": [
+  {
+   "tag": "tr",
+   "rect": {
+    "x": 264,
+    "y": 433,
+    "w": 911,
+    "h": 33
+   },
+   "kind": "row"
+  },
+  {
+   "tag": "table",
+   "rect": {
+    "x": 264,
+    "y": 268,
+    "w": 912,
+    "h": 2243
+   },
+   "kind": "table"
+  },
+  {
+   "tag": "section",
+   "rect": {
+    "x": 264,
+    "y": 202,
+    "w": 912,
+    "h": 2309
+   },
+   "kind": "section"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

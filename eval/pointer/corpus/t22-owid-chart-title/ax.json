@@ -1,6 +1,18 @@
 {
  "role": "AXWebArea",
  "title": "chart title",
+ "ancestors": [
+  {
+   "tag": "figure",
+   "rect": {
+    "x": 80,
+    "y": 100,
+    "w": 1280,
+    "h": 680
+   },
+   "kind": "chart"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

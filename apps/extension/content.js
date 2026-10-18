@@ -457,6 +457,41 @@
   }
   const knownPages = (doc, base) => { const { nums, cur } = pagerNumbers(doc, base); return Math.max(cur, ...nums.map((p) => p.n), 1); };
 
+  /**
+   * Enclosing structure of `el`, nearest first (max 6): table, row (tr, li, [role=row]), list (ul/ol), chart (figure/svg/canvas),
+   * card (one of 3-24 same-class siblings with text), section. Rects are viewport CSS px.
+   */
+  function containerAncestors(el) {
+    const out = [];
+    const kindOf = (e) => {
+      const t = e.tagName.toLowerCase(), role = (e.getAttribute("role") || "").toLowerCase();
+      if (t === "table" || role === "table" || role === "grid" || role === "treegrid") return "table";
+      if (t === "tr" || t === "li" || role === "row" || role === "listitem") return "row";
+      if (t === "ul" || t === "ol" || t === "dl" || role === "list" || role === "listbox") return "list";
+      if (t === "figure" || t === "svg" || t === "canvas" || role === "graphics-document") return "chart";
+      if (t === "section" || role === "region") return "section";
+      const cls = typeof e.className === "string" ? e.className.trim() : "";
+      // div-based tables (Notion, Sheets clones): class tokens ending in -row / -table / -grid / -table-view.
+      const toks = cls ? cls.split(/\s+/) : [];
+      if (toks.some((k) => /(^|-)row$/.test(k))) return "row";
+      if (toks.some((k) => /(^|-)(table|grid)(-view)?$/.test(k))) return "table";
+      if (cls && e.parentElement && e.parentElement !== document.body) {
+        const same = [...e.parentElement.children].filter((c) => c.tagName === e.tagName && c.className === e.className);
+        const r = e.getBoundingClientRect();
+        if (same.length >= 3 && same.length <= 24 && r.width > 120 && r.height > 60 && (e.textContent || "").trim()) return "card";
+      }
+      return null;
+    };
+    for (let cur = el.parentElement; cur && cur !== document.body && cur !== document.documentElement && out.length < 6; cur = cur.parentElement) {
+      const kind = kindOf(cur);
+      if (!kind) continue;
+      const r = cur.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) continue;
+      const role = cur.getAttribute("role");
+      out.push({ tag: cur.tagName.toLowerCase().slice(0, 40), ...(role ? { role: role.slice(0, 80) } : {}), rect: { x: r.left, y: r.top, w: r.width, h: r.height }, kind });
+    }
+    return out;
+  }
   /** Where `el` sits under <body>: tag + nth-of-type per level, plus id and classes as fallbacks. */
   function pathOf(el) {
     const steps = [];
@@ -853,7 +888,7 @@
       if (!cap.ok) return { error: cap.error || "Could not capture that" };
       const hint = clean((d.el && (d.el.getAttribute("alt") || d.el.getAttribute("aria-label"))) || document.title).slice(0, 500);
       // The DOM cannot say what is inside an image or a loop: ask /api/locate. A miss shows "Which one?", never a silent guess.
-      const loc = await send({ type: "locate", image: cap.image, hint, cursor: { x: Math.round(mx), y: Math.round(my) }, ...(d.el ? { dom: { tag: d.el.tagName.toLowerCase(), text: clean(d.el.textContent || "").slice(0, 2000), rect: { x: r.left, y: r.top, w: r.width, h: r.height }, selectorPath: JSON.stringify(pathOf(d.el)).slice(0, 1000) } } : {}) });
+      const loc = await send({ type: "locate", image: cap.image, hint, utterance: value.slice(0, 1000), cursor: { x: Math.round(mx), y: Math.round(my) }, ...(d.el ? { dom: { tag: d.el.tagName.toLowerCase(), text: clean(d.el.textContent || "").slice(0, 2000), rect: { x: r.left, y: r.top, w: r.width, h: r.height }, selectorPath: JSON.stringify(pathOf(d.el)).slice(0, 1000), ancestors: containerAncestors(d.el) } } : {}) });
       if (loc.ok && loc.ask) return { error: `${loc.ask} Point closer or circle it.` };
       if (!loc.ok) console.info("Create: locate unavailable, reading the crop directly:", loc.error);
       const ex = await send({ type: "extract", image: cap.image, hint });

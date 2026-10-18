@@ -8,7 +8,8 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "onboard": "node scripts/onboard.mjs",
-    "share:tunnel": "node scripts/tunnel.mjs"
+    "share:tunnel": "node scripts/tunnel.mjs",
+    "eval:pointer": "node eval/pointer/run.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",

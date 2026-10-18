@@ -132,6 +132,13 @@ describe("providers", () => {
     expect(res.trace.stages.find((s) => s.provider === "jev")).toMatchObject({ ok: false });
     expect(res.ask).toBeTruthy();
   });
+  it("Jev: oversize full image uses imageSmall and scales fractions back to the full frame", async () => {
+    process.env.TYPESAFE_API_KEY = "tk";
+    const f = router({ jev: () => jevOk(0.95) });
+    const res = await locate(base({ image: png(2400, 1600), imageSize: { w: 2400, h: 1600 }, imageSmall: png(1200, 800), cursor: { x: 1200, y: 800 } }), ["jev"], deps(f));
+    expect(res.result).toMatchObject({ source: "jev", box: { x: 480, y: 400, w: 1440, h: 800 } });
+    expect(res.trace.stages.find((s) => s.provider === "jev")?.ok).toBe(true);
+  });
   it("Gemini: converts [ymin,xmin,ymax,xmax] 0-1000 to pixels", async () => {
     process.env.GEMINI_API_KEY = "gk";
     const f = router({ gemini: () => gem([{ label: "Pricing", kind: "table", box_2d: [250, 200, 750, 800] }]) });

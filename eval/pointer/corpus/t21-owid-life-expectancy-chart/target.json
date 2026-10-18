@@ -43,5 +43,16 @@
   "pageHeight": 4283,
   "capturedHeight": 2400,
   "note": "full.png is the top of the page capped at 2400px; the target may be below the crop (see boxPage)"
+ },
+ "ancestorsCollectedAt": "2026-10-18T07:58:13.317Z",
+ "ancestors": {
+  "dom": [
+   "chart",
+   "chart"
+  ],
+  "ax": [
+   "chart",
+   "chart"
+  ]
  }
 }

@@ -1,6 +1,38 @@
 {
  "role": "AXWebArea",
  "title": "Status column header",
+ "ancestors": [
+  {
+   "tag": "div",
+   "rect": {
+    "x": 104,
+    "y": 454,
+    "w": 593,
+    "h": 36
+   },
+   "kind": "row"
+  },
+  {
+   "tag": "div",
+   "rect": {
+    "x": 96,
+    "y": 454,
+    "w": 601,
+    "h": 156
+   },
+   "kind": "table"
+  },
+  {
+   "tag": "div",
+   "rect": {
+    "x": 96,
+    "y": 347,
+    "w": 1248,
+    "h": 1181
+   },
+   "kind": "card"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,
@@ -52,7 +84,7 @@
    "title": "Open comments",
    "frame": {
     "x": 188,
-    "y": 536,
+    "y": 535,
     "w": 34,
     "h": 20
    }
@@ -82,7 +114,7 @@
    "title": "Open comments",
    "frame": {
     "x": 188,
-    "y": 573,
+    "y": 571,
     "w": 34,
     "h": 20
    }
@@ -100,7 +132,7 @@
    "role": "image",
    "frame": {
     "x": 112,
-    "y": 537,
+    "y": 536,
     "w": 18,
     "h": 18
    }
@@ -119,7 +151,7 @@
    "role": "image",
    "frame": {
     "x": 112,
-    "y": 574,
+    "y": 572,
     "w": 18,
     "h": 18
    }
@@ -219,7 +251,7 @@
    "title": "Original Link",
    "frame": {
     "x": 102,
-    "y": 874,
+    "y": 871,
     "w": 589,
     "h": 35
    }
@@ -357,7 +389,7 @@
    "role": "image",
    "frame": {
     "x": 789,
-    "y": 762,
+    "y": 761,
     "w": 18,
     "h": 18
    }
@@ -386,7 +418,7 @@
    "role": "image",
    "frame": {
     "x": 789,
-    "y": 799,
+    "y": 797,
     "w": 18,
     "h": 18
    }
@@ -435,7 +467,7 @@
    "title": "Open comments",
    "frame": {
     "x": 865,
-    "y": 761,
+    "y": 760,
     "w": 34,
     "h": 20
    }
@@ -445,7 +477,7 @@
    "title": "Open comments",
    "frame": {
     "x": 865,
-    "y": 798,
+    "y": 796,
     "w": 34,
     "h": 20
    }

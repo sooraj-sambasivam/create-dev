@@ -1,6 +1,28 @@
 {
  "role": "AXWebArea",
  "title": "life expectancy line chart",
+ "ancestors": [
+  {
+   "tag": "svg",
+   "rect": {
+    "x": 81,
+    "y": 256,
+    "w": 957,
+    "h": 409
+   },
+   "kind": "chart"
+  },
+  {
+   "tag": "figure",
+   "rect": {
+    "x": 80,
+    "y": 100,
+    "w": 1280,
+    "h": 680
+   },
+   "kind": "chart"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,

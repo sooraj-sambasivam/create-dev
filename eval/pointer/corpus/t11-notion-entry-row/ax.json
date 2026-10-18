@@ -1,6 +1,38 @@
 {
  "role": "AXWebArea",
  "title": "Entry 2 row",
+ "ancestors": [
+  {
+   "tag": "div",
+   "rect": {
+    "x": 104,
+    "y": 454,
+    "w": 300,
+    "h": 36
+   },
+   "kind": "row"
+  },
+  {
+   "tag": "div",
+   "rect": {
+    "x": 96,
+    "y": 382,
+    "w": 601,
+    "h": 156
+   },
+   "kind": "table"
+  },
+  {
+   "tag": "div",
+   "rect": {
+    "x": 96,
+    "y": 275,
+    "w": 1248,
+    "h": 1181
+   },
+   "kind": "card"
+  }
+ ],
  "frame": {
   "x": 0,
   "y": 0,
