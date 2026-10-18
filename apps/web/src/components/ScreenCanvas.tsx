@@ -18,7 +18,7 @@ function EditorToolbar() {
   const addSlot =
     "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!gap-1.5 [&>div>button]:!rounded-lg [&>div>button]:!bg-transparent [&>div>button]:!px-2.5 [&>div>button]:!text-sm [&>div>button]:!font-medium [&>div>button]:!text-ink-2 [&>div>button:hover]:!bg-hover [&_.absolute]:!max-h-[min(70vh,22rem)] [&_.absolute]:!w-64";
   const publishSlot =
-    "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!rounded-lg [&>div>button]:!bg-accent [&>div>button]:!px-3 [&>div>button]:!text-sm [&>div>button]:!font-medium [&>div>button]:!text-white dark:[&>div>button]:!text-shell [&>div>button:hover]:!opacity-90 [&>div>button]:!transition-opacity";
+    "[&>div>button]:!inline-flex [&>div>button]:!h-8 [&>div>button]:!items-center [&>div>button]:!rounded-lg [&>div>button]:!bg-accent [&>div>button]:!px-3 [&>div>button]:!text-sm [&>div>button]:!font-medium [&>div>button]:!text-on-accent [&>div>button:hover]:!opacity-90 [&>div>button]:!transition-opacity";
   return (
     <div className="ml-auto flex items-center gap-1">
       {editMode && (

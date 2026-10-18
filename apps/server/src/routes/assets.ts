@@ -50,6 +50,6 @@ assetsRouter.get("/icons/search", async (req, res) => {
     res.json({ icons: [] });
     return;
   }
-  const prefixes = ICON_STYLES[style] ?? [];
+  const prefixes = Object.hasOwn(ICON_STYLES, style) ? ICON_STYLES[style]! : [];
   res.json({ icons: await searchIcons(q, prefixes, 48) });
 });

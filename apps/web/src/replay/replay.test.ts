@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   FALLBACK_TOAST_TEXT,
   MODE_STORAGE_KEY,
-  TOAST_MS,
   createMemoryStore,
   hashBody,
   installReplay,
@@ -230,7 +229,7 @@ describe("replay safety: exact match vs fallback", () => {
     expect(shown).toHaveLength(1);
     // Children are [icon, label]; the label carries the text.
     const [icon, label] = shown[0].children;
-    expect(label.textContent).toBe("Replay: no exact match — showing the last recorded run");
+    expect(label.textContent).toBe("Replay mode: no exact match — showing the last recorded run");
     expect(label.textContent).toBe(FALLBACK_TOAST_TEXT);
     expect(icon.innerHTML).toContain("<svg");
     expect(icon.attrs["aria-hidden"]).toBe("true");
@@ -242,12 +241,11 @@ describe("replay safety: exact match vs fallback", () => {
     expect(shown[0].style.cssText).not.toContain("top:56px");
   });
 
-  it("auto-hides the toast after TOAST_MS (3s)", async () => {
-    expect(TOAST_MS).toBe(3000);
+  it("keeps the toast up until replay is switched off", async () => {
     const store = createMemoryStore();
     await store.put(jsonRecording('{"from":"bakery"}', "/api/generate", "POST", generateBody));
     const { doc, toasts } = fakeDoc();
-    const { win } = mk({ doc, store, mode: "replay" });
+    const { win, ctl } = mk({ doc, store, mode: "replay" });
 
     const p = win.fetch("/api/generate", { method: "POST", body: otherBody });
     await flush();
@@ -255,10 +253,53 @@ describe("replay safety: exact match vs fallback", () => {
     await p;
     expect(toasts()).toHaveLength(1);
 
-    await vi.advanceTimersByTimeAsync(TOAST_MS - 1);
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(toasts()).toHaveLength(1);
-    await vi.advanceTimersByTimeAsync(1);
+    ctl.setMode("record");
     expect(toasts()).toHaveLength(0);
+  });
+
+  it.each(["/api/canvas-ops", "/api/route-intent", "/api/edit-node"])("replays %s from a recording", async (path) => {
+    const store = createMemoryStore();
+    const body = JSON.stringify({ x: 1 });
+    await store.put(jsonRecording('{"from":"rec"}', path, "POST", body));
+    const { win, real } = mk({ store, mode: "replay" });
+    const p = win.fetch(path, { method: "POST", body });
+    await flush();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await (await p).json()).toEqual({ from: "rec" });
+    expect(real).not.toHaveBeenCalled();
+  });
+
+  it("records a stream:true NDJSON response chunk by chunk and replays it", async () => {
+    const store = createMemoryStore();
+    const body = JSON.stringify({ prompt: "p", stream: true });
+    const enc = new TextEncoder();
+    const live = () =>
+      new Response(
+        new ReadableStream({
+          start(c) {
+            c.enqueue(enc.encode('{"a":1}\n{"a'));
+            c.enqueue(enc.encode('":2}\n'));
+            c.close();
+          },
+        }),
+        { status: 200, headers: { "content-type": "application/x-ndjson" } },
+      );
+    const rec = mk({ store });
+    rec.real.mockImplementation(async () => live());
+    const res = await rec.win.fetch("/api/generate", { method: "POST", body });
+    expect(await res.text()).toBe('{"a":1}\n{"a":2}\n');
+    for (let i = 0; i < 50; i++) await Promise.resolve();
+    const saved = await store.getByKey(requestKey("POST", "/api/generate", body));
+    expect(saved?.kind).toBe("ndjson");
+    expect(saved?.chunks.map((c) => c.text).join("")).toBe('{"a":1}\n{"a":2}\n');
+
+    rec.ctl.setMode("replay");
+    const p = rec.win.fetch("/api/generate", { method: "POST", body });
+    await flush();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(await (await p).text()).toBe('{"a":1}\n{"a":2}\n');
   });
 
   it("passes through to the network when no recording exists for the path, with no toast", async () => {

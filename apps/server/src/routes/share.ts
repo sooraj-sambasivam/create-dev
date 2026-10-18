@@ -24,9 +24,12 @@ export function describeStoreChoice(env: NodeJS.ProcessEnv = process.env): strin
     : "[share] prototype store: local JSON files (MONGODB_URI not set)";
 }
 
-/** Origin used to build the share link: the caller's origin, then PUBLIC_URL, then the dev client. */
-function shareOrigin(originHeader: string | undefined): string {
-  const raw = originHeader || process.env.PUBLIC_URL || FALLBACK_ORIGIN;
+/**
+ * Origin used to build the share link: PUBLIC_URL first (a phone cannot open the localhost origin the
+ * desktop browser sends), then the caller's origin, then the dev client.
+ */
+export function shareOrigin(originHeader: string | undefined, env: NodeJS.ProcessEnv = process.env): string {
+  const raw = env.PUBLIC_URL?.trim() || originHeader || FALLBACK_ORIGIN;
   return raw.replace(/\/+$/, "");
 }
 

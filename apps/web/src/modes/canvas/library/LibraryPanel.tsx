@@ -204,7 +204,7 @@ function SectionsTab() {
     <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
       {SECTION_TEMPLATES.map((t) => (
         <li key={t.id}>
-          <button type="button" onClick={() => insertIntoPage(structuredClone(t.nodes), `Added ${t.label} section`)} className="flex w-full flex-col rounded-[8px] px-2 py-2 text-left hover:bg-hover">
+          <button type="button" draggable onDragStart={(e) => setLibraryDrag(e, { libraryKind: "section", value: t.id, label: t.label })} onClick={() => insertIntoPage(structuredClone(t.nodes), `Added ${t.label} section`)} className="flex w-full flex-col rounded-[8px] px-2 py-2 text-left hover:bg-hover">
             <span className="text-[14px] text-ink">{t.label}</span>
             <span className="text-[12px] text-ink-3">{t.description}</span>
           </button>
@@ -226,6 +226,8 @@ function MotionTab() {
           <button
             key={p}
             type="button"
+            draggable
+            onDragStart={(e) => setLibraryDrag(e, { libraryKind: "motion", value: p, label: PRESETS[p].label })}
             disabled={!selectedId || !chatId}
             onClick={() => selectedId && chatId && setPreset(chatId, selectedId, p)}
             className="flex flex-col items-center gap-2 rounded-[8px] border border-line p-2 text-[12px] text-ink-2 hover:bg-hover disabled:opacity-60"

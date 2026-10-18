@@ -43,7 +43,11 @@ export function StrokePopover({
   const input = useRef<HTMLTextAreaElement>(null);
   const box = useScreenBox(editor, ids);
   const vp = useValue("viewport", () => editor.getViewportScreenBounds(), [editor]);
-  useEffect(() => input.current?.focus(), []);
+  useEffect(() => {
+    // Focus after the rise-in starts, so the caret is ready without scrolling the page.
+    const raf = requestAnimationFrame(() => input.current?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(raf);
+  }, []);
   if (!box) return null;
   const pos = popoverPosition(box, vp.w, vp.h);
   const can = label.trim().length > 0 && !busy;
@@ -98,7 +102,7 @@ export function StrokePopover({
           type="button"
           onClick={submit}
           disabled={!can}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm text-white transition-opacity duration-150 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm text-white dark:text-[#0d0d0d] transition-opacity duration-150 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {busy && <Loader2 size={16} strokeWidth={1.75} className="animate-spin motion-reduce:animate-none" aria-hidden />}
           {busy ? "Building" : "Confirm"}

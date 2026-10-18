@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ComponentType } from "react";
-import { AudioWaveform, Database, Feather, Image as ImageIcon, MessageSquare, Mic, PanelsTopLeft, Server, Shapes, Share, Sparkles, Zap } from "lucide-react";
+import { AudioWaveform, Check, Database, Minus, TriangleAlert, Feather, Image as ImageIcon, MessageSquare, Mic, PanelsTopLeft, Server, Shapes, Share, Sparkles, Zap } from "lucide-react";
 import type { Health } from "../routes";
 import { EDGES, NODES, neighbours, nodeStatus, routesFor, statusLabel, type IconName, type Status, type SvcNode } from "./model";
 import { edgeLabelRect, placeTooltip, type Rect } from "./tooltip";
@@ -8,7 +8,12 @@ const ICONS: Record<IconName, ComponentType<{ size?: number; strokeWidth?: numbe
   message: MessageSquare, canvas: PanelsTopLeft, narrate: AudioWaveform, share: Share, server: Server, database: Database,
   sonnet: Sparkles, haiku: Feather, jev: Zap, scribe: Mic, photos: ImageIcon, icons: Shapes,
 };
-const DOT: Record<Status, string> = { connected: "bg-ok", fallback: "bg-warn", unused: "bg-ink-3", unknown: "bg-ink-3" };
+const STATUS_ICON: Record<Status, { Icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string; "aria-hidden"?: boolean }>; cls: string }> = {
+  connected: { Icon: Check, cls: "text-ok" },
+  fallback: { Icon: TriangleAlert, cls: "text-warn" },
+  unused: { Icon: Minus, cls: "text-ink-2" },
+  unknown: { Icon: Minus, cls: "text-ink-2" },
+};
 const WIDE = 520;
 const TIP_W = 240;
 const TIP_PAD = 16;
@@ -121,7 +126,7 @@ export function ServiceDiagram({ health }: { health: Health | null }) {
       {tip && (
         <div
           role="tooltip"
-          className="pointer-events-none absolute z-10 rounded-xl border border-line bg-surface p-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
+          className="pointer-events-none absolute z-10 rounded-xl border border-line bg-surface p-2 shadow-soft"
           data-side={tipPos?.side}
           style={{ top: tipPos?.y ?? 0, left: tipPos?.x ?? 0, width: TIP_W }}
         >
@@ -155,7 +160,10 @@ function NodeCard({ node, status, health, dim, on, setRef, onActive }: { node: S
       <div className="flex items-center gap-2">
         <Icon size={18} strokeWidth={1.75} aria-hidden />
         <span className="min-w-0 flex-1 truncate text-[14px] text-ink">{node.name}</span>
-        <span className={`size-2 shrink-0 rounded-full ${DOT[status]}`} aria-hidden />
+        {(() => {
+          const { Icon: StatusIcon, cls } = STATUS_ICON[status];
+          return <StatusIcon size={14} strokeWidth={2} className={`shrink-0 ${cls}`} aria-hidden />;
+        })()}
       </div>
       <p className="text-[12px] text-ink-2">{node.role}</p>
       <p className="text-[12px] text-ink-2">{label}</p>

@@ -45,8 +45,50 @@ export function installPageCamera(editor: Editor): () => void {
   const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(apply) : null;
   ro?.observe(editor.getContainer());
   if (toolbar) ro?.observe(toolbar);
+  const offZoom = installZoomLock(editor);
   return () => {
     off();
+    offZoom();
     ro?.disconnect();
+  };
+}
+
+/** True for a wheel/pinch gesture that would zoom (ctrl or meta held; trackpad pinch arrives as ctrl+wheel). */
+export function isZoomWheel(e: { ctrlKey: boolean; metaKey: boolean }): boolean {
+  return e.ctrlKey || e.metaKey;
+}
+
+/** True for a key that would zoom: cmd/ctrl with + - = 0, or tldraw's shift+0/1/2 reset, fit and zoom-to-selection. */
+export function isZoomKey(e: { key: string; code?: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey?: boolean }): boolean {
+  if (e.ctrlKey || e.metaKey) return ["+", "=", "-", "_", "0"].includes(e.key);
+  return e.shiftKey && !e.altKey && ["Digit0", "Digit1", "Digit2"].includes(e.code ?? "");
+}
+
+function isEditable(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null;
+  return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable === true);
+}
+
+/** Blocks every way to zoom (ctrl+wheel, pinch, keyboard) before tldraw sees it; the page is fit-x only. Returns a disposer. */
+export function installZoomLock(editor: Editor): () => void {
+  const el = editor.getContainer();
+  const wheel = (e: WheelEvent) => {
+    if (!isZoomWheel(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const key = (e: KeyboardEvent) => {
+    if (!isZoomKey(e) || (!(e.ctrlKey || e.metaKey) && isEditable(e.target))) return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const gesture = (e: Event) => e.preventDefault();
+  el.addEventListener("wheel", wheel, { capture: true, passive: false });
+  el.addEventListener("keydown", key, true);
+  for (const g of ["gesturestart", "gesturechange"]) el.addEventListener(g, gesture, true);
+  return () => {
+    el.removeEventListener("wheel", wheel, true);
+    el.removeEventListener("keydown", key, true);
+    for (const g of ["gesturestart", "gesturechange"]) el.removeEventListener(g, gesture, true);
   };
 }

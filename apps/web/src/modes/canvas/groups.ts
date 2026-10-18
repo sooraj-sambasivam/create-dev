@@ -118,6 +118,33 @@ export function regionFromBounds(boxes: readonly Box[]): Region | null {
   return { x, y, w: right - x, h: bottom - y };
 }
 
+/** Strokes whose boxes are closer than this (page units) belong to the same drawing. */
+export const GROUP_GAP = 120;
+
+/** Gap between two boxes (0 when they overlap). */
+function boxGap(a: Box, b: Box): number {
+  const dx = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.w, b.x + b.w));
+  const dy = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.h, b.y + b.h));
+  return Math.hypot(dx, dy);
+}
+
+/** Single-link clusters of strokes: two far-apart strokes are two groups. Order within and between clusters follows the input. */
+export function clusterByGap(items: readonly { id: string; box: Box }[], gap = GROUP_GAP): string[][] {
+  const parent = items.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      if (boxGap(items[i].box, items[j].box) <= gap) parent[find(i)] = find(j);
+    }
+  }
+  const out = new Map<number, string[]>();
+  items.forEach((it, i) => {
+    const r = find(i);
+    out.set(r, [...(out.get(r) ?? []), it.id]);
+  });
+  return [...out.values()];
+}
+
 export type BuiltGroup = { id: string; label: string; ids: string[] };
 export type GroupState = {
   /** Stroke ids drawn since the last Confirm: the one open group. */
@@ -129,11 +156,11 @@ export const initialGroupState: GroupState = { open: [], built: [] };
 export type GroupAction =
   | { type: "stroke"; id: string }
   | { type: "remove"; id: string }
-  | { type: "discard" }
-  | { type: "confirm"; groupId: string; label: string }
+  | { type: "discard"; ids?: string[] }
+  | { type: "confirm"; groupId: string; label: string; ids?: string[] }
   | { type: "hydrate"; built: BuiltGroup[] };
 
-/** One group per Confirm: every stroke since the last confirm joins the open group; confirming closes it as built. */
+/** One group per Confirm: confirming closes the given ids (default: every open stroke) as built; open strokes elsewhere on the page stay open. */
 export function groupReducer(state: GroupState, a: GroupAction): GroupState {
   switch (a.type) {
     case "stroke":
@@ -149,10 +176,12 @@ export function groupReducer(state: GroupState, a: GroupAction): GroupState {
         : { open, built };
     }
     case "discard":
-      return { ...state, open: [] };
+      return { ...state, open: a.ids ? state.open.filter((i) => !a.ids!.includes(i)) : [] };
     case "confirm": {
-      if (!state.open.length) return state;
-      return { open: [], built: [...state.built, { id: a.groupId, label: a.label, ids: state.open }] };
+      // `ids` closes just that spatial cluster; the other open strokes stay open for the next Confirm.
+      const ids = a.ids ? state.open.filter((i) => a.ids!.includes(i)) : state.open;
+      if (!ids.length) return state;
+      return { open: state.open.filter((i) => !ids.includes(i)), built: [...state.built, { id: a.groupId, label: a.label, ids }] };
     }
     case "hydrate":
       return { open: state.open, built: a.built };

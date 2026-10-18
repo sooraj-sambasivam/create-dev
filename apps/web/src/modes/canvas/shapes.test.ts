@@ -23,3 +23,10 @@ describe("shapes mapping", () => {
     expect(toSummary({ id: "s", type: "draw" }, undefined)).toEqual({ id: "s", type: "draw", x: 0, y: 0, w: 0, h: 0 });
   });
 });
+
+describe("toSummary meta", () => {
+  it("carries the library origin", () => {
+    expect(toSummary({ id: "s", type: "image", meta: { libraryKind: "icon", value: "lucide:star" } }, { x: 0, y: 0, w: 96, h: 96 }).meta).toEqual({ icon: "lucide:star" });
+    expect(toSummary({ id: "s", type: "image" }, undefined).meta).toBeUndefined();
+  });
+});

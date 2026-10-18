@@ -48,14 +48,18 @@ app.use("/api", liveRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = err instanceof Error ? err.message : "Unknown error";
-  const status =
-    typeof (err as { status?: unknown }).status === "number"
-      ? (err as { status: number }).status
+  const raw = (err as { status?: unknown }).status;
+  const isMulter = (err as { name?: unknown } | null)?.name === "MulterError";
+  const status = isMulter
+    ? message.includes("File too large") ? 413 : 400
+    : typeof raw === "number" && raw >= 400 && raw < 600
+      ? raw
       : message.includes("File too large")
         ? 413
         : 500;
   if (status >= 500) console.error("[server]", err);
-  res.status(status).json({ error: status === 404 ? "Not found." : message });
+  // Never echo raw messages for server errors; 4xx messages (bad JSON, too large, multer) are safe to show.
+  res.status(status).json({ error: status === 404 ? "Not found." : status >= 500 ? "Something went wrong on the server." : message });
 });
 
 app.listen(port, () => {

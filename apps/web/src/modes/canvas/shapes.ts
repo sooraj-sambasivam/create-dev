@@ -6,6 +6,7 @@ export type ShapeLike = {
   id: string;
   type: string;
   props?: Record<string, unknown>;
+  meta?: Record<string, unknown>;
 };
 export type BoundsLike = { x: number; y: number; w: number; h: number };
 
@@ -31,14 +32,24 @@ export function shapeText(shape: ShapeLike): string | undefined {
   return text || undefined;
 }
 
+/** Library origin of a placed shape ({ icon: "lucide:star" }, { photo: url }, ...), so canvas-ops knows what it is. */
+export function shapeMeta(shape: ShapeLike): Record<string, string> | undefined {
+  const kind = shape.meta?.libraryKind;
+  const value = shape.meta?.value;
+  if (typeof kind !== "string" || typeof value !== "string" || !value) return undefined;
+  return { [kind]: value.slice(0, 2000) };
+}
+
 /** Pure mapping: shape + page bounds -> ShapeSummary. */
 export function toSummary(shape: ShapeLike, bounds: BoundsLike | undefined): ShapeSummary {
   const text = shapeText(shape);
+  const meta = shapeMeta(shape);
   const r = (n: number) => Math.round(n);
   return {
     id: shape.id,
     type: shape.type,
     ...(text ? { text } : {}),
+    ...(meta ? { meta } : {}),
     x: r(bounds?.x ?? 0),
     y: r(bounds?.y ?? 0),
     w: r(bounds?.w ?? 0),
@@ -71,6 +82,6 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 export async function exportPng(editor: Editor, ids?: string[]): Promise<string> {
   const shapeIds = (ids?.length ? ids : [...editor.getCurrentPageShapeIds()]) as TLShapeId[];
   if (!shapeIds.length) return "";
-  const { blob } = await editor.toImage(shapeIds, { format: "png", background: true, padding: 24, scale: 1, pixelRatio: 1 });
+  const { blob } = await editor.toImage(shapeIds, { format: "png", background: true, darkMode: false, padding: 24, scale: 1, pixelRatio: 1 });
   return blobToDataUrl(blob);
 }

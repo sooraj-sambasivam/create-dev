@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  GROUP_GAP,
   MIN_PAGE_H,
+  clusterByGap,
   PAGE_W,
   builtGroupsFromShapes,
   groupReducer,
@@ -130,5 +132,34 @@ describe("page camera clamp", () => {
   it("uses a brighter pen in dark", () => {
     expect(penColorFor("light")).toBe("blue");
     expect(penColorFor("dark")).toBe("light-blue");
+  });
+});
+
+describe("clusterByGap", () => {
+  const box = (x: number, y: number) => ({ x, y, w: 40, h: 40 });
+  it("keeps near strokes together", () => {
+    expect(clusterByGap([{ id: "a", box: box(0, 0) }, { id: "b", box: box(40 + GROUP_GAP - 1, 0) }])).toEqual([["a", "b"]]);
+  });
+  it("splits two far-apart strokes into two groups", () => {
+    expect(clusterByGap([{ id: "a", box: box(0, 0) }, { id: "b", box: box(0, 900) }])).toEqual([["a"], ["b"]]);
+  });
+  it("chains strokes through a middle one", () => {
+    const r = clusterByGap([{ id: "a", box: box(0, 0) }, { id: "c", box: box(0, 300) }, { id: "b", box: box(0, 150) }]);
+    expect(r).toEqual([["a", "c", "b"]]);
+  });
+});
+
+describe("groupReducer with a cluster", () => {
+  it("confirms only the given ids and leaves the rest open", () => {
+    let s = groupReducer(initialGroupState, { type: "stroke", id: "a" });
+    s = groupReducer(s, { type: "stroke", id: "b" });
+    s = groupReducer(s, { type: "confirm", groupId: "g1", label: "x", ids: ["b"] });
+    expect(s.open).toEqual(["a"]);
+    expect(s.built).toEqual([{ id: "g1", label: "x", ids: ["b"] }]);
+  });
+  it("discards only the given ids", () => {
+    let s = groupReducer(initialGroupState, { type: "stroke", id: "a" });
+    s = groupReducer(s, { type: "stroke", id: "b" });
+    expect(groupReducer(s, { type: "discard", ids: ["a"] }).open).toEqual(["b"]);
   });
 });

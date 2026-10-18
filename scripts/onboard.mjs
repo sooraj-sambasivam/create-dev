@@ -18,7 +18,7 @@ export const SECRET_KEYS = [
 
 export const KEY_FALLBACKS = {
   ANTHROPIC_API_KEY: 'real page generation, sketch and intent AI; without it the server uses canned mock screens and keyword intent routing',
-  ELEVENLABS_API_KEY: 'voice transcription and realtime mic; without it voice input is unavailable (typing still works)',
+  ELEVENLABS_API_KEY: 'voice transcription and realtime mic; without it voice falls back to browser speech (typing still works)',
   TYPESAFE_API_KEY: 'TypeSafe/Jev judgments; without it those calls are skipped and the app still runs',
   PERCEPTRON_API_KEY: 'sketch reading by Perceptron; without it sketches are read by the other path or mocks',
   MONGODB_URI: 'share links in Atlas; without it share links use a local file store',
@@ -184,6 +184,20 @@ function portOwner(port) {
   return m ? m[1] : null;
 }
 
+/** Dev web port from vite.config.ts text; null when not set (Vite then defaults to 5173). */
+export function parseWebPort(text) {
+  const m = /server\s*:\s*\{[^}]*?\bport\s*:\s*(\d+)/s.exec(String(text ?? ''));
+  return m ? Number(m[1]) : null;
+}
+
+function webPort(root) {
+  try {
+    return parseWebPort(readFileSync(join(root, 'apps/web/vite.config.ts'), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 function portFree(port) {
   return new Promise((res) => {
     const s = net.createServer();
@@ -193,9 +207,9 @@ function portFree(port) {
   });
 }
 
-async function checkPorts() {
+async function checkPorts(root) {
   head('Ports');
-  for (const [port, label] of [[3001, 'API'], [5173, 'web']]) {
+  for (const [port, label] of [[3001, 'API'], [webPort(root) ?? 5173, 'web']]) {
     if (await portFree(port)) ok(`port ${port} (${label}) is free`);
     else {
       const who = portOwner(port);
@@ -215,10 +229,12 @@ function runChecks(root) {
   else bad('pnpm test failed', 'run pnpm test and read the first failure');
 }
 
-function nextSteps() {
+function nextSteps(root) {
   head('Next steps');
+  const wp = webPort(root);
+  const web = wp ? `http://localhost:${wp}` : 'http://localhost:5173 (default; Vite uses the next free port if busy)';
   console.log(`  pnpm dev
-    web  http://localhost:5173
+    web  ${web}
     API  http://localhost:3001/api/health
   Backend view: menu (☰) -> Backend
   PR flow: branch off integrate -> PR into integrate -> Sooraj merges. Never main.
@@ -241,10 +257,10 @@ export async function main(argv) {
   checkGit(root, doctor ? null : branch);
   if (!doctor && hasPnpm) installDeps(root);
   checkEnv(root);
-  await checkPorts();
+  await checkPorts(root);
   if (!doctor && !quick && hasPnpm) runChecks(root);
   else console.log('\n- typecheck/tests skipped (--quick or --doctor)');
-  nextSteps();
+  nextSteps(root);
   console.log(failures ? `\n${failures} problem(s) need fixing.` : '\nAll set.');
   return failures ? 1 : 0;
 }

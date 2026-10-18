@@ -32,7 +32,7 @@ export interface HistoryEntry {
 
 /** Keep the AI's edited element on screen instead of letting the view jump. */
 function revealNode(id: string | null | undefined) {
-  if (!id) return;
+  if (!id || typeof requestAnimationFrame === "undefined") return;
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       document
@@ -43,6 +43,74 @@ function revealNode(id: string | null | undefined) {
 }
 
 const UNDO_LIMIT = 60;
+
+const FONT_STEPS = ["sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl"] as const;
+const TEXT_TYPES = new Set<string>(["heading", "text", "button", "link", "badge"]);
+const HEADING_DEFAULT = ["", "4xl", "3xl", "2xl", "xl", "lg", "lg"];
+
+type FastResult = { node: Node; summary: string } | null;
+
+const FILLER = "(?:it|this|that|the (?:\\w+ ){0,2}\\w+)";
+const MODIFIER = "(?:a (?:bit|little|lot)|slightly|much|way|bit|little)";
+const rx = (body: string) => new RegExp(`^(?:please |can you |could you )?${body}[.!]?$`, "i");
+const BIGGER = rx(`(?:make ${FILLER} (?:${MODIFIER} )?(?:bigger|larger)|(?:${MODIFIER} )?(?:bigger|larger)|increase (?:the )?size|enlarge ${FILLER})`);
+const SMALLER = rx(`(?:make ${FILLER} (?:${MODIFIER} )?(?:smaller|tinier)|(?:${MODIFIER} )?smaller|decrease (?:the )?size|shrink ${FILLER})`);
+const DELETE = rx(`(?:delete|remove|get rid of|trash)(?: ${FILLER})?`);
+const BOLD = rx(`(?:make ${FILLER} bold(?:er)?|bold(?: ${FILLER})?)`);
+const CENTER = rx(`(?:(?:centre|center)(?: ${FILLER})?|make ${FILLER} cent(?:re|er)(?:ed)?|(?:centre|center)[- ]align(?:ed)?(?: ${FILLER})?)`);
+
+/** True when the prompt is a plain "delete/remove this" with nothing else in it. */
+export function isDeletePrompt(prompt: string): boolean {
+  return DELETE.test(prompt.trim());
+}
+
+/**
+ * Edits that need no model: bigger/smaller (font size for text, width for the rest), bold, centre.
+ * Returns the patched node and a one-line summary, or null when the prompt is anything else.
+ * Delete is separate (see isDeletePrompt) because it removes the node instead of patching it.
+ */
+export function fastEdit(node: Node, prompt: string): FastResult {
+  const text = prompt.trim();
+  if (!text) return null;
+  const dir = BIGGER.test(text) ? 1 : SMALLER.test(text) ? -1 : 0;
+  if (dir !== 0) {
+    if (TEXT_TYPES.has(node.type)) {
+      const cur =
+        node.style?.fontSize ??
+        (node.type === "heading" ? (HEADING_DEFAULT[(node as { level?: number }).level ?? 2] ?? "2xl") : "base");
+      const i = FONT_STEPS.indexOf(cur as (typeof FONT_STEPS)[number]);
+      const next = FONT_STEPS[Math.min(FONT_STEPS.length - 1, Math.max(0, (i < 0 ? 1 : i) + dir))];
+      if (next === cur) return { node, summary: dir > 0 ? "Already the largest size." : "Already the smallest size." };
+      return { node: { ...node, style: { ...node.style, fontSize: next } } as Node, summary: dir > 0 ? "Made it bigger." : "Made it smaller." };
+    }
+    const cur = node.widthPct ?? 60;
+    const next = Math.min(100, Math.max(10, Math.round(cur + dir * 15)));
+    if (next === node.widthPct) return { node, summary: dir > 0 ? "Already full width." : "Already at the minimum width." };
+    return { node: { ...node, widthPct: next } as Node, summary: dir > 0 ? "Made it bigger." : "Made it smaller." };
+  }
+  if (BOLD.test(text)) {
+    return { node: { ...node, style: { ...node.style, weight: "bold" } } as Node, summary: "Made it bold." };
+  }
+  if (CENTER.test(text)) {
+    return { node: { ...node, style: { ...node.style, align: "center" } } as Node, summary: "Centred it." };
+  }
+  return null;
+}
+
+/** Bumped to discard results of work that started before a reset or chat switch. */
+let epoch = 0;
+let genAbort: AbortController | null = null;
+let pendingEdit: { id: string; prompt: string; resolve: (r: { error?: string; summary?: string }) => void } | null = null;
+
+/** Drop in-flight generation and the queued edit; their results must not land on a different page. */
+export function cancelInFlight(): void {
+  epoch++;
+  genAbort?.abort();
+  genAbort = null;
+  const p = pendingEdit;
+  pendingEdit = null;
+  p?.resolve({ error: "Cancelled." });
+}
 
 interface ScreenState {
   mode: Mode;
@@ -129,12 +197,89 @@ export const useScreenStore = create<ScreenState>()(
       future: [],
     }));
 
+  // Streaming partials replace the screen, so edits made while generating would be overwritten.
+  const locked = () => get().status === "loading";
+
   const withScreen = (fn: (screen: Screen) => Screen) => {
     const { screen } = get();
-    if (!screen) return;
+    if (!screen || locked()) return;
     const next = fn(screen);
     if (next !== screen) record(next);
   };
+
+  type EditResult = { error?: string; summary?: string };
+
+  const finishEdit = (prompt: string, summary: string, nextScreen: Screen, focusId: string | null) => {
+    record(nextScreen);
+    set((s) => ({
+      aiBusyId: null,
+      selectedId: focusId,
+      history: [...s.history, { prompt, summary, kind: "element" }],
+    }));
+    revealNode(focusId);
+  };
+
+  const runEdit = async (id: string, prompt: string): Promise<EditResult> => {
+    const trimmed = prompt.trim();
+    const { screen, aiBusyId, assets, status } = get();
+    if (!trimmed || !screen || !findNode(screen, id)) return {};
+    if (aiBusyId || status === "loading") {
+      // One waiting slot: the second command runs after the first instead of being dropped.
+      if (pendingEdit) return { error: "Another edit is already waiting. Try again in a moment." };
+      return new Promise<EditResult>((resolve) => {
+        pendingEdit = { id, prompt: trimmed, resolve };
+      });
+    }
+
+    // No model call for clear cases.
+    const node = findNode(screen, id)!;
+    if (isDeletePrompt(trimmed)) {
+      record(removeNode(screen, id));
+      set((s) => ({
+        selectedId: s.selectedId === id ? null : s.selectedId,
+        editingId: null,
+        history: [...s.history, { prompt: trimmed, summary: "Removed it.", kind: "element" }],
+      }));
+      return { summary: "Removed it." };
+    }
+    const fast = fastEdit(node, trimmed);
+    if (fast) {
+      if (fast.node !== node) {
+        record(replaceNode(screen, id, [fast.node]).screen);
+        set((s) => ({ history: [...s.history, { prompt: trimmed, summary: fast.summary, kind: "element" }] }));
+      }
+      return { summary: fast.summary };
+    }
+
+    const mine = epoch;
+    set({ aiBusyId: id, editingId: null });
+    try {
+      const result = await api.editNode(screen, id, trimmed, assets);
+      // A reset or chat switch happened while waiting: the result belongs to another page.
+      if (epoch !== mine || get().aiBusyId !== id) return { error: "Cancelled." };
+      // Apply to the latest screen so manual edits made while waiting are kept.
+      const latest = get().screen;
+      if (!latest || !findNode(latest, id)) {
+        set({ aiBusyId: null });
+        return { error: "That element was removed while the AI was working." };
+      }
+      const { screen: next, ids } = replaceNode(latest, id, result.nodes);
+      finishEdit(trimmed, result.summary, next, ids[0] ?? null);
+      return { summary: result.summary };
+    } catch (err) {
+      if (epoch === mine && get().aiBusyId === id) set({ aiBusyId: null });
+      return { error: err instanceof Error ? err.message : "The AI edit failed." };
+    } finally {
+      if (epoch === mine) void drainPending();
+    }
+  };
+
+  async function drainPending() {
+    const p = pendingEdit;
+    if (!p || get().aiBusyId || get().status === "loading") return;
+    pendingEdit = null;
+    p.resolve(await runEdit(p.id, p.prompt));
+  }
 
   return {
     mode: "text",
@@ -169,13 +314,23 @@ export const useScreenStore = create<ScreenState>()(
       const trimmed = prompt.trim();
       if (!trimmed || get().status === "loading") return;
       set({ status: "loading", error: null, editingId: null, lastSummary: null });
+      const mine = epoch;
+      const ctrl = new AbortController();
+      genAbort = ctrl;
       // The page as it was before this request; restored if the request fails.
       const before = get().screen;
       try {
         const { screen, history, assets } = get();
         const request = { prompt: trimmed, screen, history: history.map((h) => h.prompt).slice(-10), assets };
         // Sections appear as they finish. These updates are not undo steps.
-        const result = await api.generateStream(request, (partial) => set({ screen: partial }));
+        const result = await api.generateStream(
+          request,
+          (partial) => {
+            if (epoch === mine) set({ screen: partial });
+          },
+          ctrl.signal,
+        );
+        if (epoch !== mine) return; // chat switched or reset: this result belongs to another page
         // One undo entry for the whole generation: the page as it was before.
         set((s) => ({
           screen: result.screen,
@@ -188,15 +343,20 @@ export const useScreenStore = create<ScreenState>()(
         }));
         revealNode(get().selectedId);
       } catch (err) {
+        if (epoch !== mine) return;
         set({
           screen: before,
           status: "error",
           error: err instanceof Error ? err.message : "Something went wrong.",
         });
+      } finally {
+        if (genAbort === ctrl) genAbort = null;
+        if (epoch === mine) void drainPending();
       }
     },
 
-    reset: () =>
+    reset: () => {
+      cancelInFlight();
       set({
         screen: null,
         status: "idle",
@@ -208,27 +368,31 @@ export const useScreenStore = create<ScreenState>()(
         lastSummary: null,
         past: [],
         future: [],
-      }),
+      });
+    },
 
     setEditMode: (on) => set({ editMode: on, selectedId: on ? get().selectedId : null, editingId: null }),
     select: (id) => set((s) => ({ selectedId: id, editingId: s.editingId === id ? s.editingId : null })),
     setEditing: (id) => set((s) => ({ editingId: id, selectedId: id ?? s.selectedId })),
 
     snapshot: () =>
-      set((s) => (s.screen ? { past: [...s.past.slice(-(UNDO_LIMIT - 1)), s.screen], future: [] } : {})),
-    replaceLive: (next) => set({ screen: next }),
+      set((s) => (s.screen && s.status !== "loading" ? { past: [...s.past.slice(-(UNDO_LIMIT - 1)), s.screen], future: [] } : {})),
+    replaceLive: (next) => {
+      if (!locked()) set({ screen: next });
+    },
 
     patchNode: (id, patch) => withScreen((screen) => updateNode(screen, id, patch)),
     patchStyle: (id, patch) => withScreen((screen) => updateStyle(screen, id, patch)),
 
     remove: (id) => {
+      if (locked()) return;
       withScreen((screen) => removeNode(screen, id));
       set((s) => ({ selectedId: s.selectedId === id ? null : s.selectedId, editingId: null }));
     },
 
     duplicate: (id) => {
       const { screen } = get();
-      if (!screen) return;
+      if (!screen || locked()) return;
       const node = findNode(screen, id);
       if (!node) return;
       const parentId = findParentId(screen, id) ?? null;
@@ -242,7 +406,7 @@ export const useScreenStore = create<ScreenState>()(
 
     addNode: (type) => {
       const { screen, selectedId } = get();
-      if (!screen) return;
+      if (!screen || locked()) return;
       const node = defaultNode(screen, type);
       let parentId: string | null = null;
       let index = screen.children.length;
@@ -260,33 +424,7 @@ export const useScreenStore = create<ScreenState>()(
       set({ selectedId: node.id });
     },
 
-    editNodeWithAI: async (id, prompt) => {
-      const trimmed = prompt.trim();
-      const { screen, aiBusyId, assets } = get();
-      if (!trimmed || !screen || aiBusyId || !findNode(screen, id)) return {};
-      set({ aiBusyId: id, editingId: null });
-      try {
-        const result = await api.editNode(screen, id, trimmed, assets);
-        // Apply to the latest screen so manual edits made while waiting are kept.
-        const latest = get().screen;
-        if (!latest || !findNode(latest, id)) {
-          set({ aiBusyId: null });
-          return { error: "That element was removed while the AI was working." };
-        }
-        const { screen: next, ids } = replaceNode(latest, id, result.nodes);
-        record(next);
-        set((s) => ({
-          aiBusyId: null,
-          selectedId: ids[0] ?? null,
-          history: [...s.history, { prompt: trimmed, summary: result.summary, kind: "element" }],
-        }));
-        revealNode(ids[0]);
-        return { summary: result.summary };
-      } catch (err) {
-        set({ aiBusyId: null });
-        return { error: err instanceof Error ? err.message : "The AI edit failed." };
-      }
-    },
+    editNodeWithAI: (id, prompt) => runEdit(id, prompt),
 
     uploadAsset: async (file) => {
       const asset = await api.uploadImage(file);
@@ -298,12 +436,14 @@ export const useScreenStore = create<ScreenState>()(
 
     undo: () =>
       set((s) => {
+        if (s.status === "loading") return {};
         const prev = s.past[s.past.length - 1];
         if (!prev || !s.screen) return {};
         return { screen: prev, past: s.past.slice(0, -1), future: [s.screen, ...s.future], editingId: null };
       }),
     redo: () =>
       set((s) => {
+        if (s.status === "loading") return {};
         const next = s.future[0];
         if (!next || !s.screen) return {};
         return { screen: next, future: s.future.slice(1), past: [...s.past, s.screen], editingId: null };

@@ -45,3 +45,15 @@ export const MAX_FIELD_PX = 24 * 8;
 export function isStoreBusy(s: { status: string; aiBusyId: string | null | undefined }): boolean {
   return s.status === "loading" || s.status === "transcribing" || (s.aiBusyId ?? null) !== null;
 }
+
+const DEICTIC_RE = /\b(this|that|these|those|it|here)\b/i;
+
+/** True when the line points at something ("make this bigger", "swap that photo", "fix it"). */
+export function isDeictic(text: string): boolean {
+  return DEICTIC_RE.test(text);
+}
+
+/** A typed prompt goes to the selected element, not the whole page, when one is selected and the line points at it. */
+export function routesToSelection(text: string, selectedId: string | null): boolean {
+  return selectedId !== null && isDeictic(text);
+}

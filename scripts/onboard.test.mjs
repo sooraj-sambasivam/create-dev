@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseVersion, versionAtLeast, parseEnvNames, parseBehindCount, isExpectedRemote, summarizeTests,
+  parseVersion, versionAtLeast, parseEnvNames, parseBehindCount, isExpectedRemote, summarizeTests, parseWebPort,
 } from './onboard.mjs';
 
 test('versionAtLeast compares semver', () => {
@@ -56,4 +56,10 @@ test('isExpectedRemote', () => {
 test('summarizeTests', () => {
   assert.match(summarizeTests('Tests  12 passed (12)\nTests  5 passed (5)'), /17 tests passed across 2/);
   assert.equal(summarizeTests('nothing'), null);
+});
+
+test('parseWebPort reads the vite server port', () => {
+  assert.equal(parseWebPort('export default defineConfig({\n  server: {\n    port: 5175,\n    proxy: {}\n  },\n})'), 5175);
+  assert.equal(parseWebPort('export default defineConfig({ plugins: [] })'), null);
+  assert.equal(parseWebPort(undefined), null);
 });

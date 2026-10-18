@@ -8,7 +8,7 @@ import {
   type GenerateResponse,
   type Screen,
 } from "@create/shared";
-import { GenerationError, editNodeWithClaude, generateWithClaude } from "../ai/claude";
+import { GenerationError, editNodeWithFallback, generateWithClaude } from "../ai/claude";
 
 export const generateRouter = Router();
 
@@ -76,6 +76,11 @@ async function streamGenerate(req: GenerateRequest, res: Response): Promise<void
 }
 
 function sendError(res: Response, err: unknown, label: string) {
+  const status = (err as { status?: unknown })?.status;
+  if (!(err instanceof GenerationError) && status === 404 && err instanceof Error) {
+    res.status(404).json({ error: err.message });
+    return;
+  }
   if (err instanceof GenerationError) {
     res.status(err.status).json({ error: err.message });
     return;
@@ -116,15 +121,9 @@ generateRouter.post("/edit-node", async (req, res) => {
     return;
   }
 
-  if (process.env.MOCK_AI === "1") {
-    await sleep(400);
-    const node = findNode(parsed.data.screen, parsed.data.nodeId);
-    res.json({ summary: "Mock mode: element left unchanged.", nodes: node ? [node] : [] });
-    return;
-  }
-
   try {
-    res.json(await editNodeWithClaude(parsed.data));
+    if (process.env.MOCK_AI === "1") await sleep(400);
+    res.json(await editNodeWithFallback(parsed.data));
   } catch (err) {
     sendError(res, err, "edit-node");
   }

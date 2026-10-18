@@ -4,11 +4,20 @@ import {
   clipRect,
   collectDomPageHits,
   collectPageHits,
+  askText,
   frameScale,
+  isDeictic,
   mapToHost,
   nodeLabel,
   overlapFraction,
+  pickHover,
+  preResolve,
+  prettyLabel,
+  pushSample,
   resolvePageTargets,
+  sampleAt,
+  type HoverHit,
+  type PointerSample,
   type ElementLike,
   type PageFrame,
 } from "./targets";
@@ -50,13 +59,85 @@ describe("targets", () => {
     expect(frameScale(0, 1200)).toBe(1);
     expect(mapToHost({ x: 10, y: 20, w: 40, h: 30 }, { x: 900, y: 100, w: 600, h: 280 }, 0.5)).toEqual({ x: 905, y: 110, w: 20, h: 15 });
   });
-  it("only builds an intent request within 4s of a lasso", () => {
-    const lasso = { t: 1000, targets: [{ id: "n1", label: "button", kind: "node" as const }] };
-    expect(buildIntentRequest("make it red", lasso, 4900)?.candidates).toHaveLength(1);
-    expect(buildIntentRequest("make it red", lasso, 5100)).toBeNull();
+  it("builds an intent request for speech up to 8s after a lasso or 4s before it", () => {
+    const lasso = { t: 10000, targets: [{ id: "n1", label: "button", kind: "node" as const }] };
+    expect(buildIntentRequest("make it red", lasso, 17900)?.candidates).toHaveLength(1);
+    expect(buildIntentRequest("make it red", lasso, 18100)).toBeNull();
+    expect(buildIntentRequest("make it red", lasso, 6100)?.candidates).toHaveLength(1);
+    expect(buildIntentRequest("make it red", lasso, 5900)).toBeNull();
     expect(buildIntentRequest("make it red", null, 1100)).toBeNull();
     expect(buildIntentRequest("  ", lasso, 1100)).toBeNull();
     expect(buildIntentRequest("x", { t: 1000, targets: [] }, 1100)).toBeNull();
+  });
+});
+
+const hover = (id: string, label = "heading: Welcome", area = 1000): HoverHit => ({ id, label, area, box: { x: 0, y: 0, w: 10, h: 10 } });
+
+describe("pointer", () => {
+  it("flags deictic lines", () => {
+    for (const t of ["make this bigger", "swap that photo", "delete these", "fix it", "change here"]) expect(isDeictic(t)).toBe(true);
+    for (const t of ["make the heading bigger", "add a footer"]) expect(isDeictic(t)).toBe(false);
+  });
+  it("prettifies labels", () => {
+    expect(prettyLabel("heading: Welcome")).toBe("Heading · Welcome");
+    expect(prettyLabel("button")).toBe("Button");
+  });
+  it("picks the deepest node under the pointer from an elementsFromPoint stack", () => {
+    const root = { contains: () => true, getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) };
+    const heading = el("h1", { left: 10, top: 10, width: 200, height: 40 }, "Welcome", "heading");
+    const section = el("s1", { left: 0, top: 0, width: 800, height: 300 }, "Welcome Buy", "section");
+    const span = { ...el("", { left: 10, top: 10, width: 50, height: 20 }), getAttribute: () => null, closest: () => heading };
+    const bare = { ...el("", { left: 0, top: 0, width: 5, height: 5 }), getAttribute: () => null };
+    const hit = pickHover([bare, span, heading, section], root);
+    expect(hit?.id).toBe("h1");
+    expect(hit?.label).toBe("heading: Welcome");
+    expect(hit?.area).toBe(8000);
+    expect(pickHover([bare], root)).toBeNull();
+    expect(pickHover([heading], { ...root, contains: () => false })).toBeNull();
+  });
+  it("looks up where the pointer was at a past time and trims old samples", () => {
+    const buf: PointerSample[] = [];
+    pushSample(buf, { t: 1000, x: 1, y: 1, hit: hover("a") });
+    pushSample(buf, { t: 2000, x: 2, y: 2, hit: hover("b") });
+    pushSample(buf, { t: 3000, x: 3, y: 3, hit: null });
+    expect(sampleAt(buf, 2500)?.hit?.id).toBe("b");
+    expect(sampleAt(buf, 2000)?.hit?.id).toBe("b");
+    expect(sampleAt(buf, 500)).toBeNull();
+    pushSample(buf, { t: 20000, x: 4, y: 4, hit: hover("c") }, 5000);
+    // Everything older than the window collapses to the newest sample before the cutoff.
+    expect(buf.map((s) => s.t)).toEqual([3000, 20000]);
+    expect(sampleAt(buf, 19000)?.t).toBe(3000);
+  });
+  it("hover alone makes a one-candidate request carrying the pointer target", () => {
+    const req = buildIntentRequest("make this bigger", null, 5000, hover("h1"));
+    expect(req?.candidates).toEqual([{ id: "h1", label: "heading: Welcome", kind: "node" }]);
+    expect(req?.pointer).toEqual({ targetId: "h1", label: "heading: Welcome" });
+    expect(buildIntentRequest("make this bigger", null, 5000, null)).toBeNull();
+  });
+  it("a lasso wins over hover, and hover inside the lasso names the pointer target", () => {
+    const lasso = { t: 1000, targets: [
+      { id: "a", label: "heading: A", kind: "node" as const },
+      { id: "b", label: "button: B", kind: "node" as const },
+    ] };
+    const req = buildIntentRequest("make this red", lasso, 2000, hover("b", "button: B"));
+    expect(req?.candidates.map((c) => c.id)).toEqual(["a", "b"]);
+    expect(req?.pointer?.targetId).toBe("b");
+    expect(buildIntentRequest("make these red", lasso, 2000, hover("zzz"))?.pointer?.targetId).toBeNull();
+  });
+  it("pre-resolves this/that: one candidate, hovered, smallest leaf, else asks", () => {
+    const two = [
+      { id: "a", label: "heading: Welcome", kind: "node" as const },
+      { id: "b", label: "section", kind: "node" as const },
+    ];
+    const one = preResolve({ transcript: "make it red", candidates: [two[0]] });
+    expect(one).toEqual({ kind: "target", id: "a", label: "heading: Welcome" });
+    expect(preResolve({ transcript: "make this bigger", candidates: two, pointer: { targetId: "b" } })).toMatchObject({ kind: "target", id: "b" });
+    expect(preResolve({ transcript: "make this bigger", candidates: two, pointer: { targetId: null } }, { a: 100, b: 5000 })).toMatchObject({ kind: "target", id: "a" });
+    const ask = preResolve({ transcript: "make this bigger", candidates: two, pointer: { targetId: null } }, { a: 100, b: 110 });
+    expect(ask).toEqual({ kind: "ask", labels: ["Heading · Welcome", "Section"] });
+    expect(preResolve({ transcript: "make this bigger", candidates: two })).toMatchObject({ kind: "ask" });
+    expect(preResolve({ transcript: "make the heading red", candidates: two })).toEqual({ kind: "none" });
+    expect(askText(["A", "B"])).toBe("Which one? (A, B)");
   });
 });
 

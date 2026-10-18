@@ -51,6 +51,7 @@ export function NarrateBarView({
   micHint,
   text,
   finishing,
+  hint,
   onFinish,
   onCancel,
 }: {
@@ -61,6 +62,8 @@ export function NarrateBarView({
   micHint?: string;
   text: string;
   finishing: boolean;
+  /** Always-visible usage hint, shown just above the bar. */
+  hint?: string;
   onFinish(): void;
   onCancel(): void;
 }) {
@@ -112,6 +115,11 @@ export function NarrateBarView({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: dur }}
     >
+      {hint && (
+        <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 rounded-full border border-line bg-surface px-3 text-[12px] leading-6 text-ink-2">
+          {hint}
+        </span>
+      )}
       <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full bg-bad ${reduce ? "" : "animate-pulse"}`} />
       <span className="shrink-0 text-[14px] tabular-nums" aria-label="Elapsed time">{elapsed}</span>
       <MicPill state={mic} hint={micHint} />

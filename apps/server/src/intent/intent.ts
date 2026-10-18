@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { judgeIntent } from "../jev/client";
-import { IntentResultSchema, type IntentRequest, type IntentResult } from "@create/shared";
+import { INTENT_ACTIONS, IntentResultSchema, type IntentRequest, type IntentResult } from "@create/shared";
 
 /**
  * Routes a spoken line: is it a command for the canvas, and which element does it target?
@@ -29,7 +29,7 @@ const INTENT_TOOL: Anthropic.Tool = {
       },
       action: {
         type: "string",
-        enum: ["restyle", "move", "delete", "add", "replace_text", "regenerate", "none"],
+        enum: [...INTENT_ACTIONS],
       },
       confidence: { type: "number", minimum: 0, maximum: 1 },
     },
@@ -47,13 +47,15 @@ const FILLER = new Set([
 /** Verb cues, checked in this order (first match wins). */
 const VERB_RULES: Array<{ action: Action; pattern: RegExp }> = [
   { action: "delete", pattern: /\b(delete|remove|erase|get rid of|drop|trash)\b/ },
+  { action: "resize", pattern: /\b(bigger|smaller|larger|wider|taller|shorter|narrower|shrink|enlarge|resize|grow)\b/ },
+  { action: "replace_media", pattern: /\b(photo|image|picture|pic|swap|replace\b.*\bwith)\b/ },
   { action: "move", pattern: /\b(move|drag|shift|nudge|place|position|align|center|centre)\b/ },
   { action: "replace_text", pattern: /\b(rewrite|reword|rephrase|say|text|caption|label|title|heading)\b/ },
   { action: "regenerate", pattern: /\b(regenerate|redo|rebuild|start over|try again)\b/ },
   { action: "add", pattern: /\b(add|insert|create|append|include)\b/ },
   {
     action: "restyle",
-    pattern: /\b(make|change|color|colour|recolor|recolour|style|bigger|smaller|larger|bold|italic|font|round|rounder|shadow|border|background|blue|red|green|black|white|dark|light|pink|purple|yellow|orange)\b/,
+    pattern: /\b(make|change|color|colour|recolor|recolour|style|bold|italic|font|round|rounder|shadow|border|background|blue|red|green|black|white|dark|light|pink|purple|yellow|orange)\b/,
   },
 ];
 
@@ -90,6 +92,24 @@ export function sanitizeIntent(raw: unknown, candidates: Candidate[]): IntentRes
   };
   if (!result.isCommand) result.action = "none";
   return IntentResultSchema.parse(result);
+}
+
+/** "this", "that", "here"... : the speaker is pointing rather than naming the element. */
+const DEICTIC = /\b(this|that|these|those|here|it)\b/;
+
+export function isDeictic(transcript: string): boolean {
+  return DEICTIC.test(normalize(transcript));
+}
+
+/**
+ * When the line is a deictic command and the engine found no target, default to the element under
+ * the pointer. The pointer id is trusted only as a candidate id or, with no candidates, as given.
+ */
+export function applyPointer(req: IntentRequest, result: IntentResult): IntentResult {
+  const pid = req.pointer?.targetId;
+  if (!pid || !result.isCommand || result.targetId || !isDeictic(req.transcript)) return result;
+  if (req.candidates.length > 0 && !req.candidates.some((c) => c.id === pid)) return result;
+  return { ...result, targetId: pid };
 }
 
 /** Keyword router. Pure and synchronous, so it always works in mock mode. */
@@ -151,7 +171,7 @@ export async function routeIntentWithClaude(req: IntentRequest, client: Anthropi
       messages: [
         {
           role: "user",
-          content: `Transcript: """${req.transcript}"""\nCandidates:\n${candidateLines}`,
+          content: `Transcript: """${req.transcript}"""\nCandidates:\n${candidateLines}${pointerLine(req)}`,
         },
       ],
     },
@@ -162,6 +182,11 @@ export async function routeIntentWithClaude(req: IntentRequest, client: Anthropi
   );
   if (!block) throw new Error("Model did not call route_intent.");
   return sanitizeIntent(block.input, req.candidates);
+}
+
+function pointerLine(req: IntentRequest): string {
+  const p = req.pointer;
+  return p?.targetId ? `\nThe pointer is on id=${p.targetId}${p.label ? ` ("${p.label}")` : ""}; "this"/"that" means it.` : "";
 }
 
 let client: Anthropic | null = null;
@@ -180,15 +205,15 @@ export async function routeIntentWithEngine(
 ): Promise<{ result: IntentResult; engine: IntentEngine }> {
   const jev = await judgeIntent(req);
   const parsed = jev ? IntentResultSchema.safeParse(jev) : null;
-  if (parsed?.success) return { result: parsed.data, engine: "jev" };
+  if (parsed?.success) return { result: applyPointer(req, parsed.data), engine: "jev" };
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (process.env.MOCK_AI === "1" || (!opts.client && !apiKey)) return { result: routeIntentFallback(req), engine: "keywords" };
+  if (process.env.MOCK_AI === "1" || (!opts.client && !apiKey)) return { result: applyPointer(req, routeIntentFallback(req)), engine: "keywords" };
   try {
     client ??= new Anthropic({ apiKey: apiKey ?? "unset", timeout: INTENT_TIMEOUT_MS, maxRetries: 0 });
-    return { result: await routeIntentWithClaude(req, opts.client ?? client), engine: "haiku" };
+    return { result: applyPointer(req, await routeIntentWithClaude(req, opts.client ?? client)), engine: "haiku" };
   } catch (err) {
     console.warn("[route-intent] falling back to keyword router:", err instanceof Error ? err.message : "unknown error");
-    return { result: routeIntentFallback(req), engine: "keywords" };
+    return { result: applyPointer(req, routeIntentFallback(req)), engine: "keywords" };
   }
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMention, fanOffset, filterMentions, mentionQuery, placeholderFor, isStoreBusy } from "./logic";
+import { applyMention, fanOffset, filterMentions, mentionQuery, placeholderFor, isStoreBusy, isDeictic, routesToSelection } from "./logic";
 import { useComposerSettings } from "./settings";
 
 describe("mentions", () => {
@@ -47,5 +47,20 @@ describe("settings", () => {
     expect(st.projectId).toBe(st.projects.at(-1)?.id);
     s.createProject("   ");
     expect(useComposerSettings.getState().projects.length).toBe(st.projects.length);
+  });
+});
+
+describe("deictic routing", () => {
+  it("flags pointing words only as whole words", () => {
+    expect(isDeictic("make this bigger")).toBe(true);
+    expect(isDeictic("Swap that photo")).toBe(true);
+    expect(isDeictic("fix it")).toBe(true);
+    expect(isDeictic("add a pricing section")).toBe(false);
+    expect(isDeictic("a bright thistle palette")).toBe(false);
+  });
+  it("routes to the selection only when something is selected", () => {
+    expect(routesToSelection("make this bigger", "n1")).toBe(true);
+    expect(routesToSelection("make this bigger", null)).toBe(false);
+    expect(routesToSelection("add a footer", "n1")).toBe(false);
   });
 });

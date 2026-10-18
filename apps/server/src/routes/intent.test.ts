@@ -5,7 +5,7 @@ import type { Server } from "node:http";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { IntentRequest } from "@create/shared";
 import { intentRouter } from "./intent";
-import { routeIntent, routeIntentFallback, routeIntentWithClaude, sanitizeIntent } from "../intent/intent";
+import { applyPointer, routeIntent, routeIntentFallback, routeIntentWithClaude, sanitizeIntent } from "../intent/intent";
 
 const candidates: IntentRequest["candidates"] = [
   { id: "n1", label: "Pricing heading", kind: "node" },
@@ -37,7 +37,9 @@ describe("keyword fallback", () => {
     expect(routeIntentFallback(req("delete the sign up button")).action).toBe("delete");
     expect(routeIntentFallback(req("move the pricing heading left")).action).toBe("move");
     expect(routeIntentFallback(req("add a footer")).action).toBe("add");
-    expect(routeIntentFallback(req("make it bigger")).action).toBe("restyle");
+    expect(routeIntentFallback(req("make it bigger")).action).toBe("resize")
+    expect(routeIntentFallback(req("swap this photo")).action).toBe("replace_media")
+    expect(routeIntentFallback(req("make it blue")).action).toBe("restyle");
     expect(routeIntentFallback(req("rewrite this as a question")).action).toBe("replace_text");
     expect(routeIntentFallback(req("start over and regenerate")).action).toBe("regenerate");
   });
@@ -187,5 +189,28 @@ describe("POST /api/route-intent", () => {
     } finally {
       delete process.env.MOCK_AI;
     }
+  });
+});
+
+describe("pointer default", () => {
+  const cmd = { isCommand: true, targetId: null, action: "resize" as const, confidence: 0.7 };
+  const withPointer = (transcript: string, id: string | null, c = candidates): IntentRequest => ({
+    transcript, candidates: c, pointer: { targetId: id },
+  });
+
+  it("defaults a deictic command to the pointer candidate", () => {
+    expect(applyPointer(withPointer("make this bigger", "n2"), cmd).targetId).toBe("n2");
+  });
+  it("accepts the pointer id when there are no candidates", () => {
+    expect(applyPointer(withPointer("make that bigger", "x1", []), cmd).targetId).toBe("x1");
+  });
+  it("ignores a pointer id that is not a candidate, a non-deictic line, and an existing target", () => {
+    expect(applyPointer(withPointer("make this bigger", "zzz"), cmd).targetId).toBeNull();
+    expect(applyPointer(withPointer("make the footer bigger", "n2"), cmd).targetId).toBeNull();
+    expect(applyPointer(withPointer("make this bigger", "n2"), { ...cmd, targetId: "n1" }).targetId).toBe("n1");
+  });
+  it("routeIntent picks the pointer target with the keyword engine", async () => {
+    const r = await routeIntent(withPointer("make this bigger", "n2"));
+    expect(r).toMatchObject({ isCommand: true, targetId: "n2", action: "resize" });
   });
 });

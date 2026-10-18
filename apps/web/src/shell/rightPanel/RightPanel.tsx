@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, type KeyboardEvent } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import { X } from "lucide-react";
-import { Inspector } from "../../editor/Inspector";
+const Inspector = lazy(() => import("../../editor/Inspector").then((m) => ({ default: m.Inspector })));
 import { MotionControls } from "../../motion";
 import { useScreenStore } from "../../store/screenStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
@@ -72,6 +72,14 @@ export function RightPanel() {
 
   const asideRef = useRef<HTMLElement>(null);
   const tabRefs = useRef<Partial<Record<RightPanelTab, HTMLButtonElement | null>>>({});
+
+  // Return focus to whatever opened the panel once it closes (unmounts).
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    return () => {
+      if (opener?.isConnected && (document.activeElement === document.body || document.activeElement === null)) opener.focus();
+    };
+  }, []);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape" && !e.defaultPrevented) {
@@ -155,7 +163,9 @@ export function RightPanel() {
       <div id="rp-body" role="tabpanel" aria-labelledby={`rp-tab-${active}`} className={`min-h-0 flex-1 ${active === "output" ? "flex flex-col overflow-hidden" : "overflow-y-auto"}`}>
         {active === "inspect" ? (
           <div data-right-panel-inspect className="px-4 py-3">
-            <Inspector />
+            <Suspense fallback={null}>
+              <Inspector />
+            </Suspense>
             {hasSelection && <MotionControls />}
           </div>
         ) : active === "backend" ? (

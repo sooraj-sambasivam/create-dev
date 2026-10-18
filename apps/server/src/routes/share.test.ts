@@ -19,6 +19,7 @@ import {
   SHARE_CREATE_PER_MINUTE,
   createShareRouter,
   describeStoreChoice,
+  shareOrigin,
 } from "./share";
 
 const screen: Screen = mockGenerate("Coffee shop landing").screen;
@@ -341,5 +342,18 @@ describe("share store choice and limits", () => {
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
+  });
+});
+
+describe("shareOrigin", () => {
+  it("prefers PUBLIC_URL over the request Origin and trims trailing slashes", () => {
+    expect(shareOrigin("http://localhost:5173", { PUBLIC_URL: "https://x.trycloudflare.com/" })).toBe(
+      "https://x.trycloudflare.com",
+    );
+  });
+
+  it("falls back to the request Origin, then the dev client", () => {
+    expect(shareOrigin("http://192.168.1.5:5173", {})).toBe("http://192.168.1.5:5173");
+    expect(shareOrigin(undefined, { PUBLIC_URL: "  " })).toBe("http://localhost:5173");
   });
 });

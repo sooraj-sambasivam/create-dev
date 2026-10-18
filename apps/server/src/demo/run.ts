@@ -10,6 +10,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Pause between mock steps so the UI shows progress (~6s total); zero under test. */
 const mockPause = (ms: number) => (process.env.NODE_ENV === "test" || process.env.DEMO_FAST === "1" ? Promise.resolve() : sleep(ms));
 
+/** Max sections built at once on the real path. */
+export const DEMO_CONCURRENCY = 3;
+
 export function useMock(): boolean {
   return process.env.MOCK_AI === "1" || !process.env.ANTHROPIC_API_KEY;
 }
@@ -66,9 +69,12 @@ export async function runDemo(req: DemoRequest, emit: Emit, opts: { mock?: boole
         await progress(`Building ${s.purpose}`);
       }
     } else {
-      await Promise.all(
-        plan.sections.map(async (s, i) => {
-          if (aborted()) return;
+      // At most DEMO_CONCURRENCY sections in flight, so a six-section plan does not hit rate limits.
+      let next = 0;
+      const worker = async () => {
+        while (next < n && !aborted()) {
+          const i = next++;
+          const s = plan.sections[i];
           try {
             const r = await buildSectionWithClaude(plan, s, i, opts.signal);
             accent ??= r.accent;
@@ -80,8 +86,9 @@ export async function runDemo(req: DemoRequest, emit: Emit, opts: { mock?: boole
             built.set(s.id, mockSectionNode(s, i, takeId(taken, s.id), taken));
             await progress(`Built ${s.purpose} (simple)`);
           }
-        }),
-      );
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(DEMO_CONCURRENCY, n) }, worker));
     }
     if (aborted()) return;
 

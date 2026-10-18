@@ -1,27 +1,59 @@
-# Create — describe it, say it, draw it
+# Create: point at it, say it, it changes
 
-A website builder where the input is natural: type a prompt, speak it, draw shapes, or point and
-narrate. Every mode produces the same **JSON component tree**, which one React renderer turns into
-a live screen. DubHacks '26.
+A website builder where the input is natural: type a prompt, speak it, draw shapes, or **point at
+an element and talk** ("make this bigger", "swap this photo"). Every mode produces the same
+**JSON component tree**, which one React renderer turns into a live page. DubHacks '26.
 
-## Run it
+Inspired by the Google DeepMind AI pointer: the pointer supplies "this" and "that", the voice
+supplies the change, and the edit happens in place. A bubble shows what Create understood.
+
+See [docs/screenshots](docs/screenshots/README.md).
+<!-- OWNER: add screenshots to docs/screenshots/ (pointer bubble, canvas sketch, phone share) and link them here. -->
+
+## Quickstart (judges)
+
+Requirements: Node 22+, pnpm 9+.
 
 ```bash
 pnpm install
-cp apps/server/.env.example apps/server/.env   # then fill in keys (or leave MOCK_AI=1)
-pnpm dev                                        # server :3001 + web :5173
+cp apps/server/.env.example apps/server/.env   # fill in keys, or keep MOCK_AI=1 to run with none
+pnpm dev                                        # API :3001 + web :5173
 ```
 
-Open http://localhost:5173. With `MOCK_AI=1` the server returns a canned screen, so the whole UI
-works before anyone has an API key.
+Open http://localhost:5173 (default web port; Vite picks the next free port if it is taken).
+With `MOCK_AI=1` no model is called and the whole UI works with canned pages. For real output,
+set `ANTHROPIC_API_KEY`, remove `MOCK_AI`, and restart the server (`.env` is read at startup).
+Check `http://localhost:3001/api/health` to see which keys are present.
 
-| Env var (apps/server/.env) | Purpose |
-| --- | --- |
-| `ANTHROPIC_API_KEY` | Claude, generates the screen tree (set `MOCK_AI=0` to use it) |
-| `CLAUDE_BUILD_EFFORT` / `CLAUDE_EDIT_EFFORT` | thinking effort for new pages (default `medium`, ~15-20 s) and edits (default `low`, ~2-4 s) |
-| `CLAUDE_MODEL` | default `claude-sonnet-5-5` (~14 s per page); `claude-haiku-5-5` is ~8 s and still solid; `claude-opus-5-5` for the richest layouts |
-| `ELEVENLABS_API_KEY` | ElevenLabs Scribe, transcribes voice recordings |
-| `MOCK_AI` | `1` = no model calls, canned screen |
+Try it: pick **Narrate** from the radial fan, hover the page title, hold Option and say
+"make this bigger". `pnpm onboard` checks your setup. Demo flow: `docs/demo-script.md`.
+If a live step fails, press Ctrl+Shift+R for replay mode.
+
+## Environment variables (names only, in `apps/server/.env`)
+
+| Name | Required | Purpose and fallback |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | For real output | Claude generates pages and edits. Without it, canned mock screens and keyword intent |
+| `MOCK_AI` | No | `1` = no model calls |
+| `TYPESAFE_API_KEY` | No | TypeSafe Jev intent routing. Without it, Claude Haiku then keywords route commands |
+| `PERCEPTRON_API_KEY` | No | Perceptron reads canvas sketches. Without it, Claude reads the sketch alone |
+| `ELEVENLABS_API_KEY` | No | ElevenLabs Scribe realtime voice. Without it, voice falls back to browser speech |
+| `MONGODB_URI` | No | Share links in Atlas. Without it, local files in `apps/server/.data/prototypes/` |
+| `YOUTUBE_API_KEY` | No | Live YouTube data |
+| `CLAUDE_MODEL`, `CLAUDE_BUILD_EFFORT`, `CLAUDE_EDIT_EFFORT` | No | Model and thinking effort. Default model `claude-sonnet-5-5` |
+| `PERCEPTRON_MODEL`, `DEMO_PLAN_MODEL`, `CANVAS_OPS_FAST`, `DEMO_FAST` | No | Tuning for sketch and demo calls |
+| `PUBLIC_URL` | No | Public origin for share links (phone sharing) |
+| `PORT` | No | API port, default `3001` |
+| `VITE_TLDRAW_LICENSE_KEY` | No | tldraw license, set in the web app env. The canvas runs on the trial without it |
+
+Never commit `.env`. Keys stay on the server.
+
+## Ports
+
+| Service | Port | Notes |
+| --- | --- | --- |
+| Web (Vite) | 5173 (default) | proxies `/api` to the API |
+| API (Express) | 3001 | override with `PORT` |
 
 ## Layout
 
@@ -90,14 +122,24 @@ The menu explains how to put it online for free by dragging the file onto Netlif
 
 ## API
 
-`POST /api/generate` `{ prompt, screen?, history?, assets? }` → `{ summary, screen }`
-`POST /api/edit-node` `{ prompt, screen, nodeId, assets? }` → `{ summary, nodes }`
-`POST /api/transcribe` multipart `audio` → `{ text }`
-`POST /api/upload` multipart `file` → `{ url, name }`
-`GET /api/image?q=…&seed=…` → redirect to a matching photo (404 if none)
-`GET /api/image/resolve?q=…&seed=…` → `{ url }` (used by Publish)
-`GET /api/icons/search?q=…&style=line|solid|cartoon|3d|brand` → `{ icons }`
-`GET /api/health` → which keys are present and whether mock mode is on
+All routes are under `/api`.
+
+| Route | Purpose |
+| --- | --- |
+| `POST /generate` `{ prompt, screen?, history?, assets? }` | Build or refine a page, `{ summary, screen }` (streams partial frames) |
+| `POST /edit-node` `{ prompt, screen, nodeId, assets? }` | Rewrite one element, `{ summary, nodes }` |
+| `POST /route-intent` `{ text, candidates, pointer? }` | Route a spoken line: action and target (Jev, then Haiku, then keywords) |
+| `POST /canvas-ops` | Turn a canvas selection (PNG and shapes) into typed edit ops (Perceptron, then Claude) |
+| `POST /generate-sketch` | Sketch to page |
+| `POST /demo` | Narrate session to a clickable demo page |
+| `POST /transcribe` multipart `audio` | Batch speech to text, `{ text }` |
+| `GET /voice-token` | Single-use ElevenLabs realtime token |
+| `POST /upload` multipart `file` | Upload PNG, JPG, WebP, GIF, `{ url, name }` |
+| `GET /image?q=` and `GET /image/resolve?q=` | Matching stock photo (404 if none) |
+| `GET /icons/search?q=&style=` and `GET /icons/svg` | Icon search and SVG |
+| `POST /prototypes`, `GET /prototypes/:id` | Save and load share links |
+| `GET /live`, `GET /live/:id` | Live data (allow-listed sources) |
+| `GET /health` | Which keys are present and whether mock mode is on |
 
 Errors come back as `{ error: string }` with a meaningful status (400, 404, 422, 429, 502, 503).
 

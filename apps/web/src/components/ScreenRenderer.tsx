@@ -40,6 +40,7 @@ import {
 } from "./elements";
 import { CopyIcon, GripIcon, TrashIcon } from "../editor/icons";
 import { NodeAIBox } from "../editor/NodeAIBox";
+import { ErrorBoundary } from "../ErrorBoundary";
 
 // ---------------------------------------------------------------- editor chrome
 
@@ -163,7 +164,7 @@ const textAlignFor: Record<Container["align"], string> = {
   end: "text-right",
 };
 
-function NodeView({ node, parentId, index, parentDirection, parentAlign, counter }: NodeViewProps) {
+function NodeViewInner({ node, parentId, index, parentDirection, parentAlign, counter }: NodeViewProps) {
   const ed = useEditor();
   const selected = useScreenStore((s) => ed.editable && s.selectedId === node.id);
   const editingThis = useScreenStore((s) => s.editingId === node.id);
@@ -305,6 +306,15 @@ function NodeView({ node, parentId, index, parentDirection, parentAlign, counter
       </div>
       {chrome}
     </motion.div>
+  );
+}
+
+/** One bad node degrades to a placeholder; its siblings keep rendering. */
+function NodeView(props: NodeViewProps) {
+  return (
+    <ErrorBoundary scope="node" resetKey={props.node} nodeId={props.node.id}>
+      <NodeViewInner {...props} />
+    </ErrorBoundary>
   );
 }
 

@@ -21,7 +21,7 @@ Defined once as CSS variables in `src/index.css` (`@theme` for Tailwind 4) and u
 | `--line` | `#E6E6E6` | All borders and dividers (1px) |
 | `--ink` | `#0D0D0D` | Primary text, headline |
 | `--ink-2` | `#5D5D5D` | Icons, secondary labels |
-| `--ink-3` | `#9B9B9B` | Placeholder, disabled, effort label |
+| `--ink-3` | `#767676` | Placeholder, disabled, effort label (4.5:1 on white) |
 | `--accent` | `#3E7BF0` | Go button, unread dots, focus ring |
 | `--ok` / `--warn` / `--bad` | `#1F8A4C` / `#C27803` / `#C93C37` | ✓ / ⚠ / ✕ only, always with their symbol |
 

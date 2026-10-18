@@ -4,7 +4,8 @@
  * RECORD mode (default): successful AI API responses are teed into IndexedDB.
  * REPLAY mode: an exact body-hash match is answered from its recording, with the
  * original NDJSON chunk timing / JSON latency. With no exact match, the latest
- * recording for that path is served and a toast says so (FALLBACK_TOAST_TEXT).
+ * recording for that path is served and a sticky "Replay mode" toast says so
+ * (FALLBACK_TOAST_TEXT); it stays until replay is switched off.
  * With no recording for the path at all, the request goes to the network.
  * Toggle with Ctrl+Shift+R. A small dot (title "Replay on") shows while on.
  */
@@ -15,6 +16,8 @@ export const REPLAY_PATHS = [
   "/api/generate",
   "/api/generate-sketch",
   "/api/edit-node",
+  "/api/canvas-ops",
+  "/api/route-intent",
   "/api/demo",
   "/api/transcribe",
 ] as const;
@@ -22,8 +25,7 @@ export const REPLAY_PATHS = [
 export const MODE_STORAGE_KEY = "create.replay.mode";
 
 /** Shown when replay answers from the latest run for a path, not an exact body match. */
-export const FALLBACK_TOAST_TEXT = "Replay: no exact match — showing the last recorded run";
-export const TOAST_MS = 3000;
+export const FALLBACK_TOAST_TEXT = "Replay mode: no exact match — showing the last recorded run";
 
 export interface RecordedChunk {
   /** ms since the response started streaming (first byte of the body). */
@@ -184,7 +186,19 @@ function pathOf(input: RequestInfo | URL, base: string): string | undefined {
 
 const isReplayPath = (p: string | undefined): p is string => !!p && (REPLAY_PATHS as readonly string[]).includes(p);
 
-const isNdjson = (res: Response) => /ndjson|x-ndjson/i.test(res.headers.get("content-type") ?? "");
+/** NDJSON by content type, or a `stream: true` request whose reply is not plain JSON (a proxy may drop the type). */
+const isNdjson = (res: Response, streamRequested = false) => {
+  const type = res.headers.get("content-type") ?? "";
+  return /ndjson/i.test(type) || (streamRequested && !!res.body && !/application\/json/i.test(type));
+};
+
+const wantsStream = (bodyText: string) => {
+  try {
+    return (JSON.parse(bodyText) as { stream?: unknown } | null)?.stream === true;
+  } catch {
+    return false;
+  }
+};
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, Math.max(0, ms)));
 
@@ -193,9 +207,9 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, Math.max(0,
 async function recordResponse(
   store: ReplayStore,
   res: Response,
-  meta: { key: string; method: string; path: string; bodyHash: string; startedAt: number; headersAt: number; now: () => number },
+  meta: { key: string; method: string; path: string; bodyHash: string; startedAt: number; headersAt: number; stream: boolean; now: () => number },
 ): Promise<void> {
-  const ndjson = isNdjson(res);
+  const ndjson = isNdjson(res, meta.stream);
   const base = {
     key: meta.key,
     method: meta.method,
@@ -331,8 +345,6 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
   let dot: HTMLElement | undefined;
   let toast: HTMLElement | undefined;
   let toastLabel: HTMLElement | undefined;
-  let toastTimer: ReturnType<typeof setTimeout> | undefined;
-  let toastFadeTimer: ReturnType<typeof setTimeout> | undefined;
 
   const renderDot = () => {
     if (!doc?.body) return;
@@ -350,7 +362,7 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
     }
   };
 
-  /** Small status toast, auto-hidden after TOAST_MS. Colors come from the theme tokens. */
+  /** Small sticky status toast, cleared when replay turns off. Colors come from the theme tokens. */
   const TOAST_FADE_MS = 180;
   const reduceMotion = () => {
     try {
@@ -390,22 +402,17 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
     // Read a layout property so the hidden state is committed before fading in.
     void el.offsetHeight;
     setToastVisible(el, true);
-    if (toastTimer !== undefined) clearTimeout(toastTimer);
-    // Fade out just before removal so the removal lands exactly at TOAST_MS.
-    toastFadeTimer = setTimeout(() => {
-      if (toast) setToastVisible(toast, false);
-    }, Math.max(0, TOAST_MS - TOAST_FADE_MS));
-    toastTimer = setTimeout(() => {
-      toast?.remove();
-      toast = undefined;
-      toastLabel = undefined;
-      toastTimer = undefined;
-      toastFadeTimer = undefined;
-    }, TOAST_MS);
+  };
+
+  const hideToast = () => {
+    toast?.remove();
+    toast = undefined;
+    toastLabel = undefined;
   };
 
   const setMode = (m: ReplayMode) => {
     mode = m;
+    if (m !== "replay") hideToast();
     try {
       storage?.setItem(MODE_STORAGE_KEY, m);
     } catch {
@@ -459,6 +466,7 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
         bodyHash: hashBody(bodyText),
         startedAt,
         headersAt,
+        stream: wantsStream(bodyText),
         now,
       }).catch(() => {});
     }
@@ -486,13 +494,7 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
       win.removeEventListener("keydown", onKey as EventListener);
       win.fetch = realFetch;
       dot?.remove();
-      if (toastTimer !== undefined) clearTimeout(toastTimer);
-      if (toastFadeTimer !== undefined) clearTimeout(toastFadeTimer);
-      toastTimer = undefined;
-      toastFadeTimer = undefined;
-      toast?.remove();
-      toast = undefined;
-      toastLabel = undefined;
+      hideToast();
       if (active === controller) active = undefined;
     },
   };

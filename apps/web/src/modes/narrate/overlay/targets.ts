@@ -146,16 +146,150 @@ export function resolvePageTargets(rect: LassoRect, host: Document = document): 
   return collectPageHits(rect, frames);
 }
 
-export const LIVE_COMMAND_WINDOW_MS = 4000;
+/** Speech may land up to this long after a lasso... */
+export const LASSO_SPEECH_AFTER_MS = 8000;
+/** ...or up to this long before it ("make this bigger", then Shift+drag). */
+export const LASSO_SPEECH_BEFORE_MS = 4000;
+export const LIVE_COMMAND_WINDOW_MS = LASSO_SPEECH_AFTER_MS;
+/** Below this the router is guessing, so the edit is not applied. */
+export const MIN_INTENT_CONFIDENCE = 0.5;
 
-/** Build a route-intent request if a final transcript follows a lasso closely enough. */
+const DEICTIC_RE = /\b(this|that|these|those|here|it)\b/i;
+
+/** True when the line points at something ("make this bigger", "swap that photo", "fix it"). */
+export function isDeictic(text: string): boolean {
+  return DEICTIC_RE.test(text);
+}
+
+/** "heading: Welcome" becomes "Heading · Welcome", for display. */
+export function prettyLabel(label: string): string {
+  const i = label.indexOf(": ");
+  const type = i < 0 ? label : label.slice(0, i);
+  const rest = i < 0 ? "" : label.slice(i + 2);
+  const head = type.charAt(0).toUpperCase() + type.slice(1);
+  return rest ? `${head} · ${rest}` : head;
+}
+
+/** The page node under the pointer. `el` lets the bubble re-measure the outline while the page scrolls. */
+export type HoverHit = { id: string; label: string; area: number; box: LassoRect; el?: ElementLike };
+
+/** The slice of the page root the hover resolver reads. */
+type RootLike = { contains(n: never): boolean; getBoundingClientRect(): ClientRect };
+
+/**
+ * Picks the page node under the pointer from a top-first element stack (document.elementsFromPoint).
+ * The first stacked element that carries a data-node-id inside `root` is the deepest node hit, so a
+ * heading wins over the section around it. `closest` is used for children such as inline spans.
+ */
+export function pickHover(stack: readonly (ElementLike & { closest?(sel: string): ElementLike | null })[], root: RootLike): HoverHit | null {
+  for (const raw of stack) {
+    const el = raw.getAttribute("data-node-id") ? raw : raw.closest?.("[data-node-id]");
+    const id = el?.getAttribute("data-node-id");
+    if (!el || !id || !root.contains(el as never)) continue;
+    const r = el.getBoundingClientRect();
+    const type = el.getAttribute("data-node-type") || el.tagName.toLowerCase();
+    return {
+      id,
+      label: nodeLabel(type, el.innerText ?? el.textContent),
+      area: Math.max(0, r.width) * Math.max(0, r.height),
+      box: toBox(r),
+      el,
+    };
+  }
+  return null;
+}
+
+/** The page node under the pointer in the right panel's live page, or null off the page. */
+export function resolveHoverAt(x: number, y: number, host: Document = document): HoverHit | null {
+  const root = host.querySelector<HTMLElement>(PANEL_PAGE_ROOT);
+  if (!root || typeof host.elementsFromPoint !== "function") return null;
+  const rb = root.getBoundingClientRect();
+  if (x < rb.left || x > rb.right || y < rb.top || y > rb.bottom) return null;
+  return pickHover(host.elementsFromPoint(x, y) as unknown as ElementLike[], root);
+}
+
+export type PointerSample = { t: number; x: number; y: number; hit: HoverHit | null };
+
+/** How far back pointer samples are kept. Long enough to bind a target at the start of a long utterance. */
+export const POINTER_BUFFER_MS = 12000;
+
+/** Appends a sample and drops those older than the window, always keeping the newest sample at or before the cutoff. */
+export function pushSample(buf: PointerSample[], s: PointerSample, maxAge = POINTER_BUFFER_MS): void {
+  buf.push(s);
+  const cutoff = s.t - maxAge;
+  let keepFrom = 0;
+  while (keepFrom + 1 < buf.length && buf[keepFrom + 1].t <= cutoff) keepFrom++;
+  if (keepFrom > 0) buf.splice(0, keepFrom);
+}
+
+/** The latest sample taken at or before `t` (where the pointer was when speech started), or null. */
+export function sampleAt(buf: readonly PointerSample[], t: number): PointerSample | null {
+  let found: PointerSample | null = null;
+  for (const s of buf) {
+    if (s.t <= t) found = s;
+    else break;
+  }
+  return found;
+}
+
+/**
+ * Build a route-intent request for a final transcript. `now` is when the line was said. A lasso counts when
+ * the speech lands up to 8s after it or up to 4s before it; otherwise the hovered element, if any, is the
+ * only candidate. `hover` is where the pointer was when the utterance started.
+ */
 export function buildIntentRequest(
   transcript: string,
   lasso: { t: number; targets: LassoTarget[] } | null,
   now: number,
+  hover: HoverHit | null = null,
 ): IntentRequest | null {
-  const text = transcript.trim();
-  if (!text || !lasso || lasso.targets.length === 0) return null;
-  if (now - lasso.t > LIVE_COMMAND_WINDOW_MS) return null;
-  return { transcript: text.slice(0, 4000), candidates: lasso.targets.slice(0, 100) };
+  const text = transcript.trim().slice(0, 4000);
+  if (!text) return null;
+  const dt = lasso ? now - lasso.t : 0;
+  if (lasso && lasso.targets.length > 0 && dt <= LASSO_SPEECH_AFTER_MS && dt >= -LASSO_SPEECH_BEFORE_MS) {
+    const candidates = lasso.targets.slice(0, 100);
+    const hovered = hover ? candidates.find((c) => c.id === hover.id) : undefined;
+    const only = candidates.length === 1 ? candidates[0] : undefined;
+    const pick = hovered ?? only;
+    return { transcript: text, candidates, pointer: { targetId: pick?.id ?? null, ...(pick ? { label: pick.label } : {}) } };
+  }
+  if (hover) {
+    const label = hover.label.slice(0, 200);
+    return {
+      transcript: text,
+      candidates: [{ id: hover.id, label, kind: "node" }],
+      pointer: { targetId: hover.id, label },
+    };
+  }
+  return null;
+}
+
+export type Resolution =
+  | { kind: "target"; id: string; label: string }
+  | { kind: "ask"; labels: string[] }
+  | { kind: "none" };
+
+/**
+ * Client-side pre-resolve of "this/that": one candidate is the target; with several, the hovered one wins,
+ * then the clearly smallest leaf (`areas` by id). Anything else is ambiguous and must be asked about.
+ * A line that is not deictic with several candidates is left to the router ("none").
+ */
+export function preResolve(req: IntentRequest, areas: Record<string, number> = {}): Resolution {
+  const cands = req.candidates;
+  if (cands.length === 0) return { kind: "none" };
+  if (cands.length === 1) return { kind: "target", id: cands[0].id, label: cands[0].label };
+  if (!isDeictic(req.transcript)) return { kind: "none" };
+  const ptr = req.pointer?.targetId;
+  const hovered = ptr ? cands.find((c) => c.id === ptr) : undefined;
+  if (hovered) return { kind: "target", id: hovered.id, label: hovered.label };
+  const sized = cands.filter((c) => (areas[c.id] ?? 0) > 0).sort((a, b) => areas[a.id] - areas[b.id]);
+  if (sized.length > 0 && (sized.length === 1 || areas[sized[0].id] <= 0.8 * areas[sized[1].id])) {
+    return { kind: "target", id: sized[0].id, label: sized[0].label };
+  }
+  return { kind: "ask", labels: cands.slice(0, 4).map((c) => prettyLabel(c.label)) };
+}
+
+/** "Which one? (Heading · Welcome, Button · Buy)" */
+export function askText(labels: string[]): string {
+  return `Which one? (${labels.join(", ")})`;
 }

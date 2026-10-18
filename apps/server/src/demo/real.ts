@@ -108,7 +108,7 @@ export async function buildSectionWithClaude(
   signal?.throwIfAborted();
   // generateWithClaude (Abel-owned) takes no AbortSignal, so its in-flight request cannot be cancelled
   // from here; stop waiting on it as soon as the client leaves and never start it after an abort.
-  const res = await abortable(generateWithClaude({ prompt: sectionPrompt(plan, section, index), screen: undefined }), signal);
+  const res = await abortable(generateWithClaude({ prompt: sectionPrompt(plan, section, index), screen: undefined }, { skipPhotoVerify: true }), signal);
   const clean = z.array(NodeSchema).parse(sanitizeNodes(res.screen.children));
   return { nodes: clean, accent: res.screen.accent };
 }

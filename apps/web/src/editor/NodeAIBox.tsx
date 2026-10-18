@@ -58,7 +58,7 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
   }, [node.id, inside]);
 
   const send = async (text: string) => {
-    if (!text.trim() || busy || otherBusy) return;
+    if (!text.trim() || busy) return;
     setError(null);
     setReply(null);
     const result = await useScreenStore.getState().editNodeWithAI(node.id, text);
@@ -103,13 +103,13 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
               if (e.key === "Escape") inputRef.current?.blur();
             }}
             disabled={busy}
-            placeholder={busy ? `Updating this ${label}…` : `Ask AI to change this ${label}…`}
+            placeholder={busy ? `Updating this ${label}…` : otherBusy ? "Queued after the current edit…" : `Ask AI to change this ${label}…`}
             aria-label={`Ask AI to change this ${label}`}
             className="min-w-0 flex-1 bg-transparent h-8 text-sm text-ink outline-none placeholder:text-ink-3"
           />
           <button
             type="submit"
-            disabled={busy || otherBusy || !value.trim()}
+            disabled={busy || !value.trim()}
             className="h-8 rounded-lg bg-accent px-3 text-sm font-medium text-white dark:text-shell transition-opacity duration-150 hover:opacity-90 disabled:opacity-40"
           >
             {busy ? (
@@ -130,7 +130,6 @@ export function NodeAIBox({ node, targetRef }: { node: Node; targetRef: RefObjec
                 <button
                   key={s}
                   type="button"
-                  disabled={otherBusy}
                   onClick={() => void send(s)}
                   className="rounded-full border border-line px-2.5 py-0.5 text-xs text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:opacity-40"
                 >

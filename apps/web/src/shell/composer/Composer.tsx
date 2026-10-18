@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { ArrowUp, AtSign, AudioWaveform, Laptop, Loader2, Mic, PanelsTopLeft, Square } from "lucide-react";
+import { ArrowUp, AtSign, AudioWaveform, Crosshair, Laptop, Loader2, Mic, PanelsTopLeft, Square } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useScreenStore } from "../../store/screenStore";
 import { useRecorder } from "../../lib/useRecorder";
@@ -20,7 +20,8 @@ import {
 } from "./voice";
 import { FilesMenu, ConnectorsMenu, ModelMenu, PermissionsMenu, PluginsMenu, ProjectMenu } from "./menus";
 import { menuItemClass } from "./Popover";
-import { MAX_FIELD_PX, applyMention, filterMentions, mentionQuery, isStoreBusy, placeholderFor } from "./logic";
+import { MAX_FIELD_PX, applyMention, filterMentions, mentionQuery, isStoreBusy, placeholderFor, routesToSelection } from "./logic";
+import { selectedLabel } from "./selection";
 
 /** Composer-local aliases of the shell theme tokens (index.css), so both themes apply. */
 const TOKENS = {
@@ -58,6 +59,7 @@ export function Composer() {
   const hasScreen = useScreenStore((s) => s.screen !== null);
   const assets = useScreenStore((s) => s.assets);
   const mode = useScreenStore((s) => s.mode);
+  const selLabel = useScreenStore(selectedLabel);
   const recorder = useRecorder();
   const [voice, dispatch] = useReducer(voiceReducer, undefined, () =>
     initialVoiceState(
@@ -72,6 +74,7 @@ export function Composer() {
   const [browserListening, setBrowserListening] = useState(false);
   const speechRef = useRef<SpeechSession | null>(null);
   const stoppedRef = useRef(false);
+  const onMicRef = useRef<() => Promise<void>>(async () => {});
 
   const recording = recorder.recording || browserListening;
   const loading = status === "loading";
@@ -106,6 +109,18 @@ export function Composer() {
     return () => window.clearTimeout(id);
   }, [voice]);
 
+  // The empty-state "Type · Speak" row drives the composer through these events.
+  useEffect(() => {
+    const focus = () => fieldRef.current?.focus();
+    const speak = () => void onMicRef.current();
+    window.addEventListener("create:focus-composer", focus);
+    window.addEventListener("create:speak", speak);
+    return () => {
+      window.removeEventListener("create:focus-composer", focus);
+      window.removeEventListener("create:speak", speak);
+    };
+  }, []);
+
   const openFan = () => {
     window.clearTimeout(closeTimer.current);
     setFanOpen(true);
@@ -135,7 +150,10 @@ export function Composer() {
     const t = text.trim();
     if (!t || isStoreBusy(useScreenStore.getState())) return;
     setValue("");
-    void useScreenStore.getState().generate(t);
+    const st = useScreenStore.getState();
+    // "make this bigger" with an element selected edits that element in place instead of regenerating the page.
+    if (st.screen && routesToSelection(t, st.selectedId)) void st.editNodeWithAI(st.selectedId!, t);
+    else void st.generate(t);
   };
 
   const submit = () => {
@@ -219,6 +237,10 @@ export function Composer() {
     useScreenStore.getState().setMode(m);
     window.clearTimeout(closeTimer.current);
     setFanOpen(false);
+    // The fan item that held focus unmounts; hand focus back to Go.
+    skipFocusOpen.current = true;
+    goRef.current?.focus();
+    skipFocusOpen.current = false;
   };
 
   const onMic = async () => {
@@ -239,6 +261,8 @@ export function Composer() {
     }
     await recorder.start();
   };
+
+  onMicRef.current = onMic;
 
   const onRetry = () => {
     // A failed transcription retries the same audio; anything else records again.
@@ -326,6 +350,14 @@ export function Composer() {
         }}
         className="relative z-10 overflow-visible rounded-3xl border border-[var(--c-line)] bg-[var(--c-surface)] px-4 pt-4 pb-3 shadow-[var(--c-shadow)]"
       >
+        {selLabel ? (
+          <div className="mb-2 flex" data-testid="selection-chip">
+            <span className="inline-flex h-6 max-w-full items-center gap-1 rounded-md bg-[var(--c-tray)] px-2 text-[12px] text-[var(--c-ink-2)]" title="Typing this/that/it edits this element">
+              <Crosshair size={12} strokeWidth={1.75} aria-hidden />
+              <span className="truncate">{selLabel}</span>
+            </span>
+          </div>
+        ) : null}
         <textarea
           ref={fieldRef}
           rows={1}

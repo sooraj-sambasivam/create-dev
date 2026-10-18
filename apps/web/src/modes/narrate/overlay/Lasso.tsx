@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { LassoHit, LassoRect, LassoResolver, LassoTarget } from "./targets";
 
-export type LassoEvent = { rect: LassoRect; targets: LassoTarget[] };
+export type LassoEvent = { rect: LassoRect; targets: LassoTarget[]; /** Visible box area by target id, for picking the smallest leaf. */ areas: Record<string, number> };
 
 const norm = (a: { x: number; y: number }, bx: number, by: number): LassoRect => ({
   x: Math.min(a.x, bx), y: Math.min(a.y, by), w: Math.abs(bx - a.x), h: Math.abs(by - a.y),
@@ -58,7 +58,11 @@ export function Lasso({ resolve, onLasso, disabled }: { resolve: LassoResolver; 
     const h = cb.current.resolve(r);
     setRect(r);
     setHits(h);
-    cb.current.onLasso({ rect: r, targets: h.map((x) => x.target) });
+    cb.current.onLasso({
+      rect: r,
+      targets: h.map((x) => x.target),
+      areas: Object.fromEntries(h.map((x) => [x.target.id, x.box.w * x.box.h])),
+    });
     fade.current = setTimeout(() => { setRect(null); setHits([]); }, 1200);
   };
 

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 import { ScreenSchema, type Screen } from "@create/shared";
-import { useScreenStore, type HistoryEntry } from "./screenStore";
+import { cancelInFlight, useScreenStore, type HistoryEntry } from "./screenStore";
 
 export type { HistoryEntry };
 
@@ -161,6 +161,7 @@ function withLive(chats: Chat[], activeChatId: string | null): Chat[] {
 let switching = false;
 function loadScreen(chat: Chat | null) {
   switching = true;
+  cancelInFlight();
   try {
     useScreenStore.setState({
       screen: chat?.screen ?? null,
@@ -168,6 +169,7 @@ function loadScreen(chat: Chat | null) {
       selectedId: null,
       editingId: null,
       aiBusyId: null,
+      status: "idle",
       lastSummary: null,
       error: null,
       past: [],

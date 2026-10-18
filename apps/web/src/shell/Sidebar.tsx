@@ -252,7 +252,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
       <nav aria-label="Chats" className="mt-4 min-h-0 flex-1 overflow-y-auto pb-4">
         {hasProjects ? (
           <div className="flex h-8 items-center justify-between pr-1 pl-2">
-            <h2 className="text-[12px] text-ink-3">Projects</h2>
+            <h2 className="text-[12px] text-ink-2">Projects</h2>
             {creating ? null : (
               <button
                 type="button"
@@ -308,11 +308,11 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
             return (
               <li key={project.id} className="mt-2 list-none first:mt-0">
                 <div className="flex h-8 items-center gap-2 pr-2 pl-2 text-[14px] text-ink">
-                  <span className="w-4 shrink-0 text-right tabular-nums text-ink-3">{index + 1}.</span>
+                  <span className="w-4 shrink-0 text-right tabular-nums text-ink-2">{index + 1}.</span>
                   <span className="truncate">{project.name}</span>
                 </div>
                 {rows.length === 0 ? (
-                  <p className="flex h-8 items-center pr-2 pl-8 text-[14px] text-ink-3">No chats yet</p>
+                  <p className="flex h-8 items-center pr-2 pl-8 text-[14px] text-ink-2">No chats yet</p>
                 ) : (
                   <ul className="flex flex-col">
                     {rows.map((chat) => (
@@ -335,7 +335,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
 
         {unassigned.length > 0 ? (
           <div className="mt-4">
-            <h2 className="flex h-8 items-center pl-2 text-[12px] text-ink-3">Chats</h2>
+            <h2 className="flex h-8 items-center pl-2 text-[12px] text-ink-2">Chats</h2>
             <ul className="flex flex-col">
               {unassigned.map((chat) => (
                 <li key={chat.id}>
@@ -357,7 +357,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
               type="button"
               aria-expanded={archivedOpen}
               onClick={() => setArchivedOpen((value) => !value)}
-              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-left text-[12px] text-ink-3 transition-colors duration-150 hover:bg-hover ${focusRing}`}
+              className={`flex h-8 w-full items-center gap-1 rounded-lg pr-2 pl-2 text-left text-[12px] text-ink-2 transition-colors duration-150 hover:bg-hover ${focusRing}`}
             >
               Archived
               <span className="ml-auto tabular-nums">{archived.length}</span>
@@ -420,7 +420,7 @@ function ChatRow({
         } ${onArchive ? "pr-2 group-hover:pr-8 group-focus-within:pr-8" : "pr-2"} ${
           active
             ? "bg-hover text-ink"
-            : `hover:bg-hover/60 ${muted ? "text-ink-3" : "text-ink-2"}`
+            : `hover:bg-hover/60 ${muted ? "text-ink-2" : "text-ink-2"}`
         }`}
       >
         <span className="truncate">{chat.title}</span>

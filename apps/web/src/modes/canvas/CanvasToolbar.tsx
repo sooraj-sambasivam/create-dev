@@ -74,7 +74,7 @@ export function CanvasToolbar({
         title="Make it"
         aria-busy={busy || undefined}
         className={`inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-          busy ? "cursor-progress bg-accent text-white" : narrating ? "cursor-not-allowed bg-hover text-ink-3" : "bg-accent text-white hover:bg-accent/90"
+          busy ? "cursor-progress bg-accent text-white dark:text-[#0d0d0d]" : narrating ? "cursor-not-allowed bg-hover text-ink-3" : "bg-accent text-white dark:text-[#0d0d0d] hover:bg-accent/90"
         }`}
       >
         {busy ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <Sparkles size={16} strokeWidth={1.75} />}

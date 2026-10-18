@@ -12,6 +12,8 @@ export const ShapeSummarySchema = z.object({
   id: z.string(),
   type: z.string(),
   text: z.string().max(2000).optional(),
+  /** Library origin of a placed shape, e.g. { icon: "lucide:star" } or { photo: "<url>" }. */
+  meta: z.record(z.string(), z.string().max(2000)).optional(),
   x: z.number(),
   y: z.number(),
   w: z.number(),
@@ -71,12 +73,15 @@ export type DemoChunk =
 export const IntentRequestSchema = z.object({
   transcript: z.string().min(1).max(4000),
   candidates: z.array(z.object({ id: z.string(), label: z.string().max(200), kind: z.enum(["node", "shape"]) })).max(100),
+  /** The element under the pointer when the utterance started, so "this"/"that"/"here" can resolve to it. */
+  pointer: z.object({ targetId: z.string().nullable(), label: z.string().max(200).optional() }).optional(),
 });
 export type IntentRequest = z.infer<typeof IntentRequestSchema>;
+export const INTENT_ACTIONS = ["restyle", "resize", "move", "delete", "add", "replace_text", "replace_media", "regenerate", "none"] as const;
 export const IntentResultSchema = z.object({
   isCommand: z.boolean(),
   targetId: z.string().nullable(),
-  action: z.enum(["restyle", "move", "delete", "add", "replace_text", "regenerate", "none"]),
+  action: z.enum(INTENT_ACTIONS),
   confidence: z.number(),
 });
 export type IntentResult = z.infer<typeof IntentResultSchema>;

@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { Editor, TLShapeId } from "tldraw";
-import { BUILT_OPACITY, POPOVER_IDLE_MS, builtGroupsFromShapes, groupReducer, initialGroupState, type GroupState } from "./groups";
+import { BUILT_OPACITY, POPOVER_IDLE_MS, builtGroupsFromShapes, clusterByGap, groupReducer, initialGroupState, type GroupState } from "./groups";
 
 export type StrokeGroups = {
   state: GroupState;
+  /** The cluster the popover acts on: the open strokes near the latest one (far-apart strokes are separate groups). */
+  active: string[];
   /** True once the pointer has been up for POPOVER_IDLE_MS with an open group. */
   popoverVisible: boolean;
   dismiss: () => void;
@@ -65,14 +67,29 @@ export function useStrokeGroups(editor: Editor | null): StrokeGroups {
     if (state.open.length === 0) setVisible(false);
   }, [state.open.length]);
 
+  const active = useMemo(() => {
+    const open = state.open;
+    if (!editor || open.length < 2) return open;
+    const items = open.flatMap((id) => {
+      const b = editor.getShapePageBounds(id as TLShapeId);
+      return b ? [{ id, box: { x: b.x, y: b.y, w: b.w, h: b.h } }] : [];
+    });
+    const last = open[open.length - 1];
+    return clusterByGap(items).find((c) => c.includes(last)) ?? open;
+    // popoverVisible: stroke bounds are final once the pointer has been up.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, state.open, popoverVisible]);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+
   const dismiss = useCallback(() => setVisible(false), []);
 
   const markBuilt = useCallback(
     (label: string) => {
-      const ids = stateRef.current.open;
+      const ids = activeRef.current;
       if (!editor || !ids.length) return [];
       const groupId = `g${Date.now().toString(36)}${groupSeq.current++}`;
-      dispatch({ type: "confirm", groupId, label });
+      dispatch({ type: "confirm", groupId, label, ids });
       setVisible(false);
       editor.run(
         () => {
@@ -91,11 +108,11 @@ export function useStrokeGroups(editor: Editor | null): StrokeGroups {
   );
 
   const discard = useCallback(() => {
-    const ids = stateRef.current.open as TLShapeId[];
+    const ids = activeRef.current as TLShapeId[];
     if (editor && ids.length) editor.deleteShapes(ids);
-    dispatch({ type: "discard" });
+    dispatch({ type: "discard", ids });
     setVisible(false);
   }, [editor]);
 
-  return { state, popoverVisible, dismiss, markBuilt, discard };
+  return { state, active, popoverVisible, dismiss, markBuilt, discard };
 }

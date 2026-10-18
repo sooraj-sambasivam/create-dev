@@ -19,9 +19,13 @@ import {
 import { resolveIconNames } from "../icons";
 import { resolvePhoto } from "../images";
 import { EDIT_NODE_INSTRUCTIONS, SYSTEM_PROMPT } from "./prompt";
+import { outlineScreen } from "../canvasOps/outline";
+import { mockEditNode } from "./mockEdit";
 import { createPartialScreenBuilder } from "./streamScreen";
 
 export const DEFAULT_MODEL = "claude-sonnet-5-5";
+/** Single-element edits run on Haiku: the request is small and latency is the product. */
+export const EDIT_MODEL = process.env.CLAUDE_EDIT_MODEL || "claude-haiku-5-5";
 type Effort = "low" | "medium" | "high";
 const MAX_ATTEMPTS = 3;
 
@@ -67,6 +71,8 @@ const REPLACE_TOOL: Anthropic.Tool = {
   description: "Replace the target element with these nodes (empty list removes it). Call exactly once.",
   input_schema: toolSchema(EditNodeResponseSchema),
 };
+/** web_fetch is unproven against a live key, so it stays off unless WEB_FETCH=1. */
+const webFetchEnabled = () => process.env.WEB_FETCH === "1";
 const WEB_FETCH_TOOL = { type: "web_fetch_20260209", name: "web_fetch", max_uses: 3 } as unknown as Anthropic.ToolUnion;
 
 const URL_RE = /https?:\/\/[^\s<>"]+/i;
@@ -82,15 +88,19 @@ async function runTool<T>(opts: {
   userMessage: string;
   effort: Effort;
   allowWebFetch: boolean;
+  /** Overrides for small requests: model id, output cap, and whether to send output_config.effort. */
+  model?: string;
+  maxTokens?: number;
+  sendEffort?: boolean;
   validate: (input: unknown, notes: string[]) => z.ZodSafeParseResult<T>;
   /** Streaming hooks: raw tool-input JSON of the first call as it grows, and cancellation. */
   onToolJson?: (accumulated: string) => void;
   signal?: AbortSignal;
 }): Promise<{ data: T; notes: string[] }> {
-  const model = process.env.CLAUDE_MODEL || DEFAULT_MODEL;
+  const model = opts.model ?? (process.env.CLAUDE_MODEL || DEFAULT_MODEL);
   const anthropic = getClient();
   const started = Date.now();
-  const tools: Anthropic.ToolUnion[] = opts.allowWebFetch ? [opts.tool, WEB_FETCH_TOOL] : [opts.tool];
+  const tools: Anthropic.ToolUnion[] = opts.allowWebFetch && webFetchEnabled() ? [opts.tool, WEB_FETCH_TOOL] : [opts.tool];
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: opts.userMessage }];
   let lastProblem = "The model did not return a page.";
 
@@ -100,12 +110,12 @@ async function runTool<T>(opts: {
       const stream = anthropic.messages.stream(
         {
           model,
-          max_tokens: 32000,
+          max_tokens: opts.maxTokens ?? 32000,
           system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
           tools,
           tool_choice: { type: "auto" },
           messages,
-          output_config: { effort: opts.effort },
+          ...(opts.sendEffort === false ? {} : { output_config: { effort: opts.effort } }),
         },
         { signal: opts.signal },
       );
@@ -307,6 +317,8 @@ export interface GenerateStreamOptions {
   /** Called with a valid screen each time another top-level section completes (new pages only). */
   onPartial?: (screen: Screen) => void;
   signal?: AbortSignal;
+  /** Skip the slow stock-photo existence check (the demo path builds many sections at once). */
+  skipPhotoVerify?: boolean;
 }
 
 export async function generateWithClaude(req: GenerateRequest, opts: GenerateStreamOptions = {}): Promise<GenerateResponse> {
@@ -332,7 +344,7 @@ export async function generateWithClaude(req: GenerateRequest, opts: GenerateStr
 
   let screen = preserveStyles(req.screen, data.screen);
   const [withIcons] = await Promise.all([fixIcons(screen.children, notes)]);
-  screen = { ...screen, children: await verifyPhotos(withIcons, notes) };
+  screen = { ...screen, children: opts.skipPhotoVerify ? withIcons : await verifyPhotos(withIcons, notes) };
   // Keep the brand color on edits unless the model deliberately changed it.
   if (req.screen?.accent && !screen.accent) screen.accent = req.screen.accent;
   return { summary: withNotes(data.summary, notes), screen };
@@ -342,10 +354,11 @@ export async function editNodeWithClaude(req: EditNodeRequest): Promise<EditNode
   const target = findNode(req.screen, req.nodeId);
   if (!target) throw new GenerationError("That element no longer exists. Select it again.", 404);
 
+  // Only the target node plus a compact outline go to the model, not the whole page.
   const message = [
     `Today is ${today()}.`,
     assetsBlock(req.assets),
-    `<current_screen>\n${JSON.stringify(req.screen)}\n</current_screen>`,
+    `<page_outline>\n${outlineScreen(req.screen)}\n</page_outline>`,
     `<target_node>\n${JSON.stringify(target)}\n</target_node>`,
     EDIT_NODE_INSTRUCTIONS,
     `Edit request for ${req.nodeId}: ${req.prompt}`,
@@ -358,6 +371,9 @@ export async function editNodeWithClaude(req: EditNodeRequest): Promise<EditNode
     tool: REPLACE_TOOL,
     userMessage: message,
     effort: effortFrom(process.env.CLAUDE_EDIT_EFFORT, "low"),
+    model: EDIT_MODEL,
+    maxTokens: 4000,
+    sendEffort: false,
     allowWebFetch: URL_RE.test(req.prompt),
     validate: (input, notes) => {
       const raw = (input ?? {}) as Record<string, unknown>;
@@ -369,4 +385,16 @@ export async function editNodeWithClaude(req: EditNodeRequest): Promise<EditNode
   const kept = preserveStyles({ ...req.screen, children: [target] }, { ...req.screen, children: data.nodes });
   const nodes = await verifyPhotos(await fixIcons(kept.children, notes), notes);
   return { summary: withNotes(data.summary, notes), nodes };
+}
+
+/** Real edit when a key is set; the deterministic edit when mocked, keyless or the model fails (404s still surface). */
+export async function editNodeWithFallback(req: EditNodeRequest): Promise<EditNodeResponse> {
+  if (process.env.MOCK_AI === "1" || !process.env.ANTHROPIC_API_KEY) return mockEditNode(req);
+  try {
+    return await editNodeWithClaude(req);
+  } catch (err) {
+    if (err instanceof GenerationError && err.status === 404) throw err;
+    console.warn("[edit-node] model failed, using the local edit:", err instanceof Error ? err.message : "unknown");
+    return mockEditNode(req);
+  }
 }

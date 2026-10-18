@@ -14,7 +14,7 @@ import { generateSketch } from "./sketchApi";
 import { exportPng, summarizeShapes } from "./shapes";
 import { CanvasNarrate } from "./narrate";
 import { classifyNarrateNotice } from "./notice";
-import { LibraryPanel } from "./library";
+import { LIBRARY_MIME, LibraryPanel, handleLibraryDrop } from "./library";
 import { PageBackground } from "./PageBackground";
 import { installPageCamera } from "./pageCamera";
 import { penColorFor } from "./groups";
@@ -308,7 +308,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
   const confirmGroup = useCallback(
     async (label: string) => {
       const editor = editorRef.current;
-      const ids = groups.state.open;
+      const ids = groups.active;
       if (!editor || !ids.length || groupBusy) return;
       const region = regionFromBounds(
         ids.flatMap((id) => {
@@ -386,7 +386,19 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
         <div className="relative z-[510] h-full shrink-0">
           <LibraryPanel />
         </div>
-        <div className="relative min-w-0 flex-1">
+        <div
+          className="relative min-w-0 flex-1"
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes(LIBRARY_MIME)) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+            }
+          }}
+          onDrop={(e) => {
+            const ed = editorRef.current;
+            if (ed) handleLibraryDrop(ed, e);
+          }}
+        >
         <Tldraw
           persistenceKey="create-dev-canvas"
           licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
@@ -396,12 +408,12 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
         {narrating && editorRef.current && (
           <CanvasNarrate editor={editorRef.current} onBuild={buildNarration} onError={narrateError} onClose={closeNarrate} />
         )}
-        {editorState && !narrating && groups.state.open.length > 0 && <GroupOutline editor={editorState} ids={groups.state.open} />}
+        {editorState && !narrating && groups.active.length > 0 && <GroupOutline editor={editorState} ids={groups.active} />}
         {editorState && <BuiltBadges editor={editorState} groups={groups.state.built} />}
-        {editorState && !narrating && groups.popoverVisible && groups.state.open.length > 0 && (
+        {editorState && !narrating && groups.popoverVisible && groups.active.length > 0 && (
           <StrokePopover
             editor={editorState}
-            ids={groups.state.open}
+            ids={groups.active}
             busy={groupBusy}
             onConfirm={(l) => void confirmGroup(l)}
             onDiscard={groups.discard}

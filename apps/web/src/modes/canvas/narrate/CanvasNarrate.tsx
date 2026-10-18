@@ -368,15 +368,15 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
                 <span className="w-10 shrink-0 tabular-nums text-ink-2">{fmt(elapsed)}</span>
                 <span className="flex min-w-0 flex-1 items-center gap-2 truncate text-ink-2">
                   {micOff ? (
-                    <span className="truncate text-ink-3">Mic unavailable. Pointing only.</span>
+                    <span className="truncate text-ink-2">Mic unavailable. Pointing only.</span>
                   ) : bubbleVisible ? (
-                    <span className="truncate text-ink-3">Speaking…</span>
+                    <span className="truncate text-ink-2">Speaking…</span>
                   ) : live ? (
                     <span className="truncate text-ink">{live}</span>
                   ) : (
                     <>
-                      <Mic size={18} strokeWidth={1.75} className="shrink-0 text-ink-3" aria-hidden />
-                      <span className="truncate text-ink-3">Listening…</span>
+                      <Mic size={18} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden />
+                      <span className="truncate text-ink-2">Listening…</span>
                     </>
                   )}
                 </span>
@@ -392,7 +392,7 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
             {/* Fixed slots so Done / Cancel never shift between recording and building. */}
             <span className="flex w-[84px] shrink-0 justify-end">
               {phase === "recording" && (
-                <button type="button" onClick={done} className={`${btn} w-full justify-center bg-accent font-medium text-white hover:opacity-90`} aria-label="Done">
+                <button type="button" onClick={done} className={`${btn} w-full justify-center bg-accent font-medium text-white dark:text-[#0d0d0d] hover:opacity-90`} aria-label="Done">
                   <Check size={18} strokeWidth={1.75} aria-hidden />
                   Done
                 </button>

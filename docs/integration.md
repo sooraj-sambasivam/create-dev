@@ -101,7 +101,7 @@ Key rules:
 | `CLAUDE_BUILD_EFFORT` / `CLAUDE_EDIT_EFFORT` | No | Thinking effort for new pages (default `medium`) and edits (default `low`) |
 | `ELEVENLABS_API_KEY` | Only for live voice | Realtime and batch Scribe. Without it, voice falls back to the batch path or mock behavior |
 | `MONGODB_URI` | No (share links only) | MongoDB Atlas connection string for `POST /api/prototypes`. When unset, share links are written as one JSON file per prototype to `apps/server/.data/prototypes/<id>.json` |
-| `VITE_TLDRAW_LICENSE_KEY` | Web app (Vite) | tldraw SDK license key, read at build or dev time from the web app's env. The 100-day trial key arrives soon; without a key the canvas runs on the trial. **TODO: confirm the exact env file (`apps/web/.env` or the shared `.env`) once the key arrives.** Not a server key |
+| `VITE_TLDRAW_LICENSE_KEY` | Web app (Vite) | tldraw SDK license key, read at build or dev time from the web app's env. The 100-day trial key arrives soon; without a key the canvas runs on the trial. OWNER: confirm the exact env file (`apps/web/.env`) once the key arrives. Not a server key |
 | `PUBLIC_URL` | No | Public origin used to build share URLs (`{PUBLIC_URL}/?p=<id>`). The server uses the caller's origin first, then this value, then the local dev client |
 | `PORT` | No | Server port, default `3001` |
 | `NODE_ENV` | No | Standard Node setting |
@@ -134,7 +134,7 @@ The server accepts browser requests only from `localhost` and `127.0.0.1` origin
 is built from the caller's origin. A link copied from `localhost` will not open on a phone. Options:
 
 - Put the app behind a tunnel or a LAN address that the phone can reach, and set `PUBLIC_URL` to
-  that origin. This is **TODO: decide the method before the demo.**
+  that origin. OWNER: decide the method (tunnel or LAN) before the demo.
 - If no phone route works, show the phone step from a recording (see `docs/demo-script.md`).
 
 ## Replay fallback

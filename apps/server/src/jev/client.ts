@@ -1,5 +1,5 @@
 import { TypeSafeClient, choice, noul } from "@typesafe-ai/sdk";
-import type { IntentRequest, IntentResult } from "@create/shared";
+import { INTENT_ACTIONS, type IntentRequest, type IntentResult } from "@create/shared";
 
 /**
  * Jev (TypeSafe System One) wrapper. Jev returns typed judgments with probabilities; it does not
@@ -9,14 +9,16 @@ import type { IntentRequest, IntentResult } from "@create/shared";
 export const JEV_TIMEOUT_MS = 1500;
 
 type Action = IntentResult["action"];
-const ACTIONS: Action[] = ["restyle", "move", "delete", "add", "replace_text", "regenerate", "none"];
+const ACTIONS: readonly Action[] = INTENT_ACTIONS;
 
 const ACTION_CRITERIA: Record<Action, string> = {
   restyle: "Change how an element looks: color, size, font, spacing, border, shadow.",
-  move: "Change where an element sits: move, align, reorder, resize position.",
+  resize: "Make an element bigger or smaller: enlarge, shrink, wider, taller.",
+  move: "Change where an element sits: move, align, reorder.",
   delete: "Remove an element.",
   add: "Create a new element or section.",
   replace_text: "Change the words inside an element.",
+  replace_media: "Swap the photo, image, picture or icon of an element for a different one.",
   regenerate: "Rebuild or redo the whole page or an element from scratch.",
   none: "No edit action is requested.",
 };

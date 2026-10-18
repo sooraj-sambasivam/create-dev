@@ -1,17 +1,20 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { useScreenStore } from "./store/screenStore";
-import { CanvasHost } from "./modes/canvas/CanvasMode";
 import { NarrateMode } from "./modes/narrate/NarrateMode";
 import { useEditorShortcuts } from "./editor/useShortcuts";
 import { AppShell } from "./shell/AppShell";
 import { Composer } from "./shell/composer";
 import { Thread, deriveItems } from "./shell/thread";
-import { SharedView } from "./share/SharedView";
+import { EmptyState } from "./shell/EmptyState";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { sharedIdFromLocation } from "./share/route";
 import { useWorkspaceStore } from "./store/workspaceStore";
 import { selectOutputOpen, useRightPanel } from "./shell/rightPanel/rightPanelStore";
 import { MotionStyles } from "./motion";
 import { setDemoWorkspaceBridge } from "./modes/narrate/demo/workspaceBridge";
+
+const CanvasHost = lazy(() => import("./modes/canvas/CanvasMode").then((m) => ({ default: m.CanvasHost })));
+const SharedView = lazy(() => import("./share/SharedView").then((m) => ({ default: m.SharedView })));
 
 setDemoWorkspaceBridge({
   logDemo: (e) => useWorkspaceStore.getState().log("demo", `${e.title}${e.mock ? " (mock)" : ""}: ${e.summary}`),
@@ -37,6 +40,7 @@ function Builder() {
   // The main card is only the conversation. The generated page lives in the right panel.
   const history = useScreenStore((s) => s.history);
   const error = useScreenStore((s) => s.error);
+  const canvasWanted = mode === "canvas" || mode === "narrate";
   const docked = deriveItems({ history, status, error }).length > 0;
 
   return (
@@ -55,12 +59,17 @@ function Builder() {
           </div>
           <div className="absolute inset-x-0 top-1/2 mt-2 px-4">
             <Composer />
+            <EmptyState />
           </div>
         </>
       )}
 
       <MotionStyles />
-      <CanvasHost />
+      {canvasWanted && (
+        <Suspense fallback={null}>
+          <CanvasHost />
+        </Suspense>
+      )}
       {mode === "narrate" && <NarrateMode />}
     </AppShell>
   );
@@ -68,6 +77,15 @@ function Builder() {
 
 export default function App() {
   const sharedId = sharedIdFromLocation();
-  if (sharedId) return <SharedView id={sharedId} />;
-  return <Builder />;
+  return (
+    <ErrorBoundary>
+      {sharedId ? (
+        <Suspense fallback={null}>
+          <SharedView id={sharedId} />
+        </Suspense>
+      ) : (
+        <Builder />
+      )}
+    </ErrorBoundary>
+  );
 }
