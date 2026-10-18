@@ -61,6 +61,9 @@ export async function judgeIntent(req: IntentRequest, opts: { client?: JevClient
       targetCriteria[alias] = `${c.kind} "${c.label}"`;
     });
     const hasCandidates = aliasToId.size > 0;
+    // Pointer deixis: only when the hovered element is a real candidate. Resolved in code, not by Jev.
+    const pointerId = req.pointer?.targetId ?? null;
+    const pointerAlias = pointerId ? [...aliasToId].find(([, id]) => id === pointerId)?.[0] ?? null : null;
 
     // Candidate `label` text is user-controlled and enters the prompt. This is bounded: targetId
     // is only ever one of the real candidate ids, re-checked below.
@@ -69,11 +72,20 @@ export async function judgeIntent(req: IntentRequest, opts: { client?: JevClient
         "Is the speaker giving an instruction to change the page or drawing (as opposed to thinking aloud, narrating or chatting)? Judge `transcript`.",
       ),
       action: choice("Which kind of edit does the speaker ask for in `transcript`?", ACTION_CRITERIA),
+      ...(pointerAlias
+        ? {
+            usesDeixis: noul(
+              "Does `transcript` refer to its target with a pointing word (this, that, it, here, these) instead of naming it?",
+            ),
+          }
+        : {}),
       // A single-label choice is not a valid question, so `target` is left out with no candidates.
       ...(hasCandidates
         ? {
             target: choice(
-              "Which candidate element does the speaker mean in `transcript`? Answer with a candidate id, or none.",
+              pointerAlias
+                ? "Which candidate element does the speaker mean in `transcript`? If it uses a pointing word, prefer `pointer`. Otherwise use the words. Answer with a candidate id, or none."
+                : "Which candidate element does the speaker mean in `transcript`? Answer with a candidate id, or none.",
               targetCriteria,
             ),
           }
@@ -85,6 +97,7 @@ export async function judgeIntent(req: IntentRequest, opts: { client?: JevClient
         state: {
           transcript: req.transcript,
           candidates: req.candidates.map((c, i) => ({ id: `c${i + 1}`, label: c.label, kind: c.kind })),
+          ...(pointerAlias ? { pointer: { id: pointerAlias, label: req.pointer?.label ?? null } } : {}),
         },
         questions,
       },
@@ -103,7 +116,10 @@ export async function judgeIntent(req: IntentRequest, opts: { client?: JevClient
 
     let targetId: string | null = null;
     let pTarget = 1;
-    if (hasCandidates) {
+    const pDeixis = pointerAlias ? (answers.usesDeixis?.noul as number | undefined) : undefined;
+    if (pointerId && typeof pDeixis === "number" && pDeixis >= 0.6) {
+      targetId = pointerId;
+    } else if (hasCandidates) {
       const picked = answers.target?.choice as string;
       pTarget = (answers.target?.probabilities as Record<string, number> | undefined)?.[picked] as number;
       if (picked !== "none") {

@@ -36,3 +36,15 @@ export const iconNode = (name: string): Node => ({ id: "icon", type: "icon", nam
 
 export const photoNode = (src: string, alt: string): Node =>
   ({ id: "photo", type: "image", alt: alt || "Photo", src, aspect: "video", size: "full" } as Node);
+
+/** Insert nodes at a top-level index (clamped), selecting the first. Returns the inserted ids. */
+export function insertIntoPageAt(nodes: Node[], index: number, summary = "Added from library"): string[] {
+  const store = useScreenStore.getState();
+  const ops: ScreenOp[] = nodes.map((node, i) => ({ op: "insert" as const, parentId: null, index: index + i, node }));
+  const result = applyOps(store.screen, ops);
+  if (!result.applied) return [];
+  store.setScreen(result.screen, summary);
+  const first = result.changedIds[0];
+  if (first) store.select(first);
+  return result.changedIds;
+}

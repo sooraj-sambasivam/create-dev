@@ -156,47 +156,52 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
         else setPhase({ kind: "done", targetId: id, label: labelOf(id), message: result.summary });
       })();
     };
+    const onTranscript = (text: string, final: boolean) => {
+      setTranscript(text);
+      if (!final) {
+        if (utterStart.current === null) utterStart.current = Date.now();
+        const k = phaseRef.current.kind;
+        if (k === "idle" || k === "done" || k === "failed" || k === "ask") {
+          const hit = hoverFor(utterStart.current);
+          setPhase({ kind: "listening", targetId: hit?.id ?? null, label: hit?.label ?? null });
+        }
+        return;
+      }
+      add({ kind: "speech", text, final });
+      finalWaiter.current?.();
+      const tFinal = Date.now();
+      const startT = utterStart.current ?? tFinal;
+      utterStart.current = null;
+      if (done.current) return;
+      const lasso = lastLasso.current;
+      const hover = hoverFor(startT);
+      const req = buildIntentRequest(text, lasso, tFinal, hover);
+      if (!req) {
+        // Nothing pointed at yet: a Shift+drag in the next few seconds can still claim this line.
+        pendingSpeech.current = { t: tFinal, text };
+        setPhase({ kind: "idle" });
+        return;
+      }
+      pendingSpeech.current = null;
+      const dt = lasso ? tFinal - lasso.t : Infinity;
+      const usedLasso = !!lasso && lasso.targets.length > 0 && dt <= LASSO_SPEECH_AFTER_MS && dt >= -LASSO_SPEECH_BEFORE_MS;
+      const areas = usedLasso ? lasso.areas : hover ? { [hover.id]: hover.area } : {};
+      if (usedLasso) lastLasso.current = null;
+      runCommand.current(text, req, areas);
+    };
     const v = createVoice({
-      onTranscript: (text, final) => {
-        setTranscript(text);
-        if (!final) {
-          if (utterStart.current === null) utterStart.current = Date.now();
-          const k = phaseRef.current.kind;
-          if (k === "idle" || k === "done" || k === "failed" || k === "ask") {
-            const hit = hoverFor(utterStart.current);
-            setPhase({ kind: "listening", targetId: hit?.id ?? null, label: hit?.label ?? null });
-          }
-          return;
-        }
-        add({ kind: "speech", text, final });
-        finalWaiter.current?.();
-        const tFinal = Date.now();
-        const startT = utterStart.current ?? tFinal;
-        utterStart.current = null;
-        if (done.current) return;
-        const lasso = lastLasso.current;
-        const hover = hoverFor(startT);
-        const req = buildIntentRequest(text, lasso, tFinal, hover);
-        if (!req) {
-          // Nothing pointed at yet: a Shift+drag in the next few seconds can still claim this line.
-          pendingSpeech.current = { t: tFinal, text };
-          setPhase({ kind: "idle" });
-          return;
-        }
-        pendingSpeech.current = null;
-        const dt = lasso ? tFinal - lasso.t : Infinity;
-        const usedLasso = !!lasso && lasso.targets.length > 0 && dt <= LASSO_SPEECH_AFTER_MS && dt >= -LASSO_SPEECH_BEFORE_MS;
-        const areas = usedLasso ? lasso.areas : hover ? { [hover.id]: hover.area } : {};
-        if (usedLasso) lastLasso.current = null;
-        runCommand.current(text, req, areas);
-      },
+      onTranscript,
       onEngine: () => setMicHint(BROWSER_SPEECH_HINT),
       onState: (s) => { micRef.current = s as MicState; setMic(s as MicState); },
     });
     voice.current = v;
     if (!v.available) setMic("unavailable");
     const unbind = v.bindKeys();
+    // Dev/test hook: feed a transcript line through the same path the speech engine uses.
+    const w = window as unknown as { __createNarrate?: { say(text: string, final?: boolean): void } };
+    if (import.meta.env.DEV) w.__createNarrate = { say: (text, final = true) => onTranscript(text, final) };
     return () => {
+      if (import.meta.env.DEV) delete w.__createNarrate;
       unbind();
       v.destroy();
     };
@@ -273,12 +278,12 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
   const dur = reduce ? 0 : 0.2;
 
   return (
-    <div data-narrate-ignore className="fixed inset-0 z-[100]" role="dialog" aria-label="Narrate mode">
+    <div data-narrate-ignore className="pointer-events-none fixed inset-0 z-[100]" role="dialog" aria-label="Narrate mode">
       <AnimatePresence>
         {!recording && (
           <motion.div
             key="countdown"
-            className="absolute inset-0 flex flex-col items-center justify-center bg-shell/95 text-ink backdrop-blur-sm"
+            className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center bg-shell/95 text-ink backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

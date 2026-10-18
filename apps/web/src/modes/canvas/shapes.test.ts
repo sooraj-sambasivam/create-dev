@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { richTextToPlain, shapeText, toSummary } from "./shapes";
+import { libraryShapesInRegion, richTextToPlain, shapeText, toSummary } from "./shapes";
 
 describe("shapes mapping", () => {
   it("flattens rich text blocks", () => {
@@ -28,5 +28,14 @@ describe("toSummary meta", () => {
   it("carries the library origin", () => {
     expect(toSummary({ id: "s", type: "image", meta: { libraryKind: "icon", value: "lucide:star" } }, { x: 0, y: 0, w: 96, h: 96 }).meta).toEqual({ icon: "lucide:star" });
     expect(toSummary({ id: "s", type: "image" }, undefined).meta).toBeUndefined();
+  });
+});
+
+describe("libraryShapesInRegion", () => {
+  const s = (id: string, x: number, y: number, meta?: Record<string, string>) => ({ id, type: "image", x, y, w: 100, h: 100, ...(meta ? { meta } : {}) });
+  it("keeps overlapping icon/photo shapes, skipping excluded and non-library", () => {
+    const all = [s("a", 50, 50, { icon: "lucide:star" }), s("b", 500, 500, { icon: "x" }), s("c", 60, 60), s("d", 0, 0, { photo: "u" })];
+    const r = libraryShapesInRegion(all, { x: 0, y: 0, w: 200, h: 200 }, ["d"]);
+    expect(r.map((x) => x.id)).toEqual(["a"]);
   });
 });

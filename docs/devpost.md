@@ -29,9 +29,8 @@ developer who needs a framework.
 
 - "Make this bigger." The heading under your pointer grows.
 - "Swap this photo for a cupcake." The image under your pointer is replaced.
-- "Fix that." The element is rewritten in place.
 
-A bubble follows the pointer and shows what Create understood (for example, "Heading: Welcome"),
+A bubble follows the pointer and shows what Create understood (the element's label),
 then the words it heard, then Editing, then Done. If two elements are equally close, it asks
 "Which one?" instead of guessing. Shift+drag still lassos several elements at once.
 
@@ -44,6 +43,10 @@ or Narrate:
   page you already have. A side preview pane shows the live output.
 - **Point and narrate (Narrate):** hover or lasso what you mean and talk. The session becomes a
   clickable demo page.
+
+A fifth way in: a **Chrome extension** lets you point at any website, say or type a change, and
+open it in Create as an editable prototype. OWNER: keep this paragraph only if the extension is
+confirmed working in Chrome before submitting.
 
 Every mode produces the same JSON component tree. One React renderer shows it as a live page, and
 the editor lets you click to select, drag to move, double-click to type, and ask AI to change one
@@ -65,6 +68,8 @@ file or share a read-only link that opens on a phone.
 - **Perceptron (sketch reading):** Perceptron reads the canvas sketch and says what each shape is
   and where it sits. Claude then writes typed edit operations from that reading, which are
   validated before they reach the page. Without a Perceptron key, Claude reads the sketch alone.
+- **Chrome extension:** a plain-JS Manifest V3 extension sends a sanitized snapshot of the clicked
+  element to the server, which converts it to a Create page tree. The server never fetches the source site.
 - **Claude:** Sonnet 5.5 generates whole pages. Haiku 5.5 handles fast single-element edits and is
   the intent fallback. The model returns the tree through a tool call, and the server validates it
   before it reaches the browser.
@@ -120,5 +125,5 @@ Express · Openverse · Iconify · TypeScript · pnpm
 ## Demo
 
 The demo video follows `docs/demo-script.md`: a two-minute script built around the pointer
-(type, point and say, swap a photo, sketch, voice, share on a phone), with a replay fallback
+(type a prompt, point and say, swap a photo, sketch, and optionally point at a website with the extension), with a replay fallback
 (Ctrl+Shift+R) for any live step that fails.

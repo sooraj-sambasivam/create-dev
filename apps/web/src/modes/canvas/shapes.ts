@@ -69,6 +69,22 @@ export function summarizeShapes(editor: Editor, ids?: string[]): ShapeSummary[] 
   return out;
 }
 
+/** True when two page-space boxes overlap (touching edges do not count). */
+export function boxesOverlap(a: BoundsLike, b: BoundsLike): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+/**
+ * Summaries of placed library shapes (icons/photos, carrying meta) that overlap the region and are not already in `excludeIds`,
+ * so canvas-ops knows "put this icon here". Pure over summaries; capped to keep the request small.
+ */
+export function libraryShapesInRegion(all: readonly ShapeSummary[], region: BoundsLike, excludeIds: readonly string[] = [], cap = 20): ShapeSummary[] {
+  const skip = new Set(excludeIds);
+  return all
+    .filter((s) => !skip.has(s.id) && (s.meta?.icon || s.meta?.photo) && boxesOverlap(s, region))
+    .slice(0, cap);
+}
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const fr = new FileReader();

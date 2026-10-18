@@ -241,6 +241,26 @@ describe("replay safety: exact match vs fallback", () => {
     expect(shown[0].style.cssText).not.toContain("top:56px");
   });
 
+  it.each(["/api/route-intent", "/api/canvas-ops"])("never falls back to the latest run for %s", async (path) => {
+    const store = createMemoryStore();
+    await store.put(jsonRecording('{"stale":true}', path, "POST", generateBody));
+    const { doc, toasts } = fakeDoc();
+    const { win, real } = mk({ doc, store, mode: "replay" });
+
+    const p = win.fetch(path, { method: "POST", body: otherBody });
+    await flush();
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+    expect(real).toHaveBeenCalledTimes(1);
+    expect(toasts()).toHaveLength(0);
+
+    const q = win.fetch(path, { method: "POST", body: generateBody });
+    await flush();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await (await q).json()).toEqual({ stale: true });
+    expect(real).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the toast up until replay is switched off", async () => {
     const store = createMemoryStore();
     await store.put(jsonRecording('{"from":"bakery"}', "/api/generate", "POST", generateBody));

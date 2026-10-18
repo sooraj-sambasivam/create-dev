@@ -1,3 +1,7 @@
+import { sectionIndexForY } from "./dropIndex";
+import { SECTION_TEMPLATES } from "./templates";
+import { insertIntoPageAt } from "./insert";
+import { useScreenStore } from "../../../store/screenStore";
 import { AssetRecordType, createShapeId, toRichText, type Editor } from "tldraw";
 
 export type LibraryKind = "icon" | "photo" | "section" | "motion";
@@ -41,6 +45,15 @@ export function readLibraryDrag(dt: DataTransfer | null): LibraryDrag | null {
 
 /** Add a library item to the tldraw canvas tagged with meta {libraryKind, value}: icons and photos as images, sections and motion as labelled frames. */
 export function addLibraryItemToCanvas(editor: Editor, item: LibraryDrag, pagePoint?: { x: number; y: number }): void {
+  if (item.libraryKind === "section" && pagePoint) {
+    // A dropped section tile goes into the page itself, at the slot matching the drop height (same path as a click).
+    const tpl = SECTION_TEMPLATES.find((t) => t.id === item.value);
+    if (tpl) {
+      const screen = useScreenStore.getState().screen;
+      const index = sectionIndexForY(pagePoint.y, screen?.children.length ?? 0);
+      if (insertIntoPageAt(structuredClone(tpl.nodes), index, `Added ${tpl.label} section`).length) return;
+    }
+  }
   if (item.libraryKind === "section" || item.libraryKind === "motion") {
     const w = item.libraryKind === "section" ? 480 : 200;
     const h = item.libraryKind === "section" ? 160 : 80;

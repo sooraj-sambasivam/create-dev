@@ -81,6 +81,19 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
 
   useEffect(place, [phase]);
 
+  // Scrolling moves the page under a still pointer: re-measure the outline (rAF-throttled, capture reaches nested scrollers).
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; place(); });
+    };
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll, { capture: true });
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   const active = phase.kind !== "idle";
   const label = phase.kind !== "idle" && phase.kind !== "ask" && phase.label ? phase.label : hover;
   const status = phaseText(phase);

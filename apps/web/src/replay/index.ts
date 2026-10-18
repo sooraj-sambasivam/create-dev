@@ -22,6 +22,13 @@ export const REPLAY_PATHS = [
   "/api/transcribe",
 ] as const;
 
+/**
+ * Paths whose output is applied to existing canvas elements. A recording for a
+ * different request could edit the wrong element, so these only replay on an
+ * exact body match and otherwise pass through to the network.
+ */
+export const EXACT_ONLY_PATHS = ["/api/route-intent", "/api/canvas-ops"] as const;
+
 export const MODE_STORAGE_KEY = "create.replay.mode";
 
 /** Shown when replay answers from the latest run for a path, not an exact body match. */
@@ -440,11 +447,14 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
     if (mode === "replay") {
       // Exact body match first. Otherwise the latest run for this path is shown
       // with a visible toast, so another prompt's recording is never silent.
-      // With no recording for the path at all, the request goes to the network.
+      // route-intent and canvas-ops never fall back (see EXACT_ONLY_PATHS).
+      // With no usable recording, the request goes to the network.
       try {
         const exact = await store.getByKey(key);
         if (exact) return await responseFromRecording(exact, init?.signal);
-        const latest = await store.latestForPath(method, path);
+        const latest = (EXACT_ONLY_PATHS as readonly string[]).includes(path)
+          ? undefined
+          : await store.latestForPath(method, path);
         if (latest) {
           showToast(FALLBACK_TOAST_TEXT);
           return await responseFromRecording(latest, init?.signal);

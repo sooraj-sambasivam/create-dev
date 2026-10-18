@@ -18,6 +18,7 @@ If three minutes are allowed, use the spare time as buffer, not for extra featur
 - [ ] Browser (Chrome) at laptop width, light theme, microphone permission granted in advance.
 - [ ] Start from an empty app (new chat, no page).
 - [ ] Narrate is on and the pointer bubble shows when you hover the page. Do one dry run.
+- [ ] Extension loaded unpacked in this Chrome profile and tested on the demo site (it has never been run in a real browser; OWNER: verify). Drop the beat if it fails.
 - [ ] Phone route for the share step is tested (see `docs/integration.md`, "Share links on a phone").
 - [ ] Replay is primed: run this exact script once in record mode (the default) in the same browser
       profile, since replay reads the recording from that browser. Keep that video as the backup.
@@ -33,7 +34,7 @@ If three minutes are allowed, use the spare time as buffer, not for extra featur
 | 1:05-1:15 | Undo and ask | Press Cmd+Z to undo. Hover where two items overlap and say `Make this red.` If the bubble asks "Which one?", click the right item. | "It never guesses silently. If it is unsure, it asks. Undo is one key." |
 | 1:15-1:35 | Sketch | Open the fan, choose **Canvas**. Draw a wide header box, two side-by-side cards, a small button box. Press Generate. Watch the preview pane. | "Or draw it. Perceptron reads the sketch, and Claude turns it into your page." |
 | 1:35-1:45 | Voice | Open the fan, choose **Mic**. Say: `Add a contact section with a phone number.` Press Go. | "Speech goes in live through ElevenLabs." |
-| 1:45-1:55 | Share on a phone | Click **Share**, copy the link, open it on the phone. | "Share a read-only link. It opens on any phone." |
+| 1:45-1:55 | Extension (only if the gate confirms it works; otherwise do the phone share) | Click the extension icon on any website, click an element, type `make this mine but darker`. A Create tab opens. Phone alternative: **Share**, copy the link, open on the phone (`pnpm share:tunnel`). | "Point at any website and pull it into Create." |
 | 1:55-2:00 | Close | Show the four inputs: type, say, draw, point. | "Point at it. Say it. It changes." |
 
 Timing notes:
@@ -44,6 +45,7 @@ Timing notes:
   Most of the wait is the edit itself. Bigger and smaller are applied with no model call.
 - Hover on the target before you start speaking and keep the pointer still until the bubble shows
   the label. The target is read when the first words arrive.
+- Known glitch: after "make this bigger" the brand text may wrap and the bubble can cover a nav link; pick a short title. At 1440x900 with the right panel open, the fan's Canvas/Narrate items may sit under the Run log summary; close the right panel or use a wider window.
 - Shift+drag lassos several elements. Use it only if there is time; it is not in the 2:00 script.
 - Claim only what the build shows. If the sketch preview only fills in after Generate finishes,
   say "it builds the page" and do not say "live". **Check on the day.**

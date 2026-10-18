@@ -27,7 +27,7 @@ const FALLBACK_STEPS = [
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
-const accentBtn = "bg-accent text-white dark:text-shell";
+const accentBtn = "bg-accent text-on-accent";
 const sectionCls = "relative w-full max-w-[520px] rounded-xl border border-line bg-surface p-8";
 
 function Frame({ children }: { children: React.ReactNode }) {

@@ -392,7 +392,7 @@ export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarra
             {/* Fixed slots so Done / Cancel never shift between recording and building. */}
             <span className="flex w-[84px] shrink-0 justify-end">
               {phase === "recording" && (
-                <button type="button" onClick={done} className={`${btn} w-full justify-center bg-accent font-medium text-white dark:text-[#0d0d0d] hover:opacity-90`} aria-label="Done">
+                <button type="button" onClick={done} className={`${btn} w-full justify-center bg-accent font-medium text-on-accent hover:opacity-90`} aria-label="Done">
                   <Check size={18} strokeWidth={1.75} aria-hidden />
                   Done
                 </button>

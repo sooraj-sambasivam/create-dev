@@ -10,6 +10,30 @@ supplies the change, and the edit happens in place. A bubble shows what Create u
 See [docs/screenshots](docs/screenshots/README.md).
 <!-- OWNER: add screenshots to docs/screenshots/ (pointer bubble, canvas sketch, phone share) and link them here. -->
 
+## Features
+
+- **Point and talk (Narrate):** hover an element, hold Option, say "make this bigger" or "swap this
+  photo". A bubble shows the target label, the words heard, then Editing and Done. Ambiguous
+  targets ask "Which one?". Shift+drag selects several elements. Edits are queued and undoable.
+- **Type, speak, draw:** prompt composer, live voice (ElevenLabs Scribe, browser speech fallback),
+  and a tldraw canvas whose sketch (plus dropped sections, icons and photos) becomes edits.
+- **Editor:** click to select, drag, resize, type in place, inspector, per-element AI box.
+- **Chrome extension:** point at any website, optionally say or type a change, and open it in
+  Create as an editable prototype (`apps/extension/README.md`).
+- **Share:** read-only links; `pnpm share:tunnel` exposes the dev server for a phone.
+- **Publish:** one self-contained HTML file.
+- **Replay mode:** Ctrl+Shift+R answers model calls from a recorded run. Intent and canvas-ops
+  calls replay only on an exact request match.
+
+## Sponsor tech
+
+- **TypeSafe Jev:** routes each spoken line to an action and a target. Pointer deixis: when the
+  pointer's element is one of the candidates and Jev judges the words are deictic ("this", "that"),
+  the pointed element wins; otherwise the words choose. Falls back to Claude Haiku, then keywords.
+- **Perceptron:** reads canvas sketches (what each shape is and where) before Claude writes edit ops.
+- **ElevenLabs Scribe:** realtime transcription with a single-use token minted by the server.
+- **MongoDB Atlas:** optional share-link store (`MONGODB_URI`); local files without it.
+
 ## Quickstart (judges)
 
 Requirements: Node 22+, pnpm 9+.
@@ -17,7 +41,7 @@ Requirements: Node 22+, pnpm 9+.
 ```bash
 pnpm install
 cp apps/server/.env.example apps/server/.env   # fill in keys, or keep MOCK_AI=1 to run with none
-pnpm dev                                        # API :3001 + web :5173
+pnpm dev                                        # API :3001 + web :5173 (next free port if taken)
 ```
 
 Open http://localhost:5173 (default web port; Vite picks the next free port if it is taken).
@@ -113,6 +137,26 @@ To add a mode:
 3. Voice helpers you can reuse: `lib/useRecorder.ts` (MediaRecorder + level meter) and
    `lib/api.ts#transcribe(blob)`.
 
+## Extension and sharing
+
+Load `apps/extension` unpacked in Chrome (see `apps/extension/README.md`). It posts a structural
+snapshot of the clicked element to `POST /api/import-element`, which returns a Create link. The
+server allows `chrome-extension://` origins on that path only (any extension ID; set
+`ALLOWED_ORIGINS` for extra web origins). The extension has not been tested in a real Chrome yet.
+OWNER: confirm it loads and imports before claiming it in the demo.
+
+Phone sharing: start `pnpm dev`, run `pnpm share:tunnel` (needs `cloudflared`), set `PUBLIC_URL`
+to the printed URL, restart the API. See `docs/DEPLOY.md`.
+
+Vercel: root `vercel.json` builds `apps/web` and rewrites `/api/*` to `api/index.ts`, which exports
+the Express app. This route is untested on Vercel; OWNER: deploy a preview before relying on it.
+
+## Known issues
+
+- At 1440x900 with the right panel open, the radial fan's Canvas and Narrate items can sit under
+  the Run log summary and not take real clicks.
+- The hover bubble label can be a raw node description instead of a short name like "Heading".
+
 ## Publishing
 
 **Publish** in the canvas title bar downloads the page as one self-contained HTML file
@@ -129,6 +173,7 @@ All routes are under `/api`.
 | `POST /generate` `{ prompt, screen?, history?, assets? }` | Build or refine a page, `{ summary, screen }` (streams partial frames) |
 | `POST /edit-node` `{ prompt, screen, nodeId, assets? }` | Rewrite one element, `{ summary, nodes }` |
 | `POST /route-intent` `{ text, candidates, pointer? }` | Route a spoken line: action and target (Jev, then Haiku, then keywords) |
+| `POST /import-element` | Chrome extension snapshot to a Create prototype, `{ id, url }` |
 | `POST /canvas-ops` | Turn a canvas selection (PNG and shapes) into typed edit ops (Perceptron, then Claude) |
 | `POST /generate-sketch` | Sketch to page |
 | `POST /demo` | Narrate session to a clickable demo page |

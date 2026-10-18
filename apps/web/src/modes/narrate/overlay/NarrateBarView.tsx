@@ -131,7 +131,7 @@ export function NarrateBarView({
         aria-label="Finish narration"
         onClick={onFinish}
         disabled={finishing}
-        className={`h-8 shrink-0 rounded-full bg-accent px-3 text-[14px] text-white transition-opacity duration-150 dark:text-shell disabled:opacity-50 ${focusRing}`}
+        className={`h-8 shrink-0 rounded-full bg-accent px-3 text-[14px] text-on-accent transition-opacity duration-150 disabled:opacity-50 ${focusRing}`}
       >
         Done
       </button>

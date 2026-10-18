@@ -11,7 +11,7 @@ import { CanvasToolbar } from "./CanvasToolbar";
 import { useCanvasStore } from "./canvasStore";
 import { buildRevealFrames } from "./reveal";
 import { generateSketch } from "./sketchApi";
-import { exportPng, summarizeShapes } from "./shapes";
+import { exportPng, libraryShapesInRegion, summarizeShapes } from "./shapes";
 import { CanvasNarrate } from "./narrate";
 import { classifyNarrateNotice } from "./notice";
 import { LIBRARY_MIME, LibraryPanel, handleLibraryDrop } from "./library";
@@ -324,7 +324,9 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
         const image = await exportPng(editor, [...ids]);
         if (!image) throw new Error("Draw something first.");
         const before = useScreenStore.getState().screen;
-        const res = await requestCanvasOps({ image, label, region, shapes: summarizeShapes(editor, [...ids]).slice(0, 200), screen: before });
+        const pen = summarizeShapes(editor, [...ids]);
+        const placed = libraryShapesInRegion(summarizeShapes(editor), { x: region.x ?? 0, y: region.y, w: region.w ?? 1, h: region.h }, ids);
+        const res = await requestCanvasOps({ image, label, region, shapes: [...pen, ...placed].slice(0, 200), screen: before });
         const next = applyOps(before, res.ops);
         if (next.applied > 0) {
           useScreenStore.getState().setScreen(next.screen, res.summary);

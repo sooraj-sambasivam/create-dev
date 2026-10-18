@@ -102,7 +102,7 @@ export function StrokePopover({
           type="button"
           onClick={submit}
           disabled={!can}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm text-white dark:text-[#0d0d0d] transition-opacity duration-150 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm text-on-accent transition-opacity duration-150 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {busy && <Loader2 size={16} strokeWidth={1.75} className="animate-spin motion-reduce:animate-none" aria-hidden />}
           {busy ? "Building" : "Confirm"}

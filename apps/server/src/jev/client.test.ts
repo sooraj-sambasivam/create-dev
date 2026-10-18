@@ -147,3 +147,26 @@ describe("x-intent-engine header", () => {
     expect(Object.keys(await res.json()).sort()).toEqual(["action", "confidence", "isCommand", "targetId"]);
   });
 });
+
+describe("judgeIntent pointer deixis", () => {
+  const withDeixis = (p: number, target: string) => {
+    const a = answers({ cmd: 0.95, target, pt: 0.9, action: "restyle", pa: 0.9 });
+    (a.answers as Record<string, unknown>).usesDeixis = { type: "noul", noul: p };
+    return a;
+  };
+  it("takes the pointer target when the line is deictic", async () => {
+    const client = fake(() => withDeixis(0.9, "c1"));
+    const r = await judgeIntent({ ...req, transcript: "make this red", pointer: { targetId: "s9" } }, { client });
+    expect(r).toMatchObject({ targetId: "s9", action: "restyle" });
+  });
+  it("trusts the words when not deictic", async () => {
+    const client = fake(() => withDeixis(0.2, "c1"));
+    const r = await judgeIntent({ ...req, transcript: "make the heading red", pointer: { targetId: "s9" } }, { client });
+    expect(r?.targetId).toBe("n1");
+  });
+  it("ignores a pointer that is not a candidate", async () => {
+    const client = fake(() => withDeixis(0.9, "c1"));
+    const r = await judgeIntent({ ...req, pointer: { targetId: "zzz" } }, { client });
+    expect(r?.targetId).toBe("n1");
+  });
+});
