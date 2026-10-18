@@ -1,265 +1,230 @@
 # Create: pixels become software you own
 
-Point at a table, chart, list or schedule on the web, say or type "turn this into something I can
-track", and Create hands you a live app: an editable table, a chart and an add-row form backed by
-real storage. Scan the QR code on your phone, add a row, and it shows up on the laptop. DubHacks '26.
+Point at a table, chart, PDF or schedule, say "turn this into something I can track", and Create hands you a live app (editable table, chart, add-row form) with a real backend. DubHacks '26.
 
 Google's pointer answers questions. Create hands you software you own, with a backend.
 
-The same pointer works inside the app: hover an element, hold Option and say "make this bigger".
-A bubble shows what Create understood, and undo is one key. Chat mode answers questions about
-what you point at ("why does week 3 spike?").
-
-See [docs/screenshots](docs/screenshots/README.md).
-<!-- OWNER: add screenshots to docs/screenshots/ (lifted schedule app, QR card, Backend tab with a new row, pointer bubble) and link them here. -->
 <!-- OWNER: product name decision (Create vs Lift) before submit; copy currently says Create. -->
 
-## Features
+**Status of the claims below.** Everything in this file was checked against the code on the `integrate` branch when written. Anything not run end to end is marked **verify before submit**. Measured numbers come from `docs/results/pointer.md` and `scripts/eval/results/`; nothing here is a vendor claim.
 
-- **Lift (Chrome extension):** hold Option over a table, list, pricing cards or a chart image on any
-  page. The extension reads the pointed-at data into a typed entity (columns and up to 500 rows),
-  and `POST /api/lift` turns it into a Create app. Charts that are only an image are cropped and
-  read through `POST /api/extract` (Perceptron, then Claude vision, then a mock). Details in
-  `apps/extension/README.md`.
-- **The app you get:** an editable table, a bar or line chart, and an "Add row" form. Rows go to
-  the forms store (`/api/forms/:appId`), which uses MongoDB when `MONGODB_URI` is set and local
-  files otherwise. The table and chart carry a `liveFormId` that binds them to that form.
-- **QR to a phone:** the Output tab and shared view have a "Scan to open" card with a QR code. A
-  row added from the phone lands in the app's **Backend** tab, which polls every 3 seconds and
-  flashes new rows.
-- **Point and talk (Narrate):** hover an element, hold Option, say "make this bigger" or "swap
-  this photo". A bubble shows the target label, the words heard, then Editing and Done. Ambiguous
-  targets ask "Which one?". Edits are queued and undoable.
-- **Chat | Code modes:** Chat answers questions about anything, including a figure you point at (the
-  server sends a crop of it to vision). Code builds and edits the app.
-- **Type, speak, sketch, narrate:** prompt composer, live voice (ElevenLabs Scribe, browser speech
-  fallback) and a tldraw canvas whose sketch becomes edits.
-- **Editor:** click to select, drag, resize, type in place, inspector, per-element AI box.
-- **Onboarding:** a first-run path for people who ask and for developers.
-- **Share and publish:** read-only links, `pnpm share:tunnel` for a phone, and one self-contained
-  HTML export.
-- **Replay mode:** Ctrl+Shift+R answers model calls from a recorded run. Intent and canvas-ops
-  calls replay only on an exact request match.
+## See it in 30 seconds
 
-Everything above was exercised by the headless smoke test (`node scripts/e2e/smoke.mjs`, lift,
-chart and add-row included) and the extension test (`scripts/e2e/extension.mjs`). Not exercised in
-a real browser session: Chrome speech and the mic button in the extension, real Perceptron and
-Claude extract calls (no keys in test), and the QR scan from a physical phone. Verify before submit.
+<!-- OWNER: record a 30-second GIF of the demo path (hover a table, hold Option, say "track this", app opens, add a row, Backend tab updates) and save it as docs/screenshots/demo.gif. -->
+<!-- OWNER: add screenshots to docs/screenshots/: lifted schedule app, QR card, Backend tab with a new row, pointer bubble, notch tray. -->
 
-## Sponsor tech
+| Placeholder | File | Status |
+| --- | --- | --- |
+| 30-second demo GIF | `docs/screenshots/demo.gif` | OWNER: not recorded |
+| Lifted app (table, chart, add-row form) | `docs/screenshots/lifted-app.png` | OWNER: not captured |
+| QR card and Backend tab with a new row | `docs/screenshots/backend-tab.png` | OWNER: not captured |
+| Notch tray | `docs/screenshots/notch-tray.png` | OWNER: not captured |
 
-- **Perceptron:** reads chart and image crops into a typed entity (`apps/server/src/extract/`), and
-  reads canvas sketches before Claude writes edit ops. Without a key, Claude vision, then a mock.
-- **MongoDB Atlas (MLH):** per-app form submissions (the rows people add) and share links
-  (`MONGODB_URI`). Local files without it.
-- **TypeSafe Jev:** routes each spoken line to an action and a target. When the words are deictic
-  ("this", "that"), the pointed element wins; otherwise the words choose. Falls back to Claude
-  Haiku, then keywords.
-- **ElevenLabs Scribe:** realtime transcription with a single-use token minted by the server.
-- **Claude:** builds and edits apps, polishes the title and summary of a lifted app, answers Chat.
+Existing screenshots: [docs/screenshots](docs/screenshots/README.md). Demo video script and shot list: `docs/pitch/`. Live demo walkthrough: `docs/demo-script.md`.
 
-Hackathon tracks: DubHacks NEXT, Perceptron, SideShift, MongoDB Atlas. Team: Sooraj Sambasivam, Abel Anand, pentaswan. Per-track evidence: `docs/devpost.md`.
+## What it does
 
-## Quickstart (judges)
+- **Point and lift.** Hover a table, list, pricing cards or a chart, hold Option, say what you want. Create reads the data into a typed entity and `POST /api/lift` turns it into an app: editable table, bar or line chart, "Add row" form.
+- **A real backend.** Rows go to `/api/forms/:appId`, stored in MongoDB when `MONGODB_URI` is set and in local files otherwise. The app's **Backend** tab polls every 3 seconds.
+- **QR to a phone.** Scan, add a row from the phone, watch it land on the laptop.
+- **Four ways to point.** Inside the app (hover, pin, hold Option), the Chrome extension (point, circle, crawl), the macOS notch tray (hold Option anywhere on screen), and **Lift from screen** (box a region of any window).
+- **Chat and Work.** Chat answers questions about what you point at ("why does week 3 spike?"). Work builds and edits the app. Edits are queued and undoable.
+- **Voice.** ElevenLabs Scribe realtime transcription, with browser speech as fallback.
+- **Replay mode.** Ctrl+Shift+R answers model calls from a recorded run if a live step fails.
 
-Requirements: Node 22+, pnpm 9+, Chrome for the extension.
+## Sponsor products wired
+
+Detail and per-track evidence: `docs/sponsors.md`, `docs/devpost.md`.
+
+| Product | What it does here |
+| --- | --- |
+| Claude (Anthropic) | Builds and edits apps; last-resort vision for locate and extract |
+| Inkling via Thinking Machines Tinker | Default model for Chat when `TINKER_API_KEY` is set; Claude is the fallback |
+| Perceptron Mk1.5 | At commit time, detects and reads tables, charts and PDFs (`/v1/detect` boxes, OCR); describes images for Chat |
+| TypeSafe Jev | Resolves "this" and "that" (about 0.1 s) and answers image yes/no with a box |
+| Gemini 3.8 Flash | Second vision and chat engine, used in commit mode when keyed |
+| ElevenLabs | Scribe realtime voice and TTS (video narration) |
+| MongoDB Atlas | Backend rows and share links, only when `MONGODB_URI` is set. OWNER: not set at the time of writing |
+
+Tracks: DubHacks NEXT, Perceptron, SideShift, and MongoDB Atlas (only if the URI is set).
+
+## Quickstart
+
+Requirements: Node 22+, pnpm 9+, Chrome (extension), macOS 14+ with Xcode (notch tray only).
 
 ```bash
-pnpm install
-cp apps/server/.env.example apps/server/.env   # fill in keys, or keep MOCK_AI=1 to run with none
-pnpm dev                                        # API :3001 + web :5173 (next free port if taken)
+pnpm i
+pnpm onboard      # checks Node, pnpm, ports and which keys are present
+pnpm dev          # API on :3001 + web on :5173 (Vite takes the next free port if busy)
 ```
 
-Open http://localhost:5173 (Vite picks the next free port if it is taken, for example 5175).
-With `MOCK_AI=1` no model is called and the whole UI works with canned pages. For real output,
-set `ANTHROPIC_API_KEY`, remove `MOCK_AI`, and restart the server (`.env` is read at startup).
-Check `http://localhost:3001/api/health` to see which keys are present.
+Open http://localhost:5173. `pnpm onboard --doctor` re-checks setup. `http://localhost:3001/api/health` shows which keys the server sees.
 
-### Try the lift in two minutes
+### Keys (names only, in `apps/server/.env`)
 
-1. Open `chrome://extensions`, turn on Developer mode, click Load unpacked, choose `apps/extension`.
-   Open the extension's options and set the web origin to the port Vite printed.
-2. Open a fixture page from `apps/extension/demo/`: `route-44-schedule.html`, `dubhacks-schedule.html`,
-   `dining-hours.html`, `pricing.html` or `chart.html`. For `file://` pages, enable "Allow access to
-   file URLs" on the extension. Or serve the folder: `python3 -m http.server -d apps/extension/demo 8080`.
-3. Hold Option over the table until it outlines, release, keep "something I can track" (or type or
-   say your own), press Enter. A new tab opens with your app.
-4. Add a row with the form. It appears in the table and in the Output panel's **Backend** tab.
+`ANTHROPIC_API_KEY`, `TINKER_API_KEY` (Inkling), `PERCEPTRON_API_KEY`, `TYPESAFE_API_KEY` (Jev), `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`, `MONGODB_URI` (optional), `MOCK_AI` (`1` = no model calls, canned pages), `PUBLIC_URL` (phone sharing), `PORT`. Tuning: `CLAUDE_MODEL`, `CLAUDE_BUILD_EFFORT`, `CLAUDE_EDIT_EFFORT`, `INKLING_MODEL`, `GEMINI_MODEL`, `PERCEPTRON_MODEL`. The server reads `.env` at startup, so restart after changing it. Never commit `.env`. Every key is optional: a missing key falls back to the next provider or a mock.
+
+### Chrome extension
+
+1. `chrome://extensions`, turn on Developer mode, **Load unpacked**, choose `apps/extension`.
+2. Open the extension options and set the web origin to the port Vite printed.
+3. Open a fixture from `apps/extension/demo/` (`route-44-schedule.html`, `dubhacks-schedule.html`, `dining-hours.html`, `pricing.html`, `chart.html`). For `file://` pages enable "Allow access to file URLs", or serve it: `python3 -m http.server -d apps/extension/demo 8080`.
+4. Hold Option over the table, release, press Enter. A new tab opens with your app.
+
+More in `apps/extension/README.md`. A hands-on run in a real Chrome profile has not been done: **verify before submit**.
+
+### macOS notch tray
+
+```bash
+cd apps/notch
+swift build -c release
+./scripts/make-app.sh      # produces apps/notch/.build/Create Tray.app (ad-hoc signed)
+```
+
+Open `Create Tray.app` from Finder, not from Terminal or Xcode, or the permission grants attach to the host app. Grant **Screen Recording** and **Accessibility** (System Settings, Privacy & Security), then quit and reopen the app. The tray itself needs no permission; the Option-hold capture does. Hold Option for 400 ms over any app: the tray reads the element under the cursor, locates it, extracts and lifts it, and adds a card to the notch. Do not rebuild after granting, since a new binary can drop the grants. Details: `apps/notch/README.md`. Its last documented state is built but not launched: **verify before submit** on the demo Mac.
+
+### Lift from screen
+
+In the web app's composer choose **Lift from screen**, pick a screen or window to share, drag a box around a table or chart, and the crop is read through `POST /api/extract`. It uses the browser's screen-share prompt and works on PDFs and apps with no DOM. Chart values read from pixels are approximate; use a real table when exact numbers matter. Not re-run end to end for this README: **verify before submit**.
 
 ### Phone and QR
 
 ```bash
-pnpm share:tunnel                                   # prints https://<name>.trycloudflare.com (needs cloudflared)
+pnpm share:tunnel                                              # prints a trycloudflare.com URL (needs cloudflared)
 PUBLIC_URL=https://<name>.trycloudflare.com pnpm --filter @create/server dev
 ```
 
-Set `PUBLIC_URL` before lifting, or the app link points at localhost. Then lift a table, open the
-Output tab, choose the QR button, and scan with a phone. Test on the venue wifi first (`docs/DEPLOY.md`).
+Set `PUBLIC_URL` before lifting, or the app link points at localhost. Test on the venue wifi first (`docs/DEPLOY.md`). A QR scan from a physical phone has not been exercised: **verify before submit**.
 
-Other tries: pick **Narrate** from the radial fan, hover the page title, hold Option and say "make
-this bigger". `pnpm onboard` checks your setup. Demo flow: `docs/demo-script.md`. If a live step
-fails, press Ctrl+Shift+R for replay mode.
-
-## Environment variables (names only, in `apps/server/.env`)
-
-| Name | Required | Purpose and fallback |
-| --- | --- | --- |
-| `ANTHROPIC_API_KEY` | For real output | Claude generates pages and edits. Without it, canned mock screens and keyword intent |
-| `MOCK_AI` | No | `1` = no model calls |
-| `TYPESAFE_API_KEY` | No | TypeSafe Jev intent routing. Without it, Claude Haiku then keywords route commands |
-| `PERCEPTRON_API_KEY` | No | Perceptron reads canvas sketches. Without it, Claude reads the sketch alone |
-| `ELEVENLABS_API_KEY` | No | ElevenLabs Scribe realtime voice. Without it, voice falls back to browser speech |
-| `MONGODB_URI` | No | Share links in Atlas. Without it, local files in `apps/server/.data/prototypes/` |
-| `YOUTUBE_API_KEY` | No | Live YouTube data |
-| `CLAUDE_MODEL`, `CLAUDE_BUILD_EFFORT`, `CLAUDE_EDIT_EFFORT` | No | Model and thinking effort. Default model `claude-sonnet-5-5` |
-| `PERCEPTRON_MODEL`, `DEMO_PLAN_MODEL`, `CANVAS_OPS_FAST`, `DEMO_FAST` | No | Tuning for sketch and demo calls |
-| `PUBLIC_URL` | No | Public origin for share links (phone sharing) |
-| `PORT` | No | API port, default `3001` |
-| `VITE_TLDRAW_LICENSE_KEY` | No | tldraw license, set in the web app env. The canvas runs on the trial without it |
-
-Never commit `.env`. Keys stay on the server.
-
-## Ports
-
-| Service | Port | Notes |
-| --- | --- | --- |
-| Web (Vite) | 5173 (default) | proxies `/api` to the API |
-| API (Express) | 3001 | override with `PORT` |
-
-## Layout
+## Architecture
 
 ```
-packages/shared   Zod schemas: Screen / Node tree, request + response shapes, mock screen
-apps/server       Express: POST /api/generate (Claude structured output), POST /api/transcribe (Scribe)
-apps/web          Vite + React: mode switcher, renderer, composer, modes/{text,voice,canvas,narrate}
+ Sources of "this"                      One pipeline                      Output
+ -----------------                      ------------                      ------
+ Web app (hover/pin/Option) --+
+ Chrome extension (DOM+crop) -+--> POST /api/locate ---+
+ Notch tray (AX + screen) ----+     mode: hover|commit |   hover : DOM + AX + Jev          (<300 ms budget)
+ Lift from screen (crop) -----+                        |   commit: + Perceptron /v1/detect  (8 s cap)
+                                                       |           + Gemini + Claude last resort
+                                                       v
+                                             fuse(): rank boxes, "Which one?" if close
+                                                       |
+                         +-----------------------------+--------------------------+
+                         v                             v                          v
+                 POST /api/extract             POST /api/route-intent       POST /api/ask
+                 pixels -> typed entity        Jev -> Haiku -> keywords     Inkling (default)
+                 Perceptron / Gemini / Claude  "this" -> pointed element    -> Claude fallback
+                         |                                                  + Perceptron image description
+                         v
+                 POST /api/lift  --> live app (table + chart + add-row form)
+                                          |
+                                          v
+                              /api/forms/:appId  --> MongoDB Atlas | local files
+                                          |
+                                          v
+                              Backend tab (3 s poll) + QR on a phone
+
+ /api/tray <--> notch app (cards, drag out, open in Create)
+ Every locate call records a stage-by-stage trace: GET /api/traces
 ```
 
-## The contract every mode shares
+Shared contract: `packages/shared/src/schema.ts` (Zod). A `Screen` is a tree of nodes (text, data, actions, media, forms, layout). Claude returns the tree through a `render_screen` tool call; the server sanitizes, validates and sends any errors back for one repair. To add an element type: add it to the schema, a renderer case in `apps/web/src/components/elements.tsx`, and inspector fields in `apps/web/src/editor/Inspector.tsx`.
 
-`packages/shared/src/schema.ts` is the single source of truth. A `Screen` has a title, theme,
-brand `accent`, `font` and a tree of nodes. Element types:
-
-| Group | Types |
-| --- | --- |
-| Text | heading, text, badge, list, table (optional `liveFormId`), accordion (FAQ) |
-| Data | chart (bar or line, 1 to 4 series, optional `liveFormId`) |
-| Actions | button, link (both take an `icon` and an `href`: `#section-id`, https, mailto, tel) |
-| Media | image (stock `query` or uploaded `src`, sizes from logo to full), avatar, icon (any Iconify icon), video (YouTube/Vimeo), map (address) |
-| Social proof | rating |
-| Forms | textbox, select, checkbox (visual only) |
-| Layout | container (row/column, wrap, background preset or photo with overlay), divider, spacer |
-
-Every node takes an optional `style` (colors, gradient, radius, shadow, border, font size and
-weight, alignment, italic, grayscale/sepia filter) and `widthPct`. Most props have defaults, so
-hand-written trees can stay short; run them through `ScreenSchema.parse` to fill defaults.
-
-How the AI produces pages: Claude returns the tree as the input of a `render_screen` tool call
-(`replace_element` for single-element edits). The server cleans small mistakes
-(`packages/shared/src/sanitize.ts`), validates with Zod, and sends any remaining errors back to
-Claude for one repair. There is no structured-output grammar limit, so new element types can be
-added to the schema directly; add a renderer case in `apps/web/src/components/elements.tsx` and
-inspector fields in `apps/web/src/editor/Inspector.tsx`.
-
-Resources the AI relies on:
-
-- **Photos**: Openverse search via `GET /api/image?q=…` (404 when nothing relevant exists, shown as a
-  "No photo found" placeholder). Results are scored against each photo's title and tags. Before
-  answering, the server checks every photo search, retries simpler wording, and tells the user
-  when nothing matched, so the AI never claims a photo changed when it didn't. Cached in
-  `apps/server/.cache`.
-- **Icons**: Iconify. Names the model guesses are checked and corrected (`apps/server/src/icons.ts`);
-  the inspector searches by style (line, solid, cartoon, 3D, brand) via `GET /api/icons/search`.
-- **The user's files**: `POST /api/upload` (PNG, JPG, WebP, GIF), served from `/api/uploads/…` and
-  passed to the AI as `<assets>` so "put my logo in the nav" works.
-- **Web pages**: when a prompt contains a URL, Claude may fetch it (e.g. an existing site or menu).
-
-To add a mode:
-
-1. Create `apps/web/src/modes/<name>/<Name>Mode.tsx` and wire it in `App.tsx` and `ModeSwitcher.tsx`
-   (Canvas and Narrate already have stubs).
-2. Produce a screen one of two ways:
-   - **Directly** (e.g. Canvas): build a `Screen` and call
-     `useScreenStore.getState().setScreen(screen, "what changed")`.
-   - **Through the model** (e.g. Narrate): call `useScreenStore.getState().generate(prompt)`, or
-     `editNodeWithAI(nodeId, prompt)` to change one element.
-3. Voice helpers you can reuse: `lib/useRecorder.ts` (MediaRecorder + level meter) and
-   `lib/api.ts#transcribe(blob)`.
-
-## Extension and sharing
-
-Load `apps/extension` unpacked in Chrome (see `apps/extension/README.md`). It sends a typed entity
-to `POST /api/lift` (or a chart crop to `POST /api/extract` first) and opens the returned link. The
-server never fetches the source page. The server's CORS list allows `chrome-extension://` origins
-on the legacy import path only; lift and extract calls are made from the extension's background
-worker (its `<all_urls>` host permission). Set `ALLOWED_ORIGINS` for extra web origins. The headless
-extension test passes (12/12); a hands-on run in your own Chrome profile has not been done.
-OWNER: confirm it loads and lifts the fixture pages in real Chrome before claiming it in the demo.
-
-Phone sharing: start `pnpm dev`, run `pnpm share:tunnel` (needs `cloudflared`), set `PUBLIC_URL`
-to the printed URL, restart the API. See `docs/DEPLOY.md`.
-
-Vercel: root `vercel.json` builds `apps/web` and rewrites `/api/*` to `api/index.ts`, which exports
-the Express app. This route is untested on Vercel; OWNER: deploy a preview before relying on it.
-
-## Known issues
-
-- At 1440x900 with the right panel open, the radial fan's Canvas and Narrate items can sit under
-  the Run log summary and not take real clicks.
-- The hover bubble label can be a raw node description instead of a short name like "Heading".
-- Lift links use `PUBLIC_URL`, then the request Origin, then `http://localhost:5173`. Set `PUBLIC_URL` for any phone demo.
-- Lifted tables and charts are read from the page you pointed at. Values read from a chart image are approximate; use a DOM table when exact numbers matter.
-- Chart labels and values from an AI edit are not padded to equal length.
-
-## Publishing
-
-**Publish** in the canvas title bar downloads the page as one self-contained HTML file
-(`apps/web/src/lib/exportSite.ts`): it is captured from Preview, stock photos are swapped for their
-real URLs, uploads are embedded, styles and fonts are inlined, and section links get real ids.
-The menu explains how to put it online for free by dragging the file onto Netlify Drop.
+```
+packages/shared   Zod schemas, tree helpers, sanitizer, timeline
+apps/server       Express API (pipeline/, extract/, lift/, ask/, forms/, tray/, routes/)
+apps/web          Vite + React app (shell, composer, narrate, onboarding, settings, sync)
+apps/extension    Chrome MV3 extension (Lift)
+apps/notch        macOS Swift menu-bar agent (Create Tray)
+scripts           onboard, tunnel, e2e/, eval/, video/
+eval/pointer      Pointer eval corpus and runner
+```
 
 ## API
 
-All routes are under `/api`.
+All routes are under `/api`. Errors are `{ error: string }` with 400, 404, 422, 429, 502 or 503.
 
 | Route | Purpose |
 | --- | --- |
-| `POST /generate` `{ prompt, screen?, history?, assets? }` | Build or refine a page, `{ summary, screen }` (streams partial frames) |
-| `POST /edit-node` `{ prompt, screen, nodeId, assets? }` | Rewrite one element, `{ summary, nodes }` |
-| `POST /route-intent` `{ text, candidates, pointer? }` | Route a spoken line: action and target (Jev, then Haiku, then keywords) |
-| `POST /lift` `{ entity, instruction? }` | Typed entity to a live app, `{ id, url, formId, provider }` (rate limited, 1 MB body) |
-| `POST /extract` `{ image, hint? }` | Chart or image crop (data URL, up to 4 MB) to an entity, `{ entity, provider }` (perceptron, claude or mock) |
-| `POST /forms/:appId` `{ formId, fields }` | Store a submitted row (the add-row form) |
-| `POST /forms/:appId/token`, `GET /forms/:appId` | Owner read token, then list stored rows (Bearer token) |
-| `POST /ask` | Chat-mode answer, optionally about a pointed-at crop |
-| `POST /import-element` | Chrome extension snapshot to a Create prototype, `{ id, url }` |
-| `POST /canvas-ops` | Turn a canvas selection (PNG and shapes) into typed edit ops (Perceptron, then Claude) |
-| `POST /generate-sketch` | Sketch to page |
-| `POST /demo` | Narrate session to a clickable demo page |
-| `POST /transcribe` multipart `audio` | Batch speech to text, `{ text }` |
-| `GET /voice-token` | Single-use ElevenLabs realtime token |
-| `POST /upload` multipart `file` | Upload PNG, JPG, WebP, GIF, `{ url, name }` |
-| `GET /image?q=` and `GET /image/resolve?q=` | Matching stock photo (404 if none) |
-| `GET /icons/search?q=&style=` and `GET /icons/svg` | Icon search and SVG |
+| `POST /locate` `{ input, utterance?, mode? }` | Find the pointed-at thing: box, kind, label, source, confidence, or an `ask` ("Which one?"). `mode` is `hover` or `commit`; omitted keeps the legacy chain |
+| `GET /traces` | Recent locate traces (stage, provider, ms, ok) |
+| `POST /extract` `{ image, hint? }` | Chart, table or image crop to a typed entity |
+| `POST /lift` `{ entity, instruction? }` | Typed entity to a live app `{ id, url, formId, provider }` |
+| `POST /forms/:appId`, `POST /forms/:appId/token`, `GET /forms/:appId` | Store a row; mint an owner token; list rows (Bearer) |
+| `POST /ask` | Chat answer, optionally about a pointed-at crop. Inkling by default, Claude fallback |
+| `POST /route-intent` `{ text, candidates, pointer? }` | Route a spoken line to an action and target (Jev, Haiku, keywords) |
+| `POST /generate`, `POST /edit-node` | Build or refine a page (streams partial frames); rewrite one element |
+| `POST /canvas-ops`, `POST /generate-sketch`, `POST /demo` | Sketch to edits or page; Narrate session to a clickable demo |
+| `GET/POST /tray`, `GET /tray/:id/thumbnail`, `GET /tray/:id/snippet`, `POST /tray/:id/open`, `DELETE /tray/:id` | Notch tray items |
+| `POST /import-element` | Extension snapshot to a Create prototype |
 | `POST /prototypes`, `GET /prototypes/:id` | Save and load share links |
-| `GET /live`, `GET /live/:id` | Live data (allow-listed sources) |
-| `GET /health` | Which keys are present and whether mock mode is on |
+| `GET /voice-token`, `POST /transcribe` | Single-use ElevenLabs realtime token; batch speech to text |
+| `POST /upload`, `GET /image`, `GET /image/resolve`, `GET /icons/search`, `GET /icons/svg` | Uploads, stock photos, icons |
+| `GET /live`, `GET /live/:id` | Allow-listed live data |
+| `POST /auth/signup`, `/auth/login`, `/auth/guest`, `/auth/logout`; `GET /auth/me`, `GET /usage` | Accounts and quota (see `docs/AUTH.md`) |
+| `GET /health`, `GET /models` | Which keys are present and mock state; selectable models |
 
-Errors come back as `{ error: string }` with a meaningful status (400, 404, 422, 429, 502, 503).
+## Evaluation
 
-## Visual editor
+```bash
+pnpm eval:pointer                        # 30 labelled targets against a running server (eval/pointer/run.mjs)
+EVAL_MODE=commit pnpm eval:pointer       # EVAL_MODE=hover|commit
+node scripts/eval/run.mjs                # 12 golden prompts: generate, edit-node, route-intent, ask
+BASE_URL=http://localhost:3002 node scripts/eval/run.mjs   # a real-mode server
+node scripts/eval/run.mjs --only edit,chat --strict
+node --env-file=apps/server/.env scripts/e2e/sync/run.mjs  # voice/pointer sync harness
+node scripts/e2e/smoke.mjs               # headless smoke (lift, chart, add-row)
+node scripts/e2e/extension.mjs           # extension e2e
+pnpm typecheck && pnpm test              # tsc and vitest across workspaces
+```
 
-After a screen is generated, the canvas is editable (toggle Edit / Preview in its title bar):
+Start the server with `MOCK_AI=0` for real-model numbers; with `MOCK_AI=1` model providers are not called. The sync harness drives Chromium with a fake mic and a scripted pointer path to check that each spoken "this" binds to where the pointer was at that word. It has no `package.json` script, and no result from it is reported here: **verify before submit**.
 
-- Click to select; the right-hand inspector edits content, layout, colors, corners and width.
-- Double-click text (or press Enter) to type over it in place.
-- Drag any element to move it, including into or out of groups. Blue lines show where it lands.
-- Pull the handle on a selected element's right edge to resize it (snaps to 5%; double-click resets).
-- Add elements from the **+ Add** menu; they go after the selection, or inside a selected box.
-- ⌘Z / ⌘⇧Z undo and redo, ⌘D duplicates, Delete removes, Esc deselects.
-- A ✦ box appears under the selected element (press `/` to focus it). Requests there go to
-  `POST /api/edit-node`, which rewrites only that element, can add siblings next to it or remove it,
-  and returns in a few seconds. The bottom composer still changes the whole page.
-- Manual styles are preserved when the AI regenerates.
+## Results
 
-Editor code lives in `apps/web/src/editor/` and `components/ScreenRenderer.tsx`. Tree edits go
-through the immutable helpers in `packages/shared/src/tree.ts`, so other modes can reuse them.
+Sources: `docs/results/pointer.md` (pointer), `scripts/eval/results/` (prompt eval), `docs/results/traces/` (per-call traces for the demo path, including the fallback recording). Reported as measured; the pointer target is not met.
+
+**Pointer, 30 labelled targets, real server, real keys** (hit = IoU >= 0.5 and the box contains the cursor):
+
+| Mode | Fused top-1 | Mean IoU | Latency (fused) |
+| --- | --- | --- | --- |
+| Hover (DOM, AX, Jev) | 66.7% (20/30) | 0.65 | p50 4 ms, p95 137 ms |
+| Commit (adds Perceptron, Gemini, Claude) | 80.0% (24/30) | 0.75 | p50 2 ms, p95 5.1 s |
+
+- The 90% target is **not met**. Web targets are 20/22 in both modes; PDF targets went from 0/8 to 4/8 in commit mode.
+- Perceptron on PDFs (commit, 8 s cap): tables and charts hit (IoU 0.87 to 0.99); single cells, prices and one bar miss. Calls take 3.5 to 5.9 s, so Perceptron belongs at commit, not hover. On web screenshots it mostly timed out at this image size.
+- In commit mode 6 of 30 answers are confidently wrong with no "Which one?" prompt (PDF boxes from Perceptron that miss). Not yet tuned.
+- Per-provider hit rates, cost estimates and open defects: `docs/results/pointer.md`.
+
+**Prompt eval, real mode** (`scripts/eval/results/2026-10-18T08-04-46-248Z.json`): 12 of 12 pass. Generation 11 to 26 s, edit-node about 2 s, route-intent 0.13 to 0.16 s (Jev), ask 3.1 to 4.6 s on Claude. Inkling answered in about 0.7 to 0.85 s in a separate live check recorded in the overnight notes (not part of the 12-case run). Chat answer quality on Inkling and Perceptron has not been measured: **verify before submit**.
+
+**Gates reported by the pointer lane:** tsc clean for shared, server and web; server vitest 330 tests pass; extension e2e 23/23. Re-run before submitting; the working tree has uncommitted changes from other lanes.
+
+## Privacy: what leaves your machine
+
+- **Sent to our API only:** the page text or structured entity you pointed at, screenshot crops (the region you boxed, or the capture around the cursor), and your typed or spoken instruction. The server forwards what each request needs to the providers in the table above.
+- **Nothing is sent until you act.** The extension and the tray capture only when you hold Option and commit. The server never fetches the page you lifted from.
+- **Keys stay server-side.** No provider key is shipped to the browser, the extension or the tray. The one by-design exception is the ElevenLabs realtime token, which is single-use and minted by `GET /api/voice-token`.
+- **Stored:** lifted apps, rows you add and share links, in MongoDB Atlas if `MONGODB_URI` is set, otherwise local files under `apps/server/.data/`. Locate traces (`.traces`, gitignored) record sizes, timings and results; `pipeline/trace.ts` has no image field and the sample traces in `docs/results/traces/` show `hasImage` and `imageBytes` only.
+- Do not point at pages with secrets or personal data while demoing: crops go to third-party models.
+
+## Known issues
+
+- Pointer accuracy is 80% in commit mode against a 90% target (see Results).
+- The notch tray and the extension have not been run by hand on the demo Mac and Chrome profile.
+- Values read from a chart image are approximate.
+- Lift links use `PUBLIC_URL`, then the request Origin, then `http://localhost:5173`.
+- The Vercel route (`vercel.json`, `api/index.ts`) is untested; see `docs/DEPLOY.md`.
+
+## Team
+
+Sooraj Sambasivam, Abel Anand, pentaswan. By `git log` author: Sooraj Sambasivam 26 commits and Abel Anand 7 on the integrate branch; pentaswan has 3 commits on another branch. Commit counts understate real work (pair work, merged branches), so confirm roles with the team before submit.
+
+## License
+
+<!-- OWNER: choose a license (no LICENSE file exists) and add it before the repo is made public. The repo is currently private. -->
+License: not yet chosen (OWNER).
+
+## More docs
+
+`docs/devpost.md` (submission text), `docs/sponsors.md` (per-sponsor one-pager), `docs/judging-qa.md` (likely judge questions), `docs/MORNING.md` (submission checklist), `docs/DEPLOY.md`, `docs/AUTH.md`, `docs/ONBOARDING.md`, `docs/research/` (judging playbook, competitors, usability), `DESIGN.md`.
