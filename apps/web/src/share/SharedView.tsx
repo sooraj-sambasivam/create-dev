@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ScreenSchema, type SharedPrototype } from "@create/shared";
 import { ScreenRenderer } from "../components/ScreenRenderer";
 import { remixScreen } from "./remix";
@@ -13,7 +13,8 @@ type LoadState =
 /** GET /api/prototypes/:id, validated. Resolves to null when the prototype does not exist. */
 async function fetchPrototype(id: string, signal: AbortSignal): Promise<SharedPrototype | null> {
   const res = await fetch(`/api/prototypes/${encodeURIComponent(id)}`, { signal, headers: { Accept: "application/json" } });
-  if (res.status === 404) return null;
+  // A malformed id is treated as not found, the same as an unknown one.
+  if (res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new Error(`Could not load this prototype (${res.status}).`);
   const data = (await res.json()) as Partial<SharedPrototype>;
   const screen = ScreenSchema.safeParse(data.screen);
@@ -26,9 +27,18 @@ async function fetchPrototype(id: string, signal: AbortSignal): Promise<SharedPr
   };
 }
 
+/** Same frame as the main window: grey shell, white card inset 8px on every side, no divider. */
+function Page({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-screen bg-shell text-ink">
+      <div className="my-2 mx-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl bg-surface">{children}</div>
+    </div>
+  );
+}
+
 function TopBar({ onRemix, canRemix }: { onRemix?: () => void; canRemix: boolean }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2.5">
+    <header className="flex h-10 shrink-0 items-center justify-between gap-3 px-4">
       <a href="/" className="text-sm font-medium text-ink no-underline">
         Made with {APP_NAME}
       </a>
@@ -37,7 +47,7 @@ function TopBar({ onRemix, canRemix }: { onRemix?: () => void; canRemix: boolean
           type="button"
           onClick={onRemix}
           disabled={!canRemix}
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-8 items-center rounded-lg bg-accent px-3 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           Remix
         </button>
@@ -51,7 +61,10 @@ function Message({ title, body }: { title: string; body: string }) {
     <main className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
       <h1 className="text-2xl font-normal tracking-tight text-ink">{title}</h1>
       <p className="mt-2 max-w-md text-sm text-ink-2">{body}</p>
-      <a href="/" className="mt-6 text-sm font-medium text-accent no-underline hover:underline">
+      <a
+        href="/"
+        className="mt-6 inline-flex h-8 items-center rounded-lg border border-line px-3 text-sm font-medium text-ink no-underline transition-colors hover:bg-tray"
+      >
         Open in {APP_NAME}
       </a>
     </main>
@@ -89,40 +102,42 @@ export function SharedView({ id }: { id: string }) {
 
   if (state.status === "loading") {
     return (
-      <div className="flex min-h-screen flex-col bg-shell">
+      <Page>
         <TopBar canRemix={false} />
         <main className="flex flex-1 items-center justify-center p-4" aria-busy="true" aria-live="polite">
-          <div className="shimmer aspect-video w-full max-w-5xl rounded-xl bg-surface" />
+          <div className="shimmer aspect-video w-full max-w-5xl rounded-xl bg-tray" />
         </main>
-      </div>
+      </Page>
     );
   }
 
   if (state.status === "not-found") {
     return (
-      <div className="flex min-h-screen flex-col bg-shell">
+      <Page>
         <TopBar canRemix={false} />
         <Message title="Prototype not found" body="This link may be wrong, or the prototype was removed." />
-      </div>
+      </Page>
     );
   }
 
   if (state.status === "error") {
     return (
-      <div className="flex min-h-screen flex-col bg-shell">
+      <Page>
         <TopBar canRemix={false} />
         <Message title="Something went wrong" body={state.message} />
-      </div>
+      </Page>
     );
   }
 
   const { prototype } = state;
   return (
-    <div className="flex min-h-screen flex-col bg-shell">
+    <Page>
       <TopBar onRemix={() => remixScreen(prototype.screen)} canRemix />
       <main className="flex flex-1 flex-col" aria-label={prototype.title}>
-        <ScreenRenderer screen={prototype.screen} editable={false} />
+        <div className="flex flex-1 flex-col">
+          <ScreenRenderer screen={prototype.screen} editable={false} />
+        </div>
       </main>
-    </div>
+    </Page>
   );
 }

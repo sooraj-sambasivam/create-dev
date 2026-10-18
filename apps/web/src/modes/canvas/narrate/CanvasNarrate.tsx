@@ -6,7 +6,8 @@ import { createRecorder, createVoice, type Recorder, type VoiceController, type 
 import { useScreenStore } from "../../../store/screenStore";
 import { exportPng, shapeText, summarizeShapes, type ShapeLike } from "../shapes";
 import { alignUtterances, createSpeechTracker } from "./align";
-import { clientToPage, createPathRecorder, rectFromPoints, rectsIntersect, SAMPLE_HZ, type Pt, type Rect } from "./geometry";
+import { clientToPage, createPathRecorder, placeBubble, rectFromPoints, rectsIntersect, SAMPLE_HZ, type Rect } from "./geometry";
+import { attachPointerTracker } from "./pointerTracker";
 import { buildPrompt, type TargetInfo } from "./prompt";
 
 type Phase = "countdown" | "recording" | "finishing" | "building";
@@ -22,7 +23,7 @@ const BLANK_PNG =
 
 const GLOW_STYLE: React.CSSProperties = {
   boxShadow:
-    "0 0 0 2px color-mix(in srgb, var(--color-accent) 60%, transparent), 0 0 18px color-mix(in srgb, var(--color-accent) 40%, transparent)",
+    "0 0 0 1.5px color-mix(in srgb, var(--color-accent) 60%, transparent), 0 2px 8px rgb(0 0 0 / 0.08)",
 };
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -33,8 +34,6 @@ const fmt = (ms: number) => {
 
 export type CanvasNarrateProps = {
   editor: Editor;
-  /** CSS `right` offset so the centered UI avoids the preview pane, e.g. "40%" or "0px". */
-  insetRight?: string;
   /** Sends the request and reveals the result in the preview pane. Resolves when the reveal is done. */
   onBuild: (req: SketchRequest, signal: AbortSignal) => Promise<void>;
   onError: (message: string) => void;
@@ -49,10 +48,11 @@ function shapeInfo(editor: Editor, id: string): TargetInfo | undefined {
 }
 
 /**
- * Narrate over the canvas. Mounted inside the tldraw container (its parent element); never leaves mode "canvas".
- * Only the pill buttons take pointer events, everything else passes through to tldraw.
+ * Narrate over the canvas. The overlay fills the tldraw area (same rect as the tldraw container) and never leaves
+ * mode "canvas". It is pointer-events-none, so it listens on the window in the capture phase (see pointerTracker.ts)
+ * and maps the pointer through the tldraw container's rect. Only the pills (`data-narrate-ui`) take pointer events.
  */
-export function CanvasNarrate({ editor, insetRight = "0px", onBuild, onError, onClose }: CanvasNarrateProps) {
+export function CanvasNarrate({ editor, onBuild, onError, onClose }: CanvasNarrateProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const [phase, setPhaseState] = useState<Phase>("countdown");
@@ -155,28 +155,22 @@ export function CanvasNarrate({ editor, insetRight = "0px", onBuild, onError, on
     return () => window.removeEventListener("keydown", onKey, true);
   }, [cancel]);
 
-  // Pointer tracking + Shift-drag lasso. Capture phase on the tldraw container; events only stop when lassoing.
+  // Pointer tracking + Shift-drag lasso. Capture phase on the window; "inside" comes from the tldraw container rect.
   useEffect(() => {
-    const container = rootRef.current?.parentElement;
-    if (!container) return;
-    const local = (cx: number, cy: number): Pt => {
-      const r = container.getBoundingClientRect();
-      return { x: cx - r.left, y: cy - r.top };
-    };
+    const container = editor.getContainer();
+    const getBox = () => container.getBoundingClientRect();
     const toPage = (cx: number, cy: number) => clientToPage((p) => editor.screenToPage(p), cx, cy);
 
-    const place = (cx: number, cy: number) => {
+    const place = (lx: number, ly: number) => {
       const el = bubbleRef.current;
       if (!el) return;
-      const r = container.getBoundingClientRect();
-      const x = Math.min(Math.max(cx - r.left + 16, 8), Math.max(8, r.width - el.offsetWidth - 8));
-      const y = Math.min(Math.max(cy - r.top + 20, 8), Math.max(8, r.height - el.offsetHeight - 8));
-      el.style.transform = `translate(${x}px, ${y}px)`;
+      const b = getBox();
+      const at = placeBubble({ x: lx, y: ly }, { w: el.offsetWidth, h: el.offsetHeight }, { w: b.width, h: b.height });
+      el.style.transform = `translate(${at.x}px, ${at.y}px)`;
+      el.style.visibility = "";
     };
 
-    let lasso: { start: Pt; startClient: Pt } | null = null;
-
-    const finishLasso = (box: Rect, startPage: Pt, endPage: Pt) => {
+    const finishLasso = (box: Rect, startPage: { x: number; y: number }, endPage: { x: number; y: number }) => {
       let ids: string[];
       if (box.w < LASSO_MIN_PX && box.h < LASSO_MIN_PX) {
         const hit = editor.getShapeAtPoint(endPage, { hitInside: true, margin: 4 });
@@ -204,46 +198,27 @@ export function CanvasNarrate({ editor, insetRight = "0px", onBuild, onError, on
       });
     };
 
-    const onMove = (e: PointerEvent) => {
-      pointer.current = { x: e.clientX, y: e.clientY, inside: true };
-      place(e.clientX, e.clientY);
-      if (lasso) {
-        e.preventDefault();
-        e.stopPropagation();
-        setLassoBox(rectFromPoints(local(lasso.startClient.x, lasso.startClient.y), local(e.clientX, e.clientY)));
-      }
-    };
-    const onLeave = () => {
-      pointer.current.inside = false;
-    };
-    const onDown = (e: PointerEvent) => {
-      if (phaseRef.current !== "recording" || !e.shiftKey || e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      lasso = { start: toPage(e.clientX, e.clientY), startClient: { x: e.clientX, y: e.clientY } };
-      setLassoBox({ ...local(e.clientX, e.clientY), w: 0, h: 0 });
-    };
-    const onUp = (e: PointerEvent) => {
-      if (!lasso) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const px = Math.abs(e.clientX - lasso.startClient.x);
-      const py = Math.abs(e.clientY - lasso.startClient.y);
-      finishLasso({ x: 0, y: 0, w: px, h: py }, lasso.start, toPage(e.clientX, e.clientY));
-      lasso = null;
-      setLassoBox(null);
-    };
-
-    container.addEventListener("pointermove", onMove, true);
-    container.addEventListener("pointerleave", onLeave);
-    container.addEventListener("pointerdown", onDown, true);
-    window.addEventListener("pointerup", onUp, true);
-    return () => {
-      container.removeEventListener("pointermove", onMove, true);
-      container.removeEventListener("pointerleave", onLeave);
-      container.removeEventListener("pointerdown", onDown, true);
-      window.removeEventListener("pointerup", onUp, true);
-    };
+    return attachPointerTracker({
+      target: window,
+      getBox,
+      isUi: (t) => t instanceof Element && !!t.closest("[data-narrate-ui]"),
+      lassoEnabled: () => phaseRef.current === "recording",
+      onMove: (i) => {
+        pointer.current = { x: i.clientX, y: i.clientY, inside: true };
+        place(i.local.x, i.local.y);
+      },
+      onLeave: () => {
+        pointer.current.inside = false;
+        if (bubbleRef.current) bubbleRef.current.style.visibility = "hidden";
+      },
+      onLassoStart: (s) => setLassoBox({ x: s.local.x, y: s.local.y, w: 0, h: 0 }),
+      onLassoMove: (s, n) => setLassoBox(rectFromPoints(s.local, n.local)),
+      onLassoEnd: (s, e, cancelled) => {
+        setLassoBox(null);
+        if (cancelled) return;
+        finishLasso({ x: 0, y: 0, w: Math.abs(e.clientX - s.clientX), h: Math.abs(e.clientY - s.clientY) }, toPage(s.clientX, s.clientY), toPage(e.clientX, e.clientY));
+      },
+    });
   }, [editor]);
 
   // ~30Hz sampler: path in PAGE coordinates, shape under the pointer, highlights, timer.
@@ -331,8 +306,11 @@ export function CanvasNarrate({ editor, insetRight = "0px", onBuild, onError, on
 
   const bubbleVisible = phase === "recording" && speaking && !!live;
   const micOff = voiceState === "unavailable";
+  const kbd = "inline-flex h-6 items-center rounded-md border border-line bg-tray px-1.5 align-middle font-sans text-[12px] leading-none text-ink";
+  const ghostBtn =
+    "inline-flex h-8 items-center gap-2 rounded-lg px-3 text-sm text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
   const btn =
-    "inline-flex h-8 items-center gap-2 rounded-lg px-2 text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-8 items-center gap-2 rounded-full px-3 text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div ref={rootRef} data-canvas-narrate className="pointer-events-none absolute inset-0 z-[400] overflow-hidden text-ink">
@@ -340,34 +318,35 @@ export function CanvasNarrate({ editor, insetRight = "0px", onBuild, onError, on
         <div
           key={i}
           aria-hidden
-          className="absolute rounded-md bg-accent/10 transition-[left,top,width,height] duration-100"
-          style={{ left: r.x - 3, top: r.y - 3, width: r.w + 6, height: r.h + 6, ...GLOW_STYLE }}
+          className="absolute rounded-md bg-accent/10 transition-[left,top,width,height] duration-150"
+          style={{ left: r.x - 4, top: r.y - 4, width: r.w + 8, height: r.h + 8, ...GLOW_STYLE }}
         />
       ))}
       {lassoBox && (
         <div
           aria-hidden
-          className="absolute rounded-sm border border-dashed border-accent bg-accent/10"
+          className="absolute rounded-md border border-dashed border-accent bg-accent/10"
           style={{ left: lassoBox.x, top: lassoBox.y, width: lassoBox.w, height: lassoBox.h }}
         />
       )}
 
       {phase === "countdown" && (
-        <div className="absolute inset-y-0 left-0 flex items-center justify-center" style={{ right: insetRight }}>
+        <div className="absolute inset-0 flex items-center justify-center bg-shell/70 backdrop-blur-sm">
           <div
             role="status"
             aria-live="polite"
-            className="w-[300px] max-w-[90%] rounded-2xl border border-line bg-surface p-5 text-center shadow-soft"
+            data-narrate-ui
+            className="pointer-events-auto w-[340px] max-w-[90%] rounded-xl border border-line bg-surface p-5 text-center shadow-soft"
           >
-            <div className="text-5xl font-semibold tabular-nums leading-none text-ink">{count}</div>
+            <div className="text-[28px] font-semibold tabular-nums leading-none text-ink">{count}</div>
             <p className="mt-3 text-sm font-medium text-ink">Talk while you point</p>
-            <p className="mt-2 text-xs text-ink-2">
-              Hold <kbd className="rounded border border-line bg-tray px-1 font-sans">Shift</kbd> and drag to lasso shapes
+            <p className="mt-2 text-sm text-ink-2">
+              Hold <kbd className={kbd}>Shift</kbd> and drag to lasso shapes
             </p>
-            <p className="mt-1 text-xs text-ink-2">
-              Hold <kbd className="rounded border border-line bg-tray px-1 font-sans">Option</kbd> to talk · double-tap to lock
+            <p className="mt-1 text-sm text-ink-2">
+              Hold <kbd className={kbd}>Option</kbd> to talk, double-tap to lock
             </p>
-            <button type="button" onClick={cancel} className={`${btn} pointer-events-auto mt-3 text-ink-2 hover:bg-hover hover:text-ink`}>
+            <button type="button" onClick={cancel} className={`${ghostBtn} mt-4`}>
               Cancel
             </button>
           </div>
@@ -375,19 +354,23 @@ export function CanvasNarrate({ editor, insetRight = "0px", onBuild, onError, on
       )}
 
       {phase !== "countdown" && (
-        <div className="absolute left-0 flex justify-center px-3" style={{ top: 68, right: insetRight }}>
+        // Centered under the Canvas toolbar (top 8 + 48 + 8). The side padding keeps clear of tldraw's style panel.
+        <div className="absolute inset-x-0 top-[74px] flex justify-center px-[164px]">
           <div
             role="status"
             aria-live="polite"
-            className="pointer-events-auto flex h-11 w-[min(640px,100%)] items-center gap-3 rounded-xl border border-line bg-surface px-3 text-sm shadow-soft"
+            data-narrate-ui
+            className="pointer-events-auto flex h-10 w-full max-w-[560px] items-center gap-2 rounded-full border border-line bg-surface p-1 text-sm shadow-soft"
           >
             {phase === "recording" ? (
               <>
-                <span aria-hidden className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-bad motion-reduce:animate-none" />
+                <span aria-hidden className="ml-3 h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-bad motion-reduce:animate-none" />
                 <span className="w-10 shrink-0 tabular-nums text-ink-2">{fmt(elapsed)}</span>
                 <span className="flex min-w-0 flex-1 items-center gap-2 truncate text-ink-2">
                   {micOff ? (
                     <span className="truncate text-ink-3">Mic unavailable. Pointing only.</span>
+                  ) : bubbleVisible ? (
+                    <span className="truncate text-ink-3">Speaking…</span>
                   ) : live ? (
                     <span className="truncate text-ink">{live}</span>
                   ) : (
@@ -397,32 +380,30 @@ export function CanvasNarrate({ editor, insetRight = "0px", onBuild, onError, on
                     </>
                   )}
                 </span>
-                <button
-                  type="button"
-                  onClick={done}
-                  className={`${btn} bg-accent px-3 font-medium text-white hover:opacity-90`}
-                  aria-label="Done"
-                >
-                  <Check size={18} strokeWidth={1.75} aria-hidden />
-                  Done
-                </button>
-                <button type="button" onClick={cancel} className={`${btn} text-ink-2 hover:bg-hover hover:text-ink`} aria-label="Cancel">
-                  <X size={18} strokeWidth={1.75} aria-hidden />
-                  Cancel
-                </button>
               </>
             ) : (
               <>
-                <Loader2 size={18} strokeWidth={1.75} className="shrink-0 animate-spin text-accent motion-reduce:animate-none" aria-hidden />
+                <Loader2 size={18} strokeWidth={1.75} className="ml-3 shrink-0 animate-spin text-ink-2 motion-reduce:animate-none" aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-ink">
                   {phase === "building" ? "Building from your narration…" : "Finishing…"}
                 </span>
-                <button type="button" onClick={cancel} className={`${btn} text-ink-2 hover:bg-hover hover:text-ink`} aria-label="Cancel">
-                  <X size={18} strokeWidth={1.75} aria-hidden />
-                  Cancel
-                </button>
               </>
             )}
+            {/* Fixed slots so Done / Cancel never shift between recording and building. */}
+            <span className="flex w-[84px] shrink-0 justify-end">
+              {phase === "recording" && (
+                <button type="button" onClick={done} className={`${btn} w-full justify-center bg-accent font-medium text-white hover:opacity-90`} aria-label="Done">
+                  <Check size={18} strokeWidth={1.75} aria-hidden />
+                  Done
+                </button>
+              )}
+            </span>
+            <span className="flex w-[92px] shrink-0 justify-end">
+              <button type="button" onClick={cancel} className={`${btn} w-full justify-center text-ink-2 hover:bg-hover hover:text-ink`} aria-label="Cancel">
+                <X size={18} strokeWidth={1.75} aria-hidden />
+                Cancel
+              </button>
+            </span>
           </div>
         </div>
       )}
@@ -430,10 +411,10 @@ export function CanvasNarrate({ editor, insetRight = "0px", onBuild, onError, on
       <div
         ref={bubbleRef}
         aria-hidden
-        className={`absolute left-0 top-0 max-w-[260px] rounded-xl rounded-tl-sm border border-line bg-surface px-3 py-1.5 text-xs text-ink shadow-soft transition-opacity duration-300 ${
+        className={`absolute left-0 top-0 max-w-[260px] rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink shadow-soft transition-opacity duration-200 ${
           bubbleVisible ? "opacity-100" : "opacity-0"
         }`}
-        style={{ transform: "translate(-9999px, -9999px)" }}
+        style={{ transform: "translate(-9999px, -9999px)", visibility: "hidden" }}
       >
         <span className="line-clamp-3 break-words">{live.length > 160 ? `…${live.slice(-160)}` : live}</span>
       </div>

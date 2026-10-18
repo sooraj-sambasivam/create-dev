@@ -74,10 +74,13 @@ describe("NDJSON timing reconstruction", () => {
 /** Minimal DOM double: enough for the replay dot and toast (createElement, body, remove, isConnected). */
 interface FakeEl {
   textContent: string;
+  innerHTML: string;
   style: { cssText: string };
   attrs: Record<string, string>;
+  children: FakeEl[];
   isConnected: boolean;
   setAttribute(k: string, v: string): void;
+  appendChild(el: FakeEl): FakeEl;
   remove(): void;
 }
 function fakeDoc() {
@@ -94,11 +97,17 @@ function fakeDoc() {
     createElement(): FakeEl {
       const el: FakeEl = {
         textContent: "",
+        innerHTML: "",
         style: { cssText: "" },
         attrs: {},
+        children: [],
         isConnected: false,
         setAttribute(k, v) {
           this.attrs[k] = v;
+        },
+        appendChild(child) {
+          this.children.push(child);
+          return child;
         },
         remove() {
           this.isConnected = false;
@@ -219,11 +228,18 @@ describe("replay safety: exact match vs fallback", () => {
 
     const shown = toasts();
     expect(shown).toHaveLength(1);
-    expect(shown[0].textContent).toBe("Replay: no exact match — showing the last recorded run");
-    expect(shown[0].textContent).toBe(FALLBACK_TOAST_TEXT);
+    // Children are [icon, label]; the label carries the text.
+    const [icon, label] = shown[0].children;
+    expect(label.textContent).toBe("Replay: no exact match — showing the last recorded run");
+    expect(label.textContent).toBe(FALLBACK_TOAST_TEXT);
+    expect(icon.innerHTML).toContain("<svg");
+    expect(icon.attrs["aria-hidden"]).toBe("true");
     expect(shown[0].attrs["aria-live"]).toBe("polite");
     expect(shown[0].style.cssText).toContain("var(--color-surface)");
-    expect(shown[0].style.cssText).toContain("var(--color-ink)");
+    expect(shown[0].style.cssText).toContain("color:var(--color-ink-2)");
+    expect(shown[0].style.cssText).toContain("height:32px");
+    expect(shown[0].style.cssText).toContain("bottom:96px");
+    expect(shown[0].style.cssText).not.toContain("top:56px");
   });
 
   it("auto-hides the toast after TOAST_MS (3s)", async () => {

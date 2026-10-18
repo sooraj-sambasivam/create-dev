@@ -1,13 +1,23 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { ArrowUp, AudioWaveform, Laptop, Loader2, Mic, PanelsTopLeft, Square } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { ArrowUp, AtSign, AudioWaveform, Laptop, Loader2, Mic, PanelsTopLeft, Square } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useScreenStore } from "../../store/screenStore";
 import { useRecorder } from "../../lib/useRecorder";
 import { transcribe } from "../../lib/api";
 import { GoFan } from "./GoFan";
 import { VoiceBar } from "./VoiceBar";
 import { chooseEngine, getSpeechCtor, probeTranscribe, speechErrorEvent, startSpeech, type SpeechSession, type VoiceEngine } from "./speech";
-import { DONE_MS, initialVoiceState, isDenied, isUnsupported, unsupportedReason, voiceActive, voiceReducer } from "./voice";
+import {
+  DONE_MS,
+  MIC_UNSUPPORTED_NOTICE,
+  NOTICE_MS,
+  initialVoiceState,
+  isDenied,
+  isUnsupported,
+  unsupportedReason,
+  voiceActive,
+  voiceReducer,
+} from "./voice";
 import { FilesMenu, ConnectorsMenu, ModelMenu, PermissionsMenu, PluginsMenu, ProjectMenu } from "./menus";
 import { menuItemClass } from "./Popover";
 import { MAX_FIELD_PX, applyMention, filterMentions, mentionQuery, isStoreBusy, placeholderFor } from "./logic";
@@ -22,7 +32,10 @@ const TOKENS = {
   "--c-ink-2": "var(--color-ink-2)",
   "--c-ink-3": "var(--color-ink-3)",
   "--c-accent": "var(--color-accent)",
+  "--c-ok": "var(--color-ok)",
   "--c-bad": "var(--color-bad)",
+  /* Glyph on a filled Go: the surface colour is light in light mode and dark in dark mode, so it stays legible on both fills. */
+  "--c-on-fill": "var(--color-surface)",
   "--c-shadow": "0 4px 24px color-mix(in srgb, var(--color-ink) 8%, transparent)",
 } as CSSProperties;
 
@@ -86,6 +99,12 @@ export function Composer() {
     const id = window.setTimeout(() => dispatch({ type: "dismiss" }), DONE_MS);
     return () => window.clearTimeout(id);
   }, [voice.phase]);
+  // Keyed on the state object, so a repeat click on Mic restarts the notice timer.
+  useEffect(() => {
+    if (voice.phase !== "notice") return;
+    const id = window.setTimeout(() => dispatch({ type: "dismiss" }), NOTICE_MS);
+    return () => window.clearTimeout(id);
+  }, [voice]);
 
   const openFan = () => {
     window.clearTimeout(closeTimer.current);
@@ -98,7 +117,11 @@ export function Composer() {
 
   const query = mentionQuery(value);
   const mentionOptions = filterMentions(assets.map((a) => a.name), query);
-  const mentionOpen = query !== null && mentionOptions.length > 0 && mentionDismissed !== value;
+  const mentionOpen = query !== null && mentionDismissed !== value;
+  // Opening a recording closes the fan, so the active Mic state is not shown beside a filled Stop.
+  useEffect(() => {
+    if (recording) setFanOpen(false);
+  }, [recording]);
 
   useLayoutEffect(() => {
     const f = fieldRef.current;
@@ -200,6 +223,11 @@ export function Composer() {
 
   const onMic = async () => {
     if (recording) return stopRecording();
+    if (voice.blocked && isUnsupported(voice.blocked)) {
+      // Unsupported browsers get a visible notice in the voice bar, not a silent no-op.
+      dispatch({ type: "notice", message: MIC_UNSUPPORTED_NOTICE });
+      return;
+    }
     if (busy || voice.blocked || !(voice.phase === "idle" || voice.phase === "done")) return;
     dispatch({ type: "start" });
     const eng = chooseEngine(await probeTranscribe(), getSpeechCtor() !== null);
@@ -253,6 +281,7 @@ export function Composer() {
     }
   };
 
+  const micUnsupported = voice.blocked !== null && isUnsupported(voice.blocked);
   const goLabel = recording ? "Stop recording" : loading ? "Working" : transcribing ? "Transcribing" : "Go";
   const goDisabled = !recording && (busy || empty || barOn);
 
@@ -265,21 +294,26 @@ export function Composer() {
           className="absolute bottom-full left-4 z-40 mb-2 max-h-60 w-[300px] overflow-auto rounded-xl border border-[var(--c-line)] bg-[var(--c-surface)] p-1.5 shadow-[var(--c-shadow)]"
         >
           <p className="px-2 pt-1.5 pb-1 text-[12px] text-[var(--c-ink-3)]">Mention a file</p>
-          {mentionOptions.map((name) => (
-            <button
-              key={name}
-              type="button"
-              role="menuitem"
-              className={menuItemClass}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                setValue(applyMention(value, name));
-                fieldRef.current?.focus();
-              }}
-            >
-              <span className="min-w-0 flex-1 truncate">@{name}</span>
-            </button>
-          ))}
+          {mentionOptions.length === 0 ? (
+            <p className="px-2 py-2 text-[14px] text-[var(--c-ink-2)]">No files yet</p>
+          ) : (
+            mentionOptions.map((name) => (
+              <button
+                key={name}
+                type="button"
+                role="menuitem"
+                className={menuItemClass}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setValue(applyMention(value, name));
+                  fieldRef.current?.focus();
+                }}
+              >
+                <AtSign size={16} strokeWidth={1.75} className="shrink-0 text-[var(--c-ink-2)]" />
+                <span className="min-w-0 flex-1 truncate">{name}</span>
+              </button>
+            ))
+          )}
         </div>
       ) : null}
 
@@ -310,18 +344,26 @@ export function Composer() {
             <div className="min-w-0 flex-1" />
             <div className="mr-2"><ModelMenu /></div>
           </div>
-          {barOn ? (
-            <div className="absolute inset-y-0 right-10 left-0 flex min-w-0 items-stretch [&>*]:flex-1">
-              <VoiceBar
-                state={voice}
-                level={engine === "browser" ? 0 : recorder.level}
-                engine={engine}
-                onStop={() => void stopRecording()}
-                onRetry={onRetry}
-                onDismiss={() => dispatch({ type: "dismiss" })}
-              />
-            </div>
-          ) : null}
+          <AnimatePresence>
+            {barOn ? (
+              <motion.div
+                key="voice-bar"
+                initial={reduce ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: reduce ? 0 : 0.15 }}
+                className="absolute inset-y-0 right-10 left-0 flex min-w-0 items-stretch [&>*]:flex-1"
+              >
+                <VoiceBar
+                  state={voice}
+                  level={engine === "browser" ? 0 : recorder.level}
+                  engine={engine}
+                  onRetry={onRetry}
+                  onDismiss={() => dispatch({ type: "dismiss" })}
+                />
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
           <div
             className="relative ml-1 h-8 w-8"
             onPointerEnter={openFan}
@@ -355,9 +397,11 @@ export function Composer() {
               data-testid="go"
               whileHover={reduce || goDisabled ? undefined : { scale: 1.06 }}
               transition={{ duration: 0.15 }}
-              className={`relative z-40 grid h-8 w-8 place-items-center rounded-full text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-accent)] ${
-                recording ? "bg-[var(--c-bad)]" : "bg-[var(--c-accent)]"
-              } ${goDisabled ? "cursor-default opacity-50" : ""}`}
+              className={`relative z-40 grid h-8 w-8 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-accent)] ${
+                goDisabled
+                  ? "cursor-default bg-[var(--c-hover)] text-[var(--c-ink-3)]"
+                  : `text-[var(--c-on-fill)] ${recording ? "bg-[var(--c-bad)]" : "bg-[var(--c-accent)]"}`
+              }`}
             >
               {recording ? (
                 <>
@@ -383,7 +427,9 @@ export function Composer() {
                   label: "Mic",
                   icon: Mic,
                   active: recording,
-                  disabled: Boolean(voice.blocked) || (busy && !recording),
+                  // Unsupported stays clickable (shows the notice); denied or busy is truly disabled.
+                  disabled: (Boolean(voice.blocked) && !micUnsupported) || (busy && !recording),
+                  ariaDisabled: micUnsupported,
                   title: voice.blocked ?? undefined,
                   onClick: () => void onMic(),
                   testId: "mic-button",
@@ -412,6 +458,20 @@ export function Composer() {
         <div className="flex items-center gap-1.5">
           <ProjectMenu />
           <FilesMenu assets={assets} inputRef={fileRef} uploading={uploading} error={uploadError} />
+          <button
+            type="button"
+            aria-label="Mention a file"
+            title="Mention a file"
+            onClick={() => {
+              // Appending "@" makes mentionQuery() non-null, which opens the Mention a file popover.
+              setMentionDismissed(null);
+              setValue((v) => (/(^|\s)@[^\s@]*$/.test(v) ? v : `${v}${v && !/\s$/.test(v) ? " " : ""}@`));
+              fieldRef.current?.focus();
+            }}
+            className="grid h-8 w-8 place-items-center rounded-lg text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink)] focus-visible:outline-none"
+          >
+            <AtSign size={16} strokeWidth={1.75} />
+          </button>
           <PluginsMenu />
         </div>
         <div className="flex-1" />
@@ -421,9 +481,9 @@ export function Composer() {
           aria-pressed={sharing}
           title={sharing ? "Stop sharing screen" : "Share screen"}
           onClick={() => setSharing((s) => !s)}
-          className="grid h-8 w-8 place-items-center rounded-lg text-[var(--c-ink-3)] hover:bg-[var(--c-hover)] focus-visible:outline-none"
+          className={`grid h-8 w-8 place-items-center rounded-lg text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink)] focus-visible:outline-none ${sharing ? "bg-[var(--c-hover)] text-[var(--c-ink)]" : ""}`}
         >
-          <Laptop size={16} strokeWidth={1.5} />
+          <Laptop size={16} strokeWidth={1.75} />
         </button>
       </div>
     </div>

@@ -1,12 +1,12 @@
 /*
- * Builder chrome remap. Abel's editor chrome (ScreenCanvas frame, toolbar, Inspector, Add and
- * Publish menus) was written with dark-only utilities (neutral-900, white/10, neutral-400).
- * Inside the shell those classes are re-pointed at the shell tokens, so one set of rules reads
- * correctly in light and dark (the tokens themselves change per theme).
+ * Builder chrome remap for the canvas frame only (ScreenCanvas, Text mode, prompt composer),
+ * which still use dark-only utilities (neutral-900, white/10, neutral-400). Those classes are
+ * re-pointed at the shell tokens so one set of rules reads correctly in light and dark.
+ * The editor (Inspector, Add and Publish menus, node AI box) is styled with tokens directly
+ * and needs nothing here.
  *
- * Scope: only inside the two chrome roots (the canvas <section> and the Inspector <aside>, both
- * rounded-2xl) under [data-builder], and never inside [data-screen-root]: the generated page
- * keeps its own palette. Selectors stay more specific than the Tailwind utilities they override.
+ * Scope: the canvas <section> under [data-builder], never inside [data-screen-root]: the
+ * generated page keeps its own palette. Selectors stay more specific than the utilities they override.
  */
 [data-builder] {
   --builder-on-accent: #ffffff;
@@ -15,7 +15,7 @@ html.dark [data-builder] {
   --builder-on-accent: #0d0d0d;
 }
 
-[data-builder] :is(section, aside).rounded-2xl {
+[data-builder] section.rounded-2xl {
   /* The frame itself: a quiet card on the white work surface, no dark glass or heavy shadow. */
   background-color: var(--color-tray);
   border-color: var(--color-line);
@@ -150,9 +150,4 @@ html.dark [data-builder] {
     background-color: var(--color-surface);
     color: var(--color-ink);
   }
-}
-
-/* The dropdown menus (Add, Publish) and the node AI box are dark panels too. */
-[data-builder] :is(section, aside).rounded-2xl .shadow-2xl:not([data-screen-root] *) {
-  box-shadow: var(--shadow-soft);
 }

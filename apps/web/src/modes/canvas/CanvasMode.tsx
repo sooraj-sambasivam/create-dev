@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Tldraw, type Editor } from "tldraw";
+import { Tldraw, type Editor, type TLComponents } from "tldraw";
 import type { SketchRequest } from "@create/shared";
 import "tldraw/tldraw.css";
-import { Check, PanelRight, X } from "lucide-react";
+import "./canvas.css";
+import { Check, Info, PanelRight, X } from "lucide-react";
 import { ScreenRenderer } from "../../components/ScreenRenderer";
 import { useScreenStore } from "../../store/screenStore";
 import { CanvasToolbar } from "./CanvasToolbar";
@@ -12,6 +13,13 @@ import { buildRevealFrames } from "./reveal";
 import { generateSketch } from "./sketchApi";
 import { exportPng, summarizeShapes } from "./shapes";
 import { CanvasNarrate } from "./narrate";
+import { classifyNarrateNotice } from "./notice";
+
+/**
+ * tldraw chrome we replace: the studio toolbar takes the top of the canvas, so the main/page menus and helper
+ * buttons go (undo/redo and the rest stay on their shortcuts). The bottom tool bar, zoom widget and style panel stay.
+ */
+const TL_COMPONENTS: TLComponents = { MenuPanel: null, PageMenu: null, HelperButtons: null, Minimap: null };
 
 const MIN_PCT = 20;
 const MAX_PCT = 70;
@@ -21,7 +29,7 @@ const ADD_PROMPT = "Add these elements to the current page";
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const cssId = (id: string) => id.replace(/["\\]/g, "\\$&");
 
-type Toast = { kind: "ok" | "error"; text: string } | null;
+type Toast = { kind: "ok" | "info" | "error"; text: string } | null;
 
 const PREVIEW_KEY = "create.canvas.previewOpen";
 function readPreviewOpen(): boolean {
@@ -62,6 +70,18 @@ function FitToWidth({ children }: { children: React.ReactNode }) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ scale: 1, h: 0 });
+  const [scheme, setScheme] = useState(shellScheme);
+  useEffect(() => {
+    const sync = () => setScheme(shellScheme());
+    const mo = new MutationObserver(sync);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    mq?.addEventListener?.("change", sync);
+    return () => {
+      mo.disconnect();
+      mq?.removeEventListener?.("change", sync);
+    };
+  }, []);
   useEffect(() => {
     const o = outer.current;
     const i = inner.current;
@@ -74,9 +94,9 @@ function FitToWidth({ children }: { children: React.ReactNode }) {
     return () => ro.disconnect();
   }, []);
   return (
-    <div ref={outer} className="p-0">
-      <div style={{ height: box.h * box.scale, overflow: "hidden" }}>
-        <div ref={inner} className="screen-light bg-white" style={{ width: DESIGN_W, transform: `scale(${box.scale})`, transformOrigin: "top left" }}>
+    <div className="p-4">
+      <div ref={outer} className="overflow-hidden rounded-xl border border-line" style={{ height: box.h * box.scale, minHeight: 96 }}>
+        <div ref={inner} className={`${scheme === "dark" ? "screen-dark" : "screen-light"} bg-[var(--bg)]`} style={{ width: DESIGN_W, transform: `scale(${box.scale})`, transformOrigin: "top left" }}>
           {children}
         </div>
       </div>
@@ -279,91 +299,95 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
     setNarrating(true);
   };
   const closeNarrate = useCallback(() => setNarrating(false), []);
-  const narrateError = useCallback((text: string) => setToast({ kind: "error", text }), []);
+  /** Narration notices: the server-to-browser speech fallback is informational, everything else is an error. */
+  const narrateError = useCallback((text: string) => setToast({ kind: classifyNarrateNotice(text) === "info" ? "info" : "error", text }), []);
 
   return createPortal(
     <div
       data-canvas-host
+      data-narrating={narrating || undefined}
       aria-hidden={hidden || undefined}
       inert={hidden || undefined}
-      className={`fixed inset-0 z-40 bg-shell ${hidden ? "pointer-events-none invisible" : ""}`}
+      className={`fixed inset-0 z-40 bg-shell p-2 ${hidden ? "pointer-events-none invisible" : ""}`}
     >
-      <div className="absolute inset-0">
-        <Tldraw persistenceKey="create-dev-canvas" licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY} onMount={handleMount} />
+      <div className="relative h-full w-full overflow-hidden rounded-xl bg-surface">
+      {/* The tldraw area: card width minus the preview pane (plus an 8px gap) so tldraw's own corners, watermark included, stay visible. */}
+      <div className="absolute inset-y-0 left-0" style={{ right: open ? `calc(${pct}% + 8px)` : 0 }}>
+        <Tldraw
+          persistenceKey="create-dev-canvas"
+          licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
+          components={TL_COMPONENTS}
+          onMount={handleMount}
+        />
         {narrating && editorRef.current && (
-          <CanvasNarrate
-            editor={editorRef.current}
-            insetRight={open ? `${pct}%` : "0px"}
-            onBuild={buildNarration}
-            onError={narrateError}
-            onClose={closeNarrate}
+          <CanvasNarrate editor={editorRef.current} onBuild={buildNarration} onError={narrateError} onClose={closeNarrate} />
+        )}
+
+        <div className="pointer-events-none absolute inset-x-0 top-2 z-[500] flex justify-center">
+          <CanvasToolbar
+            busy={busy}
+            narrating={narrating}
+            hasSelection={hasSelection}
+            previewOpen={open}
+            onBack={back}
+            onNarrate={narrate}
+            onMakeIt={() => run(false)}
+            onAddSelection={() => run(true)}
+            onTogglePreview={() => setOpen((v) => !v)}
           />
+        </div>
+
+        {toast && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[500] flex justify-center px-3">
+            <div
+              role={toast.kind === "error" ? "alert" : "status"}
+              className="canvas-rise-in pointer-events-auto flex w-max max-w-[min(480px,100%)] items-start gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink shadow-soft"
+            >
+              {toast.kind === "ok" && <Check size={18} strokeWidth={1.75} className="mt-px shrink-0 text-ok" aria-hidden />}
+              {toast.kind === "info" && <Info size={18} strokeWidth={1.75} className="mt-px shrink-0 text-ink-2" aria-hidden />}
+              {toast.kind === "error" && <X size={18} strokeWidth={1.75} className="mt-px shrink-0 text-bad" aria-hidden />}
+              <span className="min-w-0 break-words">{toast.text}</span>
+              <button
+                type="button"
+                aria-label="Dismiss"
+                onClick={() => setToast(null)}
+                className="ml-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <X size={16} strokeWidth={1.75} />
+              </button>
+            </div>
+          </div>
         )}
       </div>
-
-      <div className="pointer-events-none absolute inset-x-0 top-3 z-[500] flex justify-center" style={{ right: open ? `${pct}%` : 0 }}>
-        <CanvasToolbar
-          busy={busy || narrating}
-          hasSelection={hasSelection}
-          previewOpen={open}
-          onBack={back}
-          onNarrate={narrate}
-          onMakeIt={() => run(false)}
-          onAddSelection={() => run(true)}
-          onTogglePreview={() => setOpen((v) => !v)}
-        />
-      </div>
-
-      <style>{`@keyframes canvas-slide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}.canvas-slide-in{animation:canvas-slide .2s ease-out}@media (prefers-reduced-motion:reduce){.canvas-slide-in{animation:none}}`}</style>
-
-      {toast && (
-        <div
-          role={toast.kind === "error" ? "alert" : "status"}
-          className="absolute bottom-20 left-1/2 z-[500] flex w-max max-w-[min(560px,80vw)] -translate-x-1/2 items-start gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink shadow-soft"
-          style={{ marginRight: open ? `${pct}%` : 0 }}
-        >
-          {toast.kind === "ok" ? (
-            <Check size={18} strokeWidth={1.75} className="mt-px shrink-0 text-ok" aria-hidden />
-          ) : (
-            <X size={18} strokeWidth={1.75} className="mt-px shrink-0 text-bad" aria-hidden />
-          )}
-          <span className="min-w-0 break-words">{toast.text}</span>
-          <button
-            type="button"
-            aria-label="Dismiss"
-            onClick={() => setToast(null)}
-            className="ml-1 shrink-0 rounded-md p-0.5 text-ink-2 hover:bg-hover"
-          >
-            <X size={14} strokeWidth={1.75} />
-          </button>
-        </div>
-      )}
 
       {!open && (
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Show preview"
-          className="absolute right-0 top-1/2 z-[500] inline-flex h-8 -translate-y-1/2 items-center gap-2 rounded-l-xl border border-r-0 border-line bg-surface px-3 text-sm text-ink shadow-soft transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="canvas-fade-in absolute right-2 top-1/2 z-[500] inline-flex h-8 -translate-y-1/2 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-sm text-ink shadow-soft transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          <PanelRight size={18} strokeWidth={1.75} aria-hidden />
-          Preview · {count} {count === 1 ? "element" : "elements"}
+          <PanelRight size={16} strokeWidth={1.75} aria-hidden />
+          Preview · {count}
         </button>
       )}
 
       {open && (
         <aside
           aria-label="Preview"
-          className="canvas-slide-in absolute bottom-3 right-3 top-3 z-[500] flex overflow-hidden rounded-xl border border-line bg-surface shadow-soft"
-          style={{ width: `calc(${pct}% - 12px)` }}
+          className="canvas-slide-in absolute inset-y-2 right-2 z-[500]"
+          style={{ width: `calc(${pct}% - 8px)` }}
         >
           <div
             role="separator"
             aria-orientation="vertical"
             aria-label="Resize preview"
             onPointerDown={startResize}
-            className="w-2 shrink-0 cursor-col-resize bg-transparent transition-colors duration-150 hover:bg-accent/30 active:bg-accent/40"
-          />
+            className="group absolute inset-y-0 -left-1.5 z-10 w-3 cursor-col-resize"
+          >
+            <span className="absolute left-1/2 top-1/2 h-8 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-line transition-colors duration-150 group-hover:bg-accent group-active:bg-accent" />
+          </div>
+          <div className="flex h-full overflow-hidden rounded-xl border border-line bg-surface shadow-soft">
           <div className="flex min-w-0 flex-1 flex-col">
             <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-3">
               <div className="min-w-0 flex-1">
@@ -379,30 +403,43 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
                 title="Close preview"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                <X size={18} strokeWidth={1.75} />
+                <X size={16} strokeWidth={1.75} />
               </button>
             </header>
             <div className="canvas-preview relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-tray">
               {screen && count > 0 ? (
                 <>
                   {newestId && (
-                    <style>{`@keyframes canvas-pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}.canvas-preview [data-node-id="${cssId(newestId)}"]{animation:canvas-pop .28s ease-out}@media (prefers-reduced-motion:reduce){.canvas-preview [data-node-id]{animation:none!important}}`}</style>
+                    <style>{`@keyframes canvas-pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}.canvas-preview [data-node-id="${cssId(newestId)}"]{animation:canvas-pop .2s ease-out}@media (prefers-reduced-motion:reduce){.canvas-preview [data-node-id]{animation:none!important}}`}</style>
                   )}
                   <FitToWidth>
                     <ScreenRenderer screen={screen} editable={false} />
                   </FitToWidth>
                 </>
               ) : (
+                busy ? (
+                  <div role="status" aria-live="polite" className="flex h-full flex-col gap-3 p-3">
+                    <p className="text-sm text-ink-2">Building…</p>
+                    {[96, 56, 72, 56].map((h, i) => (
+                      <div key={i} className="shimmer rounded-xl bg-hover motion-reduce:animate-none" style={{ height: h }} />
+                    ))}
+                  </div>
+                ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
-                  <PanelRight size={18} strokeWidth={1.75} className="text-ink-3" aria-hidden />
-                  <p className="text-sm text-ink-2">Nothing here yet</p>
-                  <p className="text-xs text-ink-3">Sketch something, then press Make it.</p>
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-hover">
+                    <PanelRight size={24} strokeWidth={1.75} className="text-ink-3" aria-hidden />
+                  </div>
+                  <p className="text-base text-ink-2">Nothing here yet</p>
+                  <p className="text-sm text-ink-3">Sketch something, then press Make it.</p>
                 </div>
+                )
               )}
             </div>
           </div>
+          </div>
         </aside>
       )}
+      </div>
     </div>,
     document.body,
   );

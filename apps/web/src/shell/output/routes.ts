@@ -42,7 +42,7 @@ export const DIAGRAM_NODES: DiagramNode[] = [
   { id: "narrate", label: "Narrate", col: 0 },
   { id: "editor", label: "Editor", col: 0 },
   { id: "output", label: "Output pane", col: 0 },
-  { id: "api", label: "Express API :3001", col: 1 },
+  { id: "api", label: "API :3001", col: 1 },
   { id: "claude", label: "Anthropic Claude", col: 2 },
   { id: "elevenlabs", label: "ElevenLabs", col: 2 },
   { id: "openverse", label: "Openverse", col: 2 },
@@ -67,7 +67,7 @@ export function nodesForRoute(path: string, routes: RouteInfo[] = ROUTES): Set<s
   return r ? new Set([...r.clients, "api", ...r.providers]) : new Set();
 }
 
-export type Health = { ok?: boolean; mock?: boolean; model?: string; hasAnthropic?: boolean; hasElevenLabs?: boolean; hasMongo?: boolean };
+export type Health = { ok?: boolean; mock?: boolean; model?: string; hasAnthropic?: boolean; hasElevenLabs?: boolean; hasTypesafe?: boolean; hasMongo?: boolean };
 
 export type KeyRowInfo = { label: string; ok: boolean };
 

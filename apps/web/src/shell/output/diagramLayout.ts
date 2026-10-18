@@ -1,7 +1,7 @@
 import { DIAGRAM_NODES, diagramEdges, type DiagramNode } from "./routes";
 
-export const W = 480;
-export const NODE_W = 124;
+export const W = 400;
+export const NODE_W = 112;
 export const NODE_H = 30;
 const ROW_GAP = 12;
 const TOP = 8;

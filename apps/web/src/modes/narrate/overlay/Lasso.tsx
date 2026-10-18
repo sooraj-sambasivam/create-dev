@@ -65,8 +65,6 @@ export function Lasso({ resolve, onLasso, disabled }: { resolve: LassoResolver; 
   if (disabled) return null;
   return (
     <div data-narrate-ignore aria-hidden="true" className="pointer-events-none fixed inset-0 z-[101]">
-      <style>{`@keyframes narrate-march{to{background-position:200% 0}}
-@media (prefers-reduced-motion: reduce){.narrate-glow{animation:none!important}}`}</style>
       {(shift || dragging) && (
         <div
           className="pointer-events-auto absolute inset-0 cursor-crosshair select-none"
@@ -81,18 +79,24 @@ export function Lasso({ resolve, onLasso, disabled }: { resolve: LassoResolver; 
         <div
           key={i}
           className="absolute rounded-md"
-          style={{ left: box.x - 2, top: box.y - 2, width: box.w + 4, height: box.h + 4, boxShadow: "0 0 0 2px var(--accent, #3E7BF0), 0 0 14px 2px rgba(62,123,240,0.35)" }}
+          style={{ left: box.x - 2, top: box.y - 2, width: box.w + 4, height: box.h + 4, boxShadow: "0 0 0 2px var(--color-accent)" }}
         />
       ))}
+      {!dragging && rect && hits.length > 0 && (
+        <div
+          className="absolute rounded-full border border-line bg-surface px-3 text-[12px] leading-6 text-ink shadow-soft"
+          style={{ left: rect.x, top: Math.max(8, rect.y - 32) }}
+        >
+          {hits.length} selected
+        </div>
+      )}
       {rect && (
         <div
-          className="narrate-glow absolute rounded-xl"
+          className="absolute rounded-lg"
           style={{
             left: rect.x, top: rect.y, width: rect.w, height: rect.h,
-            border: "2px solid var(--accent, #3E7BF0)",
-            boxShadow: "0 0 24px 4px rgba(62,123,240,0.35), inset 0 0 20px rgba(62,123,240,0.12)",
-            background: "linear-gradient(90deg, rgba(62,123,240,0.06), rgba(62,123,240,0.18), rgba(62,123,240,0.06)) 0 0 / 200% 100%",
-            animation: "narrate-march 1.6s linear infinite",
+            border: "1.5px solid var(--color-accent)",
+            background: "color-mix(in srgb, var(--color-accent) 10%, transparent)",
           }}
         />
       )}

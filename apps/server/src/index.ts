@@ -29,6 +29,7 @@ app.get("/api/health", (_req, res) => {
     model: process.env.CLAUDE_MODEL || DEFAULT_MODEL,
     hasAnthropic: Boolean(process.env.ANTHROPIC_API_KEY),
     hasElevenLabs: Boolean(process.env.ELEVENLABS_API_KEY),
+    hasTypesafe: Boolean(process.env.TYPESAFE_API_KEY?.trim()),
     hasMongo: Boolean(process.env.MONGODB_URI?.trim()),
   });
 });

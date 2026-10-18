@@ -1,0 +1,126 @@
+/*
+ * Canvas studio: theme tldraw's chrome with the app tokens (DESIGN.md). Scoped to [data-canvas-host].
+ * Light and dark come for free: the --color-* tokens change with the shell and tldraw's own theme class follows it.
+ * Imported after "tldraw/tldraw.css" so equal-specificity rules here win.
+ */
+
+[data-canvas-host] .tl-theme__light,
+[data-canvas-host] .tl-theme__dark {
+  --tl-color-background: var(--color-surface);
+  --tl-color-panel: var(--color-surface);
+  --tl-color-panel-contrast: var(--color-hover);
+  --tl-color-panel-overlay: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  --tl-color-panel-transparent: transparent;
+  --tl-color-low: var(--color-tray);
+  --tl-color-low-border: var(--color-line);
+  --tl-color-selected: var(--color-accent);
+  --tl-color-selected-contrast: #fff;
+  --tl-color-primary: var(--color-accent);
+  --tl-color-text: var(--color-ink);
+  --tl-color-text-0: var(--color-ink);
+  --tl-color-text-1: var(--color-ink-2);
+  --tl-color-text-3: var(--color-ink-2);
+  --tl-color-divider: var(--color-line);
+  --tl-color-muted-0: var(--color-tray);
+  --tl-color-muted-1: var(--color-hover);
+  --tl-color-muted-2: var(--color-hover);
+  --tl-color-hint: var(--color-hover);
+  --tl-shadow-1: var(--shadow-soft);
+  --tl-shadow-2: var(--shadow-soft);
+  --tl-shadow-3: var(--shadow-soft);
+  --tl-shadow-4: var(--shadow-soft);
+  --tl-radius-1: 6px;
+  --tl-radius-2: 8px;
+  --tl-radius-3: 12px;
+  --tl-radius-4: 12px;
+}
+
+[data-canvas-host] .tl-background {
+  background: var(--color-surface);
+}
+
+/* Floating panels: surface, 1px line, radius 12, the one shadow. No hard outlines, no squared edges. */
+[data-canvas-host] .tlui-main-toolbar__tools,
+[data-canvas-host] .tlui-style-panel__wrapper,
+[data-canvas-host] .tlui-navigation-panel,
+[data-canvas-host] .tlui-menu,
+[data-canvas-host] .tlui-popover__content,
+[data-canvas-host] .tlui-select__content,
+[data-canvas-host] .tlui-dialog__content {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Bottom tool bar: breathing room from the bottom edge. */
+[data-canvas-host] .tlui-main-toolbar--horizontal {
+  padding-bottom: 8px;
+}
+[data-canvas-host] .tlui-main-toolbar__extras__controls {
+  background: var(--color-tray);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+}
+
+/* Small controls: radius 8, selected tool in the accent. */
+[data-canvas-host] .tlui-button__tool::after,
+[data-canvas-host] .tlui-button::after {
+  border-radius: 8px;
+}
+[data-canvas-host] .tlui-button__tool[aria-pressed="true"]:not(:disabled, [data-disabled])::after {
+  background: var(--color-accent);
+}
+[data-canvas-host] .tlui-button__tool[aria-pressed="true"] {
+  color: #fff;
+}
+[data-canvas-host] .tlui-button:focus-visible::after {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 0;
+}
+
+/*
+ * Style panel (only rendered while shapes are selected): top right, 8px from the edge, directly under the studio
+ * toolbar (8px top + 58px toolbar + 10px gap = 76px).
+ */
+[data-canvas-host] .tlui-layout__top__right .tlui-style-panel__wrapper {
+  margin: 76px 8px 8px;
+}
+/* While narrating, the recording pill sits under the toolbar (74 + 40 = 114), so the panel drops 8px below it. */
+[data-canvas-host][data-narrating] .tlui-layout__top__right .tlui-style-panel__wrapper {
+  margin-top: 124px;
+}
+
+/* Zoom widget: same floating panel, bottom left, aligned with the tool bar. */
+[data-canvas-host] .tlui-navigation-panel {
+  left: 8px;
+  bottom: 8px;
+  overflow: hidden;
+}
+[data-canvas-host] .tlui-navigation-panel::before {
+  display: none;
+}
+
+/*
+ * The tldraw licence watermark (.tl-watermark_SEE-LICENSE) is deliberately left alone: it stays visible, in its own
+ * colours, at the bottom right of the tldraw area. A licence key (VITE_TLDRAW_LICENSE_KEY) removes the dev notice.
+ */
+
+@keyframes canvas-slide {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes canvas-rise {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes canvas-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.canvas-slide-in { animation: canvas-slide 0.2s ease-out; }
+.canvas-rise-in { animation: canvas-rise 0.2s ease-out; }
+.canvas-fade-in { animation: canvas-fade 0.15s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .canvas-slide-in, .canvas-rise-in, .canvas-fade-in { animation: none; }
+}

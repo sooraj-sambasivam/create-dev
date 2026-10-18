@@ -293,6 +293,10 @@ export interface InstallOptions {
   storage?: Pick<Storage, "getItem" | "setItem">;
 }
 
+/** lucide `Info` at 18px, stroke 1.75: the icon the in-app info toast uses. */
+const INFO_ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+
 export function readMode(storage?: Pick<Storage, "getItem">): ReplayMode {
   try {
     return storage?.getItem(MODE_STORAGE_KEY) === "replay" ? "replay" : "record";
@@ -326,7 +330,9 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
   let mode = readMode(storage);
   let dot: HTMLElement | undefined;
   let toast: HTMLElement | undefined;
+  let toastLabel: HTMLElement | undefined;
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
+  let toastFadeTimer: ReturnType<typeof setTimeout> | undefined;
 
   const renderDot = () => {
     if (!doc?.body) return;
@@ -336,7 +342,7 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
       dot.title = "Replay on";
       dot.setAttribute("aria-label", "Replay on");
       dot.style.cssText =
-        "position:fixed;left:8px;bottom:8px;width:8px;height:8px;border-radius:50%;background:var(--color-warn);opacity:.7;z-index:2147483647;pointer-events:none";
+        "position:fixed;right:12px;bottom:12px;width:8px;height:8px;border-radius:50%;background:var(--color-warn);z-index:2147483647;pointer-events:none";
       doc.body.appendChild(dot);
     } else {
       dot?.remove();
@@ -345,22 +351,56 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
   };
 
   /** Small status toast, auto-hidden after TOAST_MS. Colors come from the theme tokens. */
+  const TOAST_FADE_MS = 180;
+  const reduceMotion = () => {
+    try {
+      const mm = (win as { matchMedia?: Window["matchMedia"] }).matchMedia;
+      return mm?.call(win, "(prefers-reduced-motion: reduce)").matches ?? false;
+    } catch {
+      return false;
+    }
+  };
+  // Bottom-centre above the composer, like the in-app toasts. It sits clear of the card toolbar and title.
+  const setToastVisible = (el: HTMLElement, visible: boolean) => {
+    el.style.opacity = visible ? "1" : "0";
+    el.style.transform = visible ? "translate(-50%,0)" : "translate(-50%,6px)";
+  };
   const showToast = (text: string) => {
     if (!doc?.body) return;
-    if (!toast) {
+    if (!toast || !toastLabel) {
       toast = doc.createElement("div");
       toast.setAttribute("role", "status");
       toast.setAttribute("aria-live", "polite");
       toast.style.cssText =
-        "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:calc(100vw - 32px);padding:8px 12px;border-radius:12px;border:1px solid var(--color-line);background:var(--color-surface);color:var(--color-ink);box-shadow:var(--shadow-soft);font:14px/20px var(--font-sans);z-index:2147483647;pointer-events:none";
+        "position:fixed;left:50%;bottom:96px;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px;height:32px;max-width:calc(100vw - 32px);padding:0 12px;border-radius:12px;border:1px solid var(--color-line);background:var(--color-surface);color:var(--color-ink-2);box-shadow:var(--shadow-soft);font:14px/20px var(--font-sans);white-space:nowrap;z-index:2147483647;pointer-events:none;transition:opacity 180ms ease-out,transform 180ms ease-out";
+      const icon = doc.createElement("span");
+      icon.setAttribute("aria-hidden", "true");
+      icon.style.cssText = "display:inline-flex;flex:none;color:var(--color-ink-2)";
+      icon.innerHTML = INFO_ICON_SVG;
+      toastLabel = doc.createElement("span");
+      toastLabel.style.cssText = "min-width:0;overflow:hidden;text-overflow:ellipsis";
+      toast.appendChild(icon);
+      toast.appendChild(toastLabel);
     }
-    toast.textContent = text;
-    if (!toast.isConnected) doc.body.appendChild(toast);
+    const el = toast;
+    el.style.transition = reduceMotion() ? "none" : `opacity ${TOAST_FADE_MS}ms ease-out,transform ${TOAST_FADE_MS}ms ease-out`;
+    toastLabel.textContent = text;
+    setToastVisible(el, false);
+    if (!el.isConnected) doc.body.appendChild(el);
+    // Read a layout property so the hidden state is committed before fading in.
+    void el.offsetHeight;
+    setToastVisible(el, true);
     if (toastTimer !== undefined) clearTimeout(toastTimer);
+    // Fade out just before removal so the removal lands exactly at TOAST_MS.
+    toastFadeTimer = setTimeout(() => {
+      if (toast) setToastVisible(toast, false);
+    }, Math.max(0, TOAST_MS - TOAST_FADE_MS));
     toastTimer = setTimeout(() => {
       toast?.remove();
       toast = undefined;
+      toastLabel = undefined;
       toastTimer = undefined;
+      toastFadeTimer = undefined;
     }, TOAST_MS);
   };
 
@@ -447,9 +487,12 @@ export function installReplay(opts: InstallOptions = {}): ReplayController {
       win.fetch = realFetch;
       dot?.remove();
       if (toastTimer !== undefined) clearTimeout(toastTimer);
+      if (toastFadeTimer !== undefined) clearTimeout(toastFadeTimer);
       toastTimer = undefined;
+      toastFadeTimer = undefined;
       toast?.remove();
       toast = undefined;
+      toastLabel = undefined;
       if (active === controller) active = undefined;
     },
   };

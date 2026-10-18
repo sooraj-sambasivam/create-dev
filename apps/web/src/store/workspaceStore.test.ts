@@ -54,7 +54,6 @@ function resetStores() {
     chats: [],
     projects: [],
     activeChatId: null,
-    outputOpen: false,
     runLog: [],
     deletedChatIds: [],
   });
@@ -258,15 +257,7 @@ describe("projects", () => {
   });
 });
 
-describe("output and run log", () => {
-  it("toggleOutput flips the flag", () => {
-    expect(ws().outputOpen).toBe(false);
-    ws().toggleOutput();
-    expect(ws().outputOpen).toBe(true);
-    ws().toggleOutput();
-    expect(ws().outputOpen).toBe(false);
-  });
-
+describe("run log", () => {
   it("log appends entries with ids and timestamps", () => {
     ws().log("generate", "made a page");
     ws().log("export", "zip");
@@ -289,11 +280,10 @@ describe("output and run log", () => {
 describe("persistence", () => {
   it("writes workspace state under the storage key without the live-only fields", () => {
     ws().newChat();
-    ws().toggleOutput();
     ws().log("k", "d");
     const stored = JSON.parse(memory.getItem(WORKSPACE_STORAGE_KEY)!);
     expect(stored.state.chats).toHaveLength(2);
-    expect(stored.state.outputOpen).toBe(true);
+    expect(stored.state).not.toHaveProperty("outputOpen");
     expect(stored.state.runLog).toHaveLength(1);
     expect(stored.state).not.toHaveProperty("screen");
   });
@@ -317,7 +307,7 @@ describe("persistence", () => {
           chats: [good, { title: "no id" }, { id: "c2", screen: { nonsense: true }, history: "x" }],
           projects: [{ id: "p1", name: "Kept" }, { id: 5 }],
           activeChatId: "c1",
-          outputOpen: true,
+          outputOpen: true, // legacy field, ignored
           runLog: [{ id: "l1", at: 3, kind: "k", detail: "d" }],
         },
       }),
@@ -331,7 +321,7 @@ describe("persistence", () => {
     expect(ws().chats[1].history).toEqual([]);
     expect(ws().projects).toEqual([{ id: "p1", name: "Kept" }]);
     expect(ws().activeChatId).toBe("c1");
-    expect(ws().outputOpen).toBe(true);
+    expect(ws().outputOpen).toBeUndefined();
     expect(ws().runLog).toHaveLength(1);
   });
 
@@ -348,7 +338,7 @@ function saveAsOtherTab(chats: unknown[], extra: Record<string, unknown> = {}) {
     WORKSPACE_STORAGE_KEY,
     JSON.stringify({
       version: 1,
-      state: { chats, projects: [], activeChatId: null, outputOpen: false, runLog: [], deletedChatIds: [], ...extra },
+      state: { chats, projects: [], activeChatId: null, runLog: [], deletedChatIds: [], ...extra },
     }),
   );
 }
