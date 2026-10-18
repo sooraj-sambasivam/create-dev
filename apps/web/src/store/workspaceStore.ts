@@ -68,6 +68,7 @@ export interface WorkspaceState {
 
   /**
    * Save the active chat, start a blank one (optionally inside a project) and make it active. Returns its id.
+   * If the active chat is already blank it is reused (and moved into the project) instead of piling up another.
    * While the page is busy this does nothing and returns the current active id.
    */
   newChat: (projectId?: string | null) => string;
@@ -86,6 +87,10 @@ export interface WorkspaceState {
   moveChat: (chatId: string, projectId: string | null) => void;
   /** Create a project and return its id. Empty names become "Untitled project". */
   createProject: (name: string, moveChatId?: string) => string;
+  /** Rename a project. Empty names are ignored. */
+  renameProject: (id: string, name: string) => void;
+  /** Delete a project. Its chats are kept and become unassigned. */
+  deleteProject: (id: string) => void;
   /** Append to the run log, keeping the most recent RUN_LOG_LIMIT entries. */
   log: (kind: string, detail: string) => void;
 }
@@ -110,6 +115,11 @@ function makeChat(over: Partial<Chat> = {}): Chat {
     renamed: false,
     ...over,
   };
+}
+
+/** True for a chat that was never used: no page, no history, and still the default title. */
+export function isBlankChat(chat: Pick<Chat, "title" | "screen" | "history">): boolean {
+  return chat.screen === null && chat.history.length === 0 && chat.title === DEFAULT_CHAT_TITLE;
 }
 
 function mostRecent(chats: Chat[]): Chat | undefined {
@@ -420,6 +430,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           }
           const chatsNow = current();
           const projectOk = projectId !== null && get().projects.some((p) => p.id === projectId);
+          const active = chatsNow.find((c) => c.id === activeId);
+          if (active && !active.archived && isBlankChat(active)) {
+            const target = projectOk ? projectId : null;
+            if (active.projectId !== target) {
+              set({ chats: chatsNow.map((c) => (c.id === active.id ? { ...c, projectId: target } : c)) });
+            }
+            return active.id;
+          }
           const chat = makeChat({ projectId: projectOk ? projectId : null });
           cancelPending();
           set({ chats: [chat, ...chatsNow], activeChatId: chat.id });
@@ -505,6 +523,17 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               : s.chats,
           }));
           return project.id;
+        },
+
+        renameProject: (id, name) => {
+          const trimmed = name.trim();
+          if (!trimmed) return;
+          set((s) => ({ projects: s.projects.map((p) => (p.id === id ? { ...p, name: trimmed } : p)) }));
+        },
+
+        deleteProject: (id) => {
+          const chats = current().map((c) => (c.projectId === id ? { ...c, projectId: null } : c));
+          set((s) => ({ projects: s.projects.filter((p) => p.id !== id), chats }));
         },
 
         log: (kind, detail) =>

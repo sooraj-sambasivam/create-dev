@@ -47,7 +47,7 @@ function TopBar({ onRemix, canRemix }: { onRemix?: () => void; canRemix: boolean
           type="button"
           onClick={onRemix}
           disabled={!canRemix}
-          className="inline-flex h-8 items-center rounded-lg bg-accent px-3 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-8 items-center rounded-lg bg-accent px-3 text-sm font-medium text-white transition-opacity duration-150 hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           Remix
         </button>

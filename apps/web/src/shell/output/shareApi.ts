@@ -28,6 +28,28 @@ export async function sharePrototype(screen: Screen, title?: string): Promise<Sh
   return { id: data.id, url: lastShareUrl };
 }
 
+/**
+ * The one share path: create the link, then copy it. Header Share and the Output tab's "Copy share
+ * link" both go through here. A clipboard refusal is not a failure: the link exists, `copied` is false
+ * and the caller shows it. Rejects only when the link could not be created.
+ */
+export async function shareAndCopy(
+  screen: Screen,
+  clipboard: { writeText(text: string): Promise<void> } | undefined = typeof navigator !== "undefined" ? navigator.clipboard : undefined,
+): Promise<{ url: string; copied: boolean }> {
+  const { url } = await sharePrototype(screen);
+  let copied = false;
+  try {
+    if (clipboard) {
+      await clipboard.writeText(url);
+      copied = true;
+    }
+  } catch {
+    /* clipboard blocked */
+  }
+  return { url, copied };
+}
+
 /** The server may return `/?p=id`; make it shareable outside the app. */
 export function absoluteUrl(url: string, origin = typeof location !== "undefined" ? location.origin : ""): string {
   if (/^https?:\/\//i.test(url)) return url;

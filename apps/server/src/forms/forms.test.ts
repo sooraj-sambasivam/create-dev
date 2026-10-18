@@ -6,9 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { StoredSubmission } from "@create/shared";
-import { createFormsRouter } from "./route";
+import { createFormsRouter, formsToken } from "./route";
 import { FileFormStore, MAX_SUBMISSIONS, isValidAppId } from "./store";
 
+const SECRET = "test-secret";
+const key = (id: string) => formsToken(id, SECRET);
 let dir: string;
 let server: Server;
 let base: string;
@@ -18,7 +20,7 @@ beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), "forms-"));
   store = new FileFormStore(dir);
   const app = express();
-  app.use("/api", createFormsRouter(store));
+  app.use("/api", createFormsRouter(store, { secret: SECRET }));
   server = app.listen(0);
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/forms`;
 });
@@ -44,12 +46,30 @@ describe("forms routes", () => {
     const saved = (await res.json()) as StoredSubmission;
     expect(saved).toMatchObject({ appId: "shop", formId: "contact" });
     expect(saved.id).toBeTruthy();
-    const list = (await (await fetch(`${base}/shop`)).json()) as StoredSubmission[];
+    const list = (await (await fetch(`${base}/shop?key=${key("shop")}`)).json()) as StoredSubmission[];
     expect(list.map((s) => s.fields.email)).toEqual(["c@d.co", "a@b.co"]);
   });
 
   it("returns an empty list for an unknown app", async () => {
-    expect(await (await fetch(`${base}/nothing`)).json()).toEqual([]);
+    expect(await (await fetch(`${base}/nothing?key=${key("nothing")}`)).json()).toEqual([]);
+  });
+
+  it("requires the owner key to read submissions", async () => {
+    expect((await fetch(`${base}/shop`)).status).toBe(401);
+    expect((await fetch(`${base}/shop?key=wrong`)).status).toBe(401);
+    expect((await fetch(`${base}/shop?key=${key("other")}`)).status).toBe(401);
+    const bearer = await fetch(`${base}/shop`, { headers: { authorization: `Bearer ${key("shop")}` } });
+    expect(bearer.status).toBe(200);
+  });
+
+  it("issues the token only to an allowed origin", async () => {
+    const tok = (origin?: string) =>
+      fetch(`${base}/shop/token`, { method: "POST", headers: origin ? { origin } : {} });
+    expect((await tok()).status).toBe(401);
+    expect((await tok("https://evil.example")).status).toBe(401);
+    const ok = await tok("http://localhost:5173");
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ token: key("shop") });
   });
 
   it("rejects a bad id, bad body and oversize body", async () => {

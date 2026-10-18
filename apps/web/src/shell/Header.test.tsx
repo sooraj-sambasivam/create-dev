@@ -98,7 +98,7 @@ describe("Header markup", () => {
     expect(html).toContain("Coffee shop");
     expect(html).toContain(">Share<");
     expect(html).toContain('aria-label="Chat options"');
-    expect(html).toContain('aria-label="Output"');
+    expect(html).toContain('aria-label="Show output panel"');
     expect(html).toContain('aria-pressed="false"');
   });
 

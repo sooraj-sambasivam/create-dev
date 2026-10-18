@@ -16,7 +16,7 @@ export type FanItem = {
   title?: string;
 };
 
-/** Mic, Canvas, Narrate spring out along an arc centred on Go, past the composer's right edge, or mirrored left when the right is cramped. */
+/** Speak, Sketch, Point spring out along an arc centred on Go, past the composer's right edge, or mirrored left when the right is cramped. */
 export function GoFan({ open, items, dir = "right" }: { open: boolean; items: FanItem[]; dir?: FanDir }) {
   const reduce = useReducedMotion();
   const spring = { type: "spring" as const, stiffness: 420, damping: 28 };
@@ -57,7 +57,7 @@ export function GoFan({ open, items, dir = "right" }: { open: boolean; items: Fa
                 <Icon size={16} strokeWidth={1.75} />
                 <span
                   aria-hidden="true"
-                  className={`pointer-events-none absolute top-1/2 ${dir === "left" ? "right-full mr-2" : "left-full ml-2"} -translate-y-1/2 rounded-lg border border-[var(--c-line)] bg-[var(--c-tray)] px-2 py-1 text-[14px] leading-4 whitespace-nowrap text-[var(--c-ink)] shadow-[var(--c-shadow)] opacity-0 transition-opacity duration-150 group-hover/fan:opacity-100 group-focus-visible/fan:opacity-100`}
+                  className={`pointer-events-none absolute ${dir === "left" ? "bottom-full left-1/2 mb-2 -translate-x-1/2" : "top-1/2 left-full ml-2 -translate-y-1/2"} rounded-lg border border-[var(--c-line)] bg-[var(--c-tray)] px-2 py-1 text-[14px] leading-4 whitespace-nowrap text-[var(--c-ink)] shadow-[var(--c-shadow)] opacity-0 transition-opacity duration-150 group-hover/fan:opacity-100 group-focus-visible/fan:opacity-100`}
                 >
                   {item.label}
                 </span>

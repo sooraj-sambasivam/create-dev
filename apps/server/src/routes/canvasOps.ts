@@ -1,4 +1,5 @@
-import express, { Router, type ErrorRequestHandler } from "express";
+import { Router, type ErrorRequestHandler } from "express";
+import { bigJson } from "../middleware/bodyLimit";
 import { CanvasOpsRequestSchema } from "@create/shared";
 import { GenerationError } from "../ai/claude";
 import { runCanvasOps } from "../canvasOps/pipeline";
@@ -6,7 +7,7 @@ import { runCanvasOps } from "../canvasOps/pipeline";
 export const canvasOpsRouter = Router();
 
 // The app-wide limit is 3mb; a canvas PNG is bigger, so raise it on this path only.
-canvasOpsRouter.use("/canvas-ops", express.json({ limit: "10mb" }));
+canvasOpsRouter.use("/canvas-ops", bigJson("The drawing is too large. Select a smaller area."));
 
 canvasOpsRouter.post("/canvas-ops", async (req, res) => {
   const parsed = CanvasOpsRequestSchema.safeParse(req.body);

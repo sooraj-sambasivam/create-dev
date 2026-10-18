@@ -39,7 +39,7 @@ export function createRateLimiter(options: RateLimitOptions) {
       const retryAfterSec = Math.max(1, Math.ceil((recent[0] + windowMs - current) / 1000));
       hits.set(key, recent);
       res.setHeader("Retry-After", String(retryAfterSec));
-      res.status(429).json({ error: "Too many requests. Try again in a moment." });
+      res.status(429).json({ error: "Too many requests. Try again in a moment.", retryAfterSec });
       return;
     }
     recent.push(current);

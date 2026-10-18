@@ -57,11 +57,20 @@ export function buildSystemPrompt(req: AskRequest, reading?: string | null): str
   const node = id && req.screen ? findNode(req.screen, id) : null;
   if (node) lines.push(`The user is pointing at this element (full JSON):\n${JSON.stringify(node).slice(0, 4000)}\n"this" and "that" mean it.`);
   else if (req.pointer?.label) lines.push(`The user is pointing at: "${req.pointer.label}".`);
+  if (req.pointer?.image) lines.push("The user attached an image of what they are pointing at. Look at it and answer about what it shows (a photo, chart, sketch or screenshot).");
   if (reading) lines.push(`A vision model read the pointed region as:\n${reading}`);
   return lines.join("\n\n");
 }
 
 let client: Anthropic | null = null;
+
+type ImageBlock = { type: "image"; source: { type: "base64"; media_type: "image/png" | "image/jpeg"; data: string } };
+
+/** Splits a PNG/JPEG data URL into a Claude vision block, or null for anything else. */
+export function imageBlock(dataUrl: string | undefined): ImageBlock | null {
+  const m = /^data:(image\/(?:png|jpeg));base64,([A-Za-z0-9+/=\s]+)$/.exec(dataUrl ?? "");
+  return m ? { type: "image", source: { type: "base64", media_type: m[1] as ImageBlock["source"]["media_type"], data: m[2]!.replace(/\s/g, "") } } : null;
+}
 
 /** Answers the question. Never throws for model trouble: falls back to the mock answer. */
 export async function answerAsk(req: AskRequest, opts: { client?: Anthropic } = {}): Promise<AskResponse> {
@@ -75,12 +84,14 @@ export async function answerAsk(req: AskRequest, opts: { client?: Anthropic } = 
   try {
     client ??= new Anthropic({ apiKey: apiKey ?? "unset", timeout: ASK_TIMEOUT_MS, maxRetries: 0 });
     const model = req.question.length <= SHORT_QUESTION && !req.screen ? ASK_FAST_MODEL : process.env.CLAUDE_ASK_MODEL || DEFAULT_MODEL;
+    const image = imageBlock(req.pointer?.image);
+    const userContent = image ? [image, { type: "text" as const, text: req.question }] : req.question;
     const message = await (opts.client ?? client).messages.create(
       {
         model,
         max_tokens: 600,
         system: buildSystemPrompt(req, reading),
-        messages: [...req.history.slice(-10).map((h) => ({ role: h.role, content: h.text })), { role: "user", content: req.question }],
+        messages: [...req.history.slice(-10).map((h) => ({ role: h.role, content: h.text })), { role: "user" as const, content: userContent }],
       },
       { timeout: ASK_TIMEOUT_MS },
     );

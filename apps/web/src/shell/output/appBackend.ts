@@ -91,5 +91,5 @@ export function sampleBody(form: AppBackend["forms"][number]) {
 }
 
 export function curlExample(form: AppBackend["forms"][number], origin: string): string {
-  return `curl -X POST ${origin}${form.endpoint} \\\n  -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(sampleBody(form))}'`;
+  return `curl -X POST ${origin}${form.endpoint} \\\n  -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(sampleBody(form))}'\n\n# Read submissions (owner key from POST ${origin}${form.endpoint}/token)\ncurl ${origin}${form.endpoint} \\\n  -H 'Authorization: Bearer <token from POST ${form.endpoint}/token>'`;
 }

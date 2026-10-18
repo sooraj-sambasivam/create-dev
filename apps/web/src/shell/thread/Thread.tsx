@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Code2, Crosshair, RotateCw, Sparkles } from "lucide-react";
-import { useScreenStore } from "../../store/screenStore";
+import { findNode } from "@create/shared";
+import { revealNode, useScreenStore } from "../../store/screenStore";
 import { useWorkMode } from "../../store/modeStore";
 import { useRightPanel } from "../rightPanel";
 import { deriveItems, type ThreadItem } from "./items";
@@ -81,10 +82,38 @@ function Markdown({ text }: { text: string }) {
   );
 }
 
+function ElementChip({ label, onClick }: { label: string; onClick: (() => void) | null }) {
+  const cls = "mb-1 mr-2 inline-flex h-5 max-w-full items-center gap-1 rounded-md bg-tray px-1.5 text-[12px] text-ink-2";
+  const body = (
+    <>
+      <Crosshair size={12} strokeWidth={1.75} aria-hidden />
+      <span className="truncate">{label}</span>
+    </>
+  );
+  if (!onClick) return <span className={cls}>{body}</span>;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Show ${label} on the page`}
+      className={`${cls} transition-colors duration-150 hover:bg-hover hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+    >
+      {body}
+    </button>
+  );
+}
+
 function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
   const generate = useScreenStore((s) => s.generate);
   const openTab = useRightPanel((s) => s.openTab);
   const setMode = useWorkMode((s) => s.setMode);
+  const select = useScreenStore((s) => s.select);
+  const exists = useScreenStore((s) => (item.kind === "assistant" || item.kind === "answer") && item.nodeId && s.screen ? Boolean(findNode(s.screen, item.nodeId)) : false);
+  const focusElement = (id: string) => {
+    openTab("output");
+    select(id);
+    revealNode(id);
+  };
   if (item.kind === "user") {
     return (
       <div className="flex justify-end">
@@ -98,10 +127,7 @@ function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
         <Avatar />
         <div className="min-w-0 flex-1">
           {item.element && (
-            <span className="mb-1 mr-2 inline-flex h-5 max-w-full items-center gap-1 rounded-md bg-tray px-1.5 text-[12px] text-ink-2">
-              <Crosshair size={12} strokeWidth={1.75} aria-hidden />
-              <span className="truncate">{item.label ?? "Element"}</span>
-            </span>
+<ElementChip label={item.label ?? "Element"} onClick={exists && item.nodeId ? () => focusElement(item.nodeId!) : null} />
           )}
           <p className="whitespace-pre-wrap break-words text-[16px] leading-6 text-ink">{item.text}</p>
           {hasPage && (
@@ -122,12 +148,7 @@ function Item({ item, hasPage }: { item: ThreadItem; hasPage: boolean }) {
       <div className="flex items-start gap-3" data-testid="answer">
         <Avatar />
         <div className="min-w-0 flex-1">
-          {item.label && (
-            <span className="mb-1 mr-2 inline-flex h-5 max-w-full items-center gap-1 rounded-md bg-tray px-1.5 text-[12px] text-ink-2">
-              <Crosshair size={12} strokeWidth={1.75} aria-hidden />
-              <span className="truncate">{item.label}</span>
-            </span>
-          )}
+          {item.label && <ElementChip label={item.label} onClick={exists && item.nodeId ? () => focusElement(item.nodeId!) : null} />}
           <Markdown text={item.text} />
           {item.routed && <p className="mt-1 text-[12px] text-ink-3">Answered — no changes made</p>}
           {item.suggestCode && (
@@ -169,8 +190,9 @@ export function Thread() {
   const status = useScreenStore((s) => s.status);
   const error = useScreenStore((s) => s.error);
   const asking = useScreenStore((s) => s.asking);
+  const lastAttempt = useScreenStore((s) => s.lastAttempt);
   const hasPage = useScreenStore((s) => s.screen !== null);
-  const items = deriveItems({ history, status, error, asking });
+  const items = deriveItems({ history, status, error, asking, lastAttempt });
   const endRef = useRef<HTMLDivElement>(null);
   const lastKey = items.length ? items[items.length - 1].key : "";
 

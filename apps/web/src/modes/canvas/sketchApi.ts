@@ -1,4 +1,5 @@
 import { GenerateResponseSchema, type GenerateResponse, type SketchRequest } from "@create/shared";
+import { fitDataUrl } from "../../lib/image";
 
 async function readError(res: Response, fallback: string): Promise<string> {
   try {
@@ -14,7 +15,7 @@ export async function generateSketch(req: SketchRequest, signal?: AbortSignal): 
   const res = await fetch("/api/generate-sketch", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
+    body: JSON.stringify({ ...req, image: await fitDataUrl(req.image) }),
     signal,
   });
   if (!res.ok) throw new Error(await readError(res, `Sketch generation failed (${res.status})`));

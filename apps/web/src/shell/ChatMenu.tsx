@@ -475,7 +475,7 @@ export function ChatMenu({
           onClick={() => setView("project")}
         >
           <Folder size={18} strokeWidth={1.75} aria-hidden="true" className={iconClass} />
-          <span className="flex-1">New project</span>
+          <span className="flex-1">Move to project</span>
           <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true" className="text-ink-3" />
         </button>
         <div className={separator} />

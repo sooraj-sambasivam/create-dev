@@ -15,3 +15,4 @@ export {
 export { exitDestination, exitNarrate, type ExitDeps, type NarrateDestination, type NarrateExitKind, type NarrateOrigin } from "./exit";
 export { usePin, pinFromClick } from "./pinStore";
 export { registerAnswerSink, sendAnswerToChat, hasAnswerSink, type AnswerSink } from "./answerSink";
+export { TAP_MS, initialHold, reduceHold, type HoldAction, type HoldEvent, type HoldState } from "./holdToggle";

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { applyMention, fanOffset, pickFanDir, filterMentions, mentionQuery, placeholderFor, isStoreBusy, isDeictic, routesToSelection, isQuestion, routeFor, defaultModeFor } from "./logic";
-import { useComposerSettings } from "./settings";
 
 describe("mentions", () => {
   it("detects a trailing @query", () => {
@@ -51,20 +50,6 @@ describe("fan + placeholder", () => {
     expect(placeholderFor(false, "chat")).toBe("Ask anything — or point and ask");
     expect(placeholderFor(true, "chat")).toBe("Ask anything — or point and ask");
     expect(placeholderFor(true)).toBe("Describe a change…");
-  });
-});
-
-describe("settings", () => {
-  it("toggles and creates projects", () => {
-    const s = useComposerSettings.getState();
-    s.toggleConnector("gmail");
-    expect(useComposerSettings.getState().connectors.gmail).toBe(true);
-    s.createProject("  Demo ");
-    const st = useComposerSettings.getState();
-    expect(st.projects.at(-1)?.name).toBe("Demo");
-    expect(st.projectId).toBe(st.projects.at(-1)?.id);
-    s.createProject("   ");
-    expect(useComposerSettings.getState().projects.length).toBe(st.projects.length);
   });
 });
 

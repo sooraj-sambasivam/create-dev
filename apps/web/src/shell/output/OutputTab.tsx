@@ -3,24 +3,20 @@ import { Check, ChevronRight, CircleAlert, Copy, Link2 } from "lucide-react";
 import type { Screen } from "@create/shared";
 import { ScreenCanvas } from "../../components/ScreenCanvas";
 import { useScreenStore } from "../../store/screenStore";
-import { sharePrototype } from "./shareApi";
-
-export type RunLogEntry = { id: string; at: string; kind: string; detail: string };
+import { shareAndCopy } from "./shareApi";
 
 export interface OutputTabProps {
-  /** workspaceStore.runLog. */
-  runLog?: RunLogEntry[];
   /** Defaults to the current screen in useScreenStore. */
   screen?: Screen | null;
 }
 
 /**
  * Output tab body: the live page (Abel's ScreenCanvas, editable in place with Edit/Preview, Add,
- * undo, Publish and the AI box), then a footer with the share link, the run log and the edit
+ * undo, Publish and the AI box), then a footer with the share link and the edit
  * history. It is the only renderer of the page, so [data-screen-root] stays unique. Renders inside
  * the right panel.
  */
-export function OutputTab({ runLog = [], screen: screenProp }: OutputTabProps) {
+export function OutputTab({ screen: screenProp }: OutputTabProps) {
   const storeScreen = useScreenStore((s) => s.screen);
   const history = useScreenStore((s) => s.history);
   const screen = screenProp ?? storeScreen;
@@ -44,14 +40,9 @@ export function OutputTab({ runLog = [], screen: screenProp }: OutputTabProps) {
     setBusy("share");
     setError(null);
     try {
-      const { url } = await sharePrototype(screen);
+      const { url, copied: ok } = await shareAndCopy(screen);
       setShareUrl(url);
-      try {
-        await navigator.clipboard.writeText(url);
-        flashCopied();
-      } catch {
-        /* clipboard blocked; the link is still shown */
-      }
+      if (ok) flashCopied();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't create a share link.");
     } finally {
@@ -106,26 +97,6 @@ export function OutputTab({ runLog = [], screen: screenProp }: OutputTabProps) {
               )}
             </>
           )}
-
-          <details className="group" aria-label="Run log">
-            <summary className="flex h-8 cursor-pointer list-none items-center gap-1 text-[14px] text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
-              <ChevronRight size={16} strokeWidth={1.75} className="transition-transform duration-150 group-open:rotate-90" aria-hidden />
-              Run log{runLog.length > 0 ? ` (${runLog.length})` : ""}
-            </summary>
-            {runLog.length === 0 ? (
-              <p className="py-2 text-[12px] text-ink-2">No runs yet.</p>
-            ) : (
-              <ul className="flex flex-col">
-                {runLog.map((l) => (
-                  <li key={l.id} className="flex gap-2 border-b border-line py-1.5 text-[12px] last:border-b-0">
-                    <time className="shrink-0 font-mono text-ink-2" title={l.at}>{l.at.slice(11, 19)}</time>
-                    <span className="shrink-0 self-start rounded-md bg-tray px-1.5 leading-5 text-ink-2">{l.kind}</span>
-                    <span className="min-w-0 break-all text-ink">{l.detail}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </details>
 
           <details className="group" aria-label="History">
             <summary className="flex h-8 cursor-pointer list-none items-center gap-1 text-[14px] text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -14,7 +14,7 @@ export function Popover({
   open,
   onClose,
   align = "left",
-  side = "up",
+  side: sideProp = "up",
   children,
   panel,
   wide = false,
@@ -31,6 +31,14 @@ export function Popover({
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
+  // A "down" menu flips up when the trigger sits near the bottom of the window (docked composer).
+  const [flip, setFlip] = useState(false);
+  useLayoutEffect(() => {
+    if (!open || sideProp !== "down") return;
+    const r = ref.current?.getBoundingClientRect();
+    if (r) setFlip(window.innerHeight - r.bottom < 280 && r.top > 280);
+  }, [open, sideProp]);
+  const side = sideProp === "down" && flip ? "up" : sideProp;
 
   useEffect(() => {
     if (!open) return;

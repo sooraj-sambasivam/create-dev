@@ -105,6 +105,6 @@ describe("GET /api/voice-token", () => {
     expect(statuses.slice(0, 1)).toEqual([200]);
     expect(last?.status).toBe(429);
     expect(last?.headers.get("retry-after")).toBeTruthy();
-    expect(await last?.json()).toEqual({ error: expect.any(String) });
+    expect(await last?.json()).toEqual({ error: expect.any(String), retryAfterSec: expect.any(Number) });
   });
 });

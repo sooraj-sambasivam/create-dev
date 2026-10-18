@@ -1,5 +1,5 @@
-export { OutputTab, type OutputTabProps, type RunLogEntry } from "./OutputTab";
+export { OutputTab, type OutputTabProps } from "./OutputTab";
 export { BackendTab } from "./BackendTab";
 export { deriveAppBackend, type AppBackend } from "./appBackend";
 export { PreviewFrame, syncFrameHead } from "./PreviewFrame";
-export { sharePrototype, absoluteUrl, fetchHealth } from "./shareApi";
+export { sharePrototype, shareAndCopy, absoluteUrl, fetchHealth } from "./shareApi";

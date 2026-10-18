@@ -65,7 +65,10 @@ export function submitForm(appId: string, submission: FormSubmission): Promise<S
 
 /** Submissions a user's page has collected (the Backend tab's data view). */
 export async function listSubmissions(appId: string): Promise<StoredSubmission[]> {
-  const res = await fetch(`/api/forms/${encodeURIComponent(appId)}`);
+  const tokenRes = await fetch(`/api/forms/${encodeURIComponent(appId)}/token`, { method: "POST" });
+  if (!tokenRes.ok) throw new Error(await readError(tokenRes, `Couldn't load submissions (${tokenRes.status})`));
+  const { token } = (await tokenRes.json()) as { token?: string };
+  const res = await fetch(`/api/forms/${encodeURIComponent(appId)}`, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error(await readError(res, `Couldn't load submissions (${res.status})`));
   const data = (await res.json()) as unknown;
   const rows = Array.isArray(data) ? data : (data as { submissions?: unknown })?.submissions;

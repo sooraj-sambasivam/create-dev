@@ -230,6 +230,10 @@ export function mockAnswerBody(req: AskRequest, reading?: string | null): string
   } else {
     parts.push("I do not see a page to look at yet, so tell me which part you mean and I will explain it.");
   }
+  if (pointer?.image) {
+    const about = (pointed?.type === "image" && pointed.alt.trim()) || pointer.label?.trim() || question;
+    parts.unshift(`I see the image you pointed at (${quote(about)}).`);
+  }
   if (reading) parts.push(`What I can see there: ${reading.replace(/\s+/g, " ").slice(0, 300)}`);
   return parts.join(" ");
 }

@@ -1,9 +1,10 @@
 import type { IntentRequest, IntentResult } from "@create/shared";
 import { ask } from "../../../lib/api";
+import { captureNodeImage } from "../../../lib/capture";
 import { useScreenStore } from "../../../store/screenStore";
 import type { WorkMode } from "../../../store/modeStore";
 import type { PointerPhase } from "./PointerBubble";
-import { classifyImageSrc, fitSize, MAX_ASK_IMAGE_CHARS, matchOffered } from "./pointerLogic";
+import { matchOffered } from "./pointerLogic";
 import { askText, isDeictic, MIN_INTENT_CONFIDENCE, PANEL_PAGE_ROOT, preResolve, prettyLabel } from "./targets";
 
 type Add = (e: Record<string, unknown>) => void;
@@ -19,46 +20,24 @@ export type CommandCtx = {
   /** Narration recorder; absent for hold-to-talk outside Narrate mode. */
   add?: Add;
   isDone(): boolean;
+  /** Aborts the route-intent fetch when the user cancels. */
+  signal?: AbortSignal;
   offer(o: Offered | null): void;
 };
-
-const ASK_IMAGE_MAX_PX = 768;
 
 /** The live page element for a node id in the panel's page, or null. */
 export function pageElement(id: string | null, host: Document = document): HTMLElement | null {
   return id ? host.querySelector<HTMLElement>(`${PANEL_PAGE_ROOT} [data-node-id="${CSS.escape(id)}"]`) : null;
 }
 
-/** A PNG/JPEG data URL of an image or canvas node, or undefined when it has none a canvas may read. */
-export function pointerImage(el: HTMLElement | null): string | undefined {
-  if (!el) return undefined;
-  try {
-    const node = el instanceof HTMLImageElement || el instanceof HTMLCanvasElement ? el : el.querySelector("img, canvas");
-    if (node instanceof HTMLCanvasElement) {
-      const url = node.toDataURL("image/png");
-      return url.length <= MAX_ASK_IMAGE_CHARS ? url : undefined;
-    }
-    if (!(node instanceof HTMLImageElement) || !node.src) return undefined;
-    const kind = classifyImageSrc(node.currentSrc || node.src, window.location.origin);
-    if (!kind || !node.naturalWidth) return undefined;
-    if (kind === "data" && node.src.length <= MAX_ASK_IMAGE_CHARS) return node.src;
-    const { w, h } = fitSize(node.naturalWidth, node.naturalHeight, ASK_IMAGE_MAX_PX);
-    const c = document.createElement("canvas");
-    c.width = w;
-    c.height = h;
-    c.getContext("2d")?.drawImage(node, 0, 0, w, h);
-    const url = c.toDataURL("image/jpeg", 0.8);
-    return url.length <= MAX_ASK_IMAGE_CHARS ? url : undefined;
-  } catch {
-    return undefined; // tainted canvas or a detached node
-  }
-}
+/** A PNG/JPEG data URL (at most 1024px, 1.5MB) of the node's picture, or undefined. Never throws. */
+export const pointerImage = captureNodeImage;
 
 /** Chat answer for a spoken line about the page and the pointed-at element. Never edits. */
 export async function runAsk(ctx: CommandCtx, question: string, target: { id: string | null; label: string | null }): Promise<void> {
   ctx.setPhase({ kind: "understanding", targetId: target.id, label: target.label });
   try {
-    const image = pointerImage(pageElement(target.id));
+    const image = await pointerImage(pageElement(target.id), ctx.signal);
     const res = await ask({
       question: question.slice(0, 4000),
       screen: useScreenStore.getState().screen,
@@ -107,6 +86,7 @@ export function runPointerCommand(ctx: CommandCtx, text: string, req: IntentRequ
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(req),
+        signal: ctx.signal,
       });
       if (!res.ok) throw new Error(String(res.status));
       intent = (await res.json()) as IntentResult;
@@ -147,6 +127,6 @@ export function runPointerCommand(ctx: CommandCtx, text: string, req: IntentRequ
     );
     if (ctx.isDone()) return;
     if (result.error) fail(result.error, id);
-    else ctx.setPhase({ kind: "done", targetId: id, label: labelOf(id), message: result.summary });
+    else ctx.setPhase({ kind: "done", targetId: id, label: labelOf(id), message: result.summary, undoable: Boolean(result.summary) });
   })();
 }

@@ -140,6 +140,26 @@ describe("real mode", () => {
     expect((await answerAsk(req, { client: bad })).provider).toBe("mock");
   });
 
+  it("sends the pointer image to Claude as a vision block", async () => {
+    delete process.env.MOCK_AI;
+    delete process.env.PERCEPTRON_API_KEY;
+    const create = vi.fn(async (..._a: unknown[]) => ({ content: [{ type: "text", text: "A red chart." }] }));
+    const client = { messages: { create } } as unknown as Anthropic;
+    const r = await answerAsk(ask("what does this chart show?", { pointer: { targetId: "x", image: "data:image/png;base64,iVBORw0KGgo=" } }), { client });
+    expect(r).toEqual({ answer: "A red chart.", provider: "claude" });
+    const arg = create.mock.calls[0]![0] as { messages: { content: unknown }[] };
+    expect(arg.messages.at(-1)!.content).toEqual([
+      { type: "image", source: { type: "base64", media_type: "image/png", data: "iVBORw0KGgo=" } },
+      { type: "text", text: "what does this chart show?" },
+    ]);
+  });
+
+  it("mock mode mentions the image node alt", () => {
+    const s = page({ id: "im", type: "image", src: "https://example.com/a.png", alt: "Sunset over the bay" });
+    const r = mockAnswer(ask("what is in this photo?", { screen: s, pointer: { targetId: "im", image: "data:image/jpeg;base64,/9j/4AAQ" } }));
+    expect(r).toContain("Sunset over the bay");
+  });
+
   it("system prompt forbids claiming edits", () => {
     expect(buildSystemPrompt(ask("hi"))).toMatch(/can NOT edit/);
   });

@@ -11,7 +11,8 @@ const state = {
   archiveChat: vi.fn(),
 };
 
-vi.mock("../store/workspaceStore", () => ({
+vi.mock("../store/workspaceStore", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../store/workspaceStore")>()),
   useWorkspaceStore: (selector: (s: typeof state) => unknown) => selector(state),
 }));
 

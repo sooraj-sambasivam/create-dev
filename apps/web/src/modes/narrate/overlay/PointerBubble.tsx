@@ -14,7 +14,8 @@ export type PointerPhase =
   | { kind: "listening"; targetId: string | null; label: string | null }
   | { kind: "understanding"; targetId: string | null; label: string | null }
   | { kind: "editing"; targetId: string | null; label: string | null }
-  | { kind: "done"; targetId: string | null; label: string | null; message?: string }
+  | { kind: "done"; targetId: string | null; label: string | null; message?: string; undoable?: boolean }
+  | { kind: "cancelled" }
   | { kind: "failed"; targetId: string | null; label: string | null; message: string }
   | { kind: "ask"; message: string }
   | { kind: "answer"; targetId: string | null; label: string | null; question: string; answer: string; suggestCode?: boolean };
@@ -25,19 +26,58 @@ const STATUS: Record<Exclude<PointerPhase["kind"], "idle">, string> = {
   editing: "Editing…",
   done: "Done",
   failed: "Couldn't do that",
+  cancelled: "Cancelled",
   ask: "",
   answer: "",
 };
 
 /** The text after the label: a status word, or the result message when there is one. */
-export function phaseText(phase: PointerPhase): string {
+export function phaseText(phase: PointerPhase, slow = false): string {
   if (phase.kind === "idle") return "";
+  if (slow && (phase.kind === "understanding" || phase.kind === "editing")) return STILL_WORKING;
   if (phase.kind === "ask") return phase.message;
   if (phase.kind === "failed" || phase.kind === "done") {
     const m = phase.message?.trim();
     return m ? `${STATUS[phase.kind]} · ${m.slice(0, 60)}` : STATUS[phase.kind];
   }
   return STATUS[phase.kind];
+}
+
+/** Understanding or Editing for this long shows "Still working…". */
+export const SLOW_MS = 1000;
+const STILL_WORKING = "Still working…";
+
+/** What a screen reader hears for a phase: the target, then the status or the answer. */
+export function phaseAnnouncement(phase: PointerPhase, label: string | null, slow = false): string {
+  if (phase.kind === "idle") return "";
+  if (phase.kind === "answer") return phase.answer;
+  if (phase.kind === "ask") return phase.message;
+  const status = phaseText(phase, slow).replace(/…$/, "");
+  return label && phase.kind !== "cancelled" ? `${label}. ${status}` : status;
+}
+
+/** Slow-state flag: true once the phase has sat in Understanding or Editing for SLOW_MS. */
+function useSlow(phase: PointerPhase): boolean {
+  const [slow, setSlow] = useState(false);
+  const working = phase.kind === "understanding" || phase.kind === "editing";
+  useEffect(() => {
+    if (!working) { setSlow(false); return; }
+    const t = setTimeout(() => setSlow(true), SLOW_MS);
+    return () => clearTimeout(t);
+  }, [working]);
+  return working && slow;
+}
+
+/**
+ * Visually hidden polite live region for the pointer. Keep it mounted (the bubble itself unmounts when idle),
+ * so a screen reader hears Listening, the target, Done and the answer text.
+ */
+export function PointerLiveRegion({ phase }: { phase: PointerPhase }) {
+  const screen = useScreenStore((st) => st.screen);
+  const slow = useSlow(phase);
+  const named = phase.kind !== "idle" && phase.kind !== "ask" && phase.kind !== "cancelled" && phase.label ? phase : null;
+  const label = named ? humanLabel(named.targetId ?? "", screen, named.label ?? "") : null;
+  return <div aria-live="polite" role="status" data-narrate-ignore className="sr-only">{phaseAnnouncement(phase, label, slow)}</div>;
 }
 
 const OFFSET = 14;
@@ -69,7 +109,8 @@ export function chipPosition(o: {
  * the command (Listening, Understanding, Editing, Done or Couldn't do that). The chip and the 2px outline
  * move through refs, so a pointer move never re-renders React. It never takes pointer events.
  */
-export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer; phase: PointerPhase; reduce: boolean | null }) {
+export function PointerBubble({ pointer, phase, reduce, onUndo }: { pointer: PagePointer; phase: PointerPhase; reduce: boolean | null; onUndo?: () => void }) {
+  const slow = useSlow(phase);
   const chip = useRef<HTMLDivElement>(null);
   const outline = useRef<HTMLDivElement>(null);
   const hoverEl = useRef<HoverHit["el"] | null>(null);
@@ -85,7 +126,7 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
 
   const place = () => {
     const p = phaseRef.current;
-    const bound = p.kind !== "idle" && p.kind !== "ask" && p.targetId ? document.querySelector<HTMLElement>(`[data-right-panel] [data-screen-root] [data-node-id="${CSS.escape(p.targetId)}"]`) : null;
+    const bound = p.kind !== "idle" && p.kind !== "ask" && p.kind !== "cancelled" && p.targetId ? document.querySelector<HTMLElement>(`[data-right-panel] [data-screen-root] [data-node-id="${CSS.escape(p.targetId)}"]`) : null;
     const pin = pinRef.current;
     // The pinned node is looked up by id, so an edit that re-rendered it does not lose the outline.
     const pinEl = pin ? document.querySelector<HTMLElement>(`[data-right-panel] [data-screen-root] [data-node-id="${CSS.escape(pin.id)}"]`) ?? (pin.el as HTMLElement | undefined) ?? null : null;
@@ -133,13 +174,13 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
   }, []);
 
   const active = phase.kind !== "idle";
-  const bound = phase.kind !== "idle" && phase.kind !== "ask" && phase.label ? phase : null;
+  const bound = phase.kind !== "idle" && phase.kind !== "ask" && phase.kind !== "cancelled" && phase.label ? phase : null;
   const label = bound
     ? humanLabel(bound.targetId ?? "", screen, bound.label ?? "")
     : pinned ? pinnedChip(humanLabel(pinned.id, screen, pinned.label))
     : hover ? humanLabel(hover.id, screen, hover.label) : null;
-  const status = phaseText(phase);
-  const show = Boolean(label) || phase.kind === "ask" || phase.kind === "answer";
+  const status = phaseText(phase, slow);
+  const show = Boolean(label) || phase.kind === "ask" || phase.kind === "answer" || phase.kind === "cancelled";
   const answer = phase.kind === "answer" ? phase : null;
   const action = "pointer-events-auto flex h-6 items-center gap-1 rounded-md px-2 text-[12px] text-ink-2 transition-colors duration-150 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
   const tone = phase.kind === "failed" ? "text-bad" : phase.kind === "done" ? "text-ok" : "text-ink-2";
@@ -160,6 +201,9 @@ export function PointerBubble({ pointer, phase, reduce }: { pointer: PagePointer
           <Crosshair size={12} strokeWidth={1.75} className={active ? "shrink-0 text-accent" : "shrink-0 text-ink-2"} />
           {phase.kind !== "ask" && label && <span className="min-w-0 truncate">{label}</span>}
           {status && <span className={`shrink-0 ${tone}`}>{phase.kind === "ask" || !label ? status : `· ${status}`}</span>}
+          {phase.kind === "done" && phase.undoable && onUndo && (
+            <button type="button" className={`${action} -mr-1.5`} onClick={onUndo}>Undo</button>
+          )}
         </div>
         {answer && (
           <div className="w-full rounded-xl border border-line bg-surface p-2.5 text-[12px] leading-5 text-ink shadow-soft">

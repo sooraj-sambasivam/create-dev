@@ -16,24 +16,27 @@ import { importElementRouter } from "./importElement/route";
 import { askRouter } from "./ask/route";
 import { formsRouter } from "./forms/route";
 import { DEFAULT_MODEL } from "./ai/claude";
+import { allowedOrigins, isAllowedOrigin } from "./middleware/origins";
+import { createRateLimiter } from "./middleware/rateLimit";
 
-const LOCAL_ORIGINS = [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
+/** Per-IP requests per minute on routes that spend vendor money. Each limiter is its own bucket. */
+export const COST_LIMITS: Record<string, number> = {
+  "/generate": 20,
+  "/generate-sketch": 20,
+  "/canvas-ops": 30,
+  "/demo": 10,
+  "/transcribe": 30,
+  "/route-intent": 120,
+  "/edit-node": 40,
+  "/upload": 30,
+};
 
-export function allowedOrigins(): string[] {
-  return (process.env.ALLOWED_ORIGINS ?? "")
-    .split(",")
-    .map((o) => o.trim().replace(/\/+$/, ""))
-    .filter(Boolean);
-}
-
-export function isAllowedOrigin(origin: string, path: string): boolean {
-  if (LOCAL_ORIGINS.some((re) => re.test(origin))) return true;
-  if (allowedOrigins().includes(origin)) return true;
-  return origin.startsWith("chrome-extension://") && path.startsWith("/api/import-element");
-}
+export { allowedOrigins, isAllowedOrigin };
 
 export function createApp(): express.Express {
   const app = express();
+  // Behind Vercel's proxy req.ip would be the proxy; trust one hop so the limiter keys on the client.
+  if (process.env.VERCEL) app.set("trust proxy", 1);
 
   app.use(
     cors((req, cb) => {
@@ -42,6 +45,10 @@ export function createApp(): express.Express {
       cb(null, { origin: origin ? isAllowedOrigin(origin, req.originalUrl ?? req.url ?? "") : false });
     }),
   );
+  // Cost routes: limit before any body parsing so refused requests stay cheap.
+  for (const [path, max] of Object.entries(COST_LIMITS)) {
+    app.post(`/api${path}`, createRateLimiter({ windowMs: 60_000, max }));
+  }
   // Routers that parse their own (larger) bodies mount before the global 3mb parser.
   app.use("/api", sketchRouter);
   app.use("/api", demoRouter);

@@ -50,8 +50,15 @@ export function AddMenu() {
     const close = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     window.addEventListener("pointerdown", close);
-    return () => window.removeEventListener("pointerdown", close);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", esc);
+    };
   }, [open]);
 
   const where = selectedType === "container" ? "inside the selected box" : selectedType ? "after the selected element" : "at the end of the page";
@@ -61,6 +68,8 @@ export function AddMenu() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
         className="flex h-8 items-center gap-1.5 rounded-lg bg-hover px-3 text-sm font-medium text-ink transition-colors duration-150 hover:bg-line"
       >
         <PlusIcon /> Add
@@ -68,6 +77,8 @@ export function AddMenu() {
       <AnimatePresence>
         {open && (
           <motion.div
+            role="menu"
+            aria-label="Add an element"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -78,6 +89,7 @@ export function AddMenu() {
               <button
                 key={item.type}
                 type="button"
+                role="menuitem"
                 onClick={() => {
                   addNode(item.type);
                   setOpen(false);

@@ -1,4 +1,5 @@
-import express, { Router } from "express";
+import { Router } from "express";
+import { bigJson } from "../middleware/bodyLimit";
 import { SketchRequestSchema } from "@create/shared";
 import { GenerationError } from "../ai/claude";
 import { generateSketchWithClaude } from "../sketch/claude";
@@ -7,7 +8,7 @@ import { buildMockSketchScreen } from "../sketch/mock";
 export const sketchRouter = Router();
 
 // The app-wide limit is 3mb; a canvas PNG is bigger, so raise it on this path only.
-sketchRouter.use("/generate-sketch", express.json({ limit: "10mb" }));
+sketchRouter.use("/generate-sketch", bigJson("The sketch is too large. Try a smaller canvas area."));
 
 sketchRouter.post("/generate-sketch", async (req, res) => {
   const parsed = SketchRequestSchema.safeParse(req.body);

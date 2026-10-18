@@ -8,12 +8,10 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { Archive, ChevronDown, ChevronRight, Folder, PanelLeft, Plus, SquarePen } from "lucide-react";
-import { useWorkspaceStore } from "../store/workspaceStore";
+import { Archive, ArchiveRestore, ChevronDown, ChevronRight, Folder, PanelLeft, Pencil, Plus, SquarePen, Trash2 } from "lucide-react";
+import { isBlankChat as isBlankWorkspaceChat, useWorkspaceStore } from "../store/workspaceStore";
 import { AvatarMenu } from "../onboarding";
 
-/** Title given to a chat that has not been named yet. Blank chats are not listed as rows. */
-const NEW_CHAT_TITLE = "New chat";
 const AVATAR_INITIALS = "SS";
 
 const ICON = { size: 18, strokeWidth: 1.75 } as const;
@@ -77,6 +75,8 @@ export interface SidebarChat {
   projectId?: string | null;
   archived?: boolean;
   messages?: readonly unknown[];
+  screen?: unknown;
+  history?: readonly unknown[];
 }
 
 /** Structural subset of the workspace project record the sidebar reads. */
@@ -89,7 +89,15 @@ export interface SidebarProject {
  * Left navigation on the grey shell. Reads chats, projects and the active chat from
  * `useWorkspaceStore` and calls its actions. Collapses to a 56px icon rail.
  */
-export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean } = {}) {
+export function Sidebar({
+  forceCollapsed = false,
+  onForcedExpandChange,
+}: {
+  /** The layout wants the rail because the window is narrow. */
+  forceCollapsed?: boolean;
+  /** Called with true when the user expands a forced rail, and false when they collapse it again. */
+  onForcedExpandChange?: (expanded: boolean) => void;
+} = {}) {
   const chats = useWorkspaceStore((state) => state.chats) as SidebarChat[];
   const projects = useWorkspaceStore((state) => state.projects) as SidebarProject[];
   const activeChatId = useWorkspaceStore((state) => state.activeChatId) as string | null;
@@ -97,6 +105,10 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
   const selectChat = useWorkspaceStore((state) => state.selectChat);
   const createProject = useWorkspaceStore((state) => state.createProject);
   const archiveChat = useWorkspaceStore((state) => state.archiveChat);
+  const renameChat = useWorkspaceStore((state) => state.renameChat);
+  const deleteChat = useWorkspaceStore((state) => state.deleteChat);
+  const renameProject = useWorkspaceStore((state) => state.renameProject);
+  const deleteProject = useWorkspaceStore((state) => state.deleteProject);
 
   const [collapsed, setCollapsed] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -123,7 +135,12 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
   const archived = chats.filter((chat) => chat.archived);
   // A blank, untitled chat is already represented by the "New chat" button, so it is not listed as a row.
   const isBlankChat = (chat: SidebarChat) =>
-    (chat.messages?.length ?? 0) === 0 && chat.title === NEW_CHAT_TITLE;
+    (chat.messages?.length ?? 0) === 0 &&
+    isBlankWorkspaceChat({
+      title: chat.title,
+      screen: (chat.screen ?? null) as never,
+      history: (chat.history ?? []) as never,
+    });
   const openChats = chats.filter((chat) => !chat.archived && !isBlankChat(chat));
   const unassigned = openChats.filter((chat) => !chat.projectId);
 
@@ -137,7 +154,18 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
   }
 
   const hasProjects = projects.length > 0;
-  const toggleLabel = collapsed ? "Expand sidebar" : "Collapse sidebar";
+  const railShown = collapsed || forceCollapsed;
+  const toggleLabel = railShown ? "Expand sidebar" : "Collapse sidebar";
+
+  function expand() {
+    setCollapsed(false);
+    if (forceCollapsed) onForcedExpandChange?.(true);
+  }
+
+  function collapse() {
+    setCollapsed(true);
+    onForcedExpandChange?.(false);
+  }
 
   function onHandlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
@@ -173,7 +201,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
     event.preventDefault();
   }
 
-  if (collapsed || forceCollapsed) {
+  if (railShown) {
     return (
       <aside
         aria-label="Sidebar"
@@ -181,7 +209,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
         className="flex h-full shrink-0 flex-col items-center bg-shell px-2 py-3"
       >
         <div className="flex h-[44px] items-center px-1">
-          <IconButton label={toggleLabel} onClick={() => setCollapsed(false)}>
+          <IconButton label={toggleLabel} onClick={expand}>
             <PanelLeft {...ICON} className="text-ink-2" />
           </IconButton>
         </div>
@@ -189,12 +217,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
           <IconButton label="New chat" onClick={() => newChat()}>
             <SquarePen {...ICON} className="text-ink-2" />
           </IconButton>
-          <IconButton
-            label="Projects"
-            onClick={() => {
-              setCollapsed(false);
-            }}
-          >
+          <IconButton label="Show projects" onClick={expand}>
             <Folder {...ICON} className="text-ink-2" />
           </IconButton>
         </div>
@@ -236,7 +259,7 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
         />
       </div>
       <div className="flex h-[44px] items-center px-1">
-        <IconButton label={toggleLabel} onClick={() => setCollapsed(true)}>
+        <IconButton label={toggleLabel} onClick={collapse}>
           <PanelLeft {...ICON} className="text-ink-2" />
         </IconButton>
       </div>
@@ -308,10 +331,13 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
             const rows = openChats.filter((chat) => chat.projectId === project.id);
             return (
               <li key={project.id} className="mt-2 list-none first:mt-0">
-                <div className="flex h-8 items-center gap-2 pr-2 pl-2 text-[14px] text-ink">
-                  <span className="w-4 shrink-0 text-right tabular-nums text-ink-2">{index + 1}.</span>
-                  <span className="truncate">{project.name}</span>
-                </div>
+                <ProjectRow
+                  project={project}
+                  index={index}
+                  onRename={renameProject}
+                  onDelete={deleteProject}
+                  onNewChat={(id) => newChat(id)}
+                />
                 {rows.length === 0 ? (
                   <p className="flex h-8 items-center pr-2 pl-8 text-[14px] text-ink-2">No chats yet</p>
                 ) : (
@@ -324,6 +350,8 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
                           nested
                           onSelect={selectChat}
                           onArchive={archiveChat}
+                          onRename={renameChat}
+                          onDelete={deleteChat}
                         />
                       </li>
                     ))}
@@ -345,6 +373,8 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
                     active={chat.id === activeChatId}
                     onSelect={selectChat}
                     onArchive={archiveChat}
+                    onRename={renameChat}
+                    onDelete={deleteChat}
                   />
                 </li>
               ))}
@@ -378,6 +408,9 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
                       nested
                       muted
                       onSelect={selectChat}
+                      onArchive={archiveChat}
+                      onRename={renameChat}
+                      onDelete={deleteChat}
                     />
                   </li>
                 ))}
@@ -394,6 +427,176 @@ export function Sidebar({ forceCollapsed = false }: { forceCollapsed?: boolean }
   );
 }
 
+const actionButton = `grid h-6 w-6 place-items-center rounded-md text-ink-2 transition-colors duration-150 hover:bg-tray hover:text-ink ${focusRing}`;
+const revealActions =
+  "absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5 rounded-lg bg-shell opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100";
+
+/** Inline text field used to rename a row. Enter saves, Escape or blur cancels. */
+function RenameField({
+  initial,
+  label,
+  className,
+  onSubmit,
+  onCancel,
+}: {
+  initial: string;
+  label: string;
+  className: string;
+  onSubmit: (value: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(initial);
+  const done = useRef(false);
+  const finish = (save: boolean) => {
+    if (done.current) return;
+    done.current = true;
+    const trimmed = value.trim();
+    if (save && trimmed && trimmed !== initial) onSubmit(trimmed);
+    else onCancel();
+  };
+  return (
+    <input
+      autoFocus
+      value={value}
+      aria-label={label}
+      onChange={(event) => setValue(event.target.value)}
+      onFocus={(event) => event.currentTarget.select()}
+      onBlur={() => finish(true)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          finish(true);
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          finish(false);
+        }
+      }}
+      className={`h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-[14px] text-ink outline-none focus:border-accent ${className}`}
+    />
+  );
+}
+
+/** Inline two-step delete: the row asks once, in words, before anything is removed. */
+function ConfirmDelete({
+  what,
+  nested,
+  onConfirm,
+  onCancel,
+}: {
+  what: string;
+  nested: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={`Delete ${what}?`}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          onCancel();
+        }
+      }}
+      className={`flex h-8 items-center gap-1 pr-1 text-[14px] ${nested ? "pl-8" : "pl-2"}`}
+    >
+      <span className="min-w-0 flex-1 truncate text-ink-2">Delete?</span>
+      <button
+        type="button"
+        autoFocus
+        onClick={onConfirm}
+        className={`h-6 rounded-md px-2 text-[12px] text-ink transition-colors duration-150 hover:bg-tray ${focusRing}`}
+      >
+        Delete
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        className={`h-6 rounded-md px-2 text-[12px] text-ink-2 transition-colors duration-150 hover:bg-tray ${focusRing}`}
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+function ProjectRow({
+  project,
+  index,
+  onRename,
+  onDelete,
+  onNewChat,
+}: {
+  project: SidebarProject;
+  index: number;
+  onRename: (id: string, name: string) => void;
+  onDelete: (id: string) => void;
+  onNewChat: (id: string) => void;
+}) {
+  const [mode, setMode] = useState<"view" | "rename" | "delete">("view");
+  if (mode === "delete") {
+    return (
+      <ConfirmDelete
+        what={project.name}
+        nested={false}
+        onConfirm={() => onDelete(project.id)}
+        onCancel={() => setMode("view")}
+      />
+    );
+  }
+  return (
+    <div className="group relative flex h-8 items-center gap-2 pr-2 pl-2 text-[14px] text-ink">
+      <span className="w-4 shrink-0 text-right tabular-nums text-ink-2">{index + 1}.</span>
+      {mode === "rename" ? (
+        <RenameField
+          initial={project.name}
+          label={`Rename project ${project.name}`}
+          className=""
+          onSubmit={(name) => {
+            onRename(project.id, name);
+            setMode("view");
+          }}
+          onCancel={() => setMode("view")}
+        />
+      ) : (
+        <>
+          <span className="truncate" title={project.name}>{project.name}</span>
+          <div className={revealActions}>
+            <button
+              type="button"
+              onClick={() => onNewChat(project.id)}
+              aria-label={`New chat in ${project.name}`}
+              title="New chat here"
+              className={actionButton}
+            >
+              <SquarePen size={16} strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("rename")}
+              aria-label={`Rename project ${project.name}`}
+              title="Rename"
+              className={actionButton}
+            >
+              <Pencil size={16} strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("delete")}
+              aria-label={`Delete project ${project.name}`}
+              title="Delete project"
+              className={actionButton}
+            >
+              <Trash2 size={16} strokeWidth={1.75} />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ChatRow({
   chat,
   active,
@@ -401,6 +604,8 @@ function ChatRow({
   muted = false,
   onSelect,
   onArchive,
+  onRename,
+  onDelete,
 }: {
   chat: SidebarChat;
   active: boolean;
@@ -408,7 +613,37 @@ function ChatRow({
   muted?: boolean;
   onSelect: (id: string) => void;
   onArchive?: (id: string) => void;
+  onRename?: (id: string, title: string) => void;
+  onDelete?: (id: string) => void;
 }) {
+  const [mode, setMode] = useState<"view" | "rename" | "delete">("view");
+  if (mode === "delete" && onDelete) {
+    return (
+      <ConfirmDelete
+        what={chat.title}
+        nested={nested}
+        onConfirm={() => onDelete(chat.id)}
+        onCancel={() => setMode("view")}
+      />
+    );
+  }
+  if (mode === "rename" && onRename) {
+    return (
+      <div className={`flex items-center pr-1 ${nested ? "pl-6" : "pl-0"}`}>
+        <RenameField
+          initial={chat.title}
+          label={`Rename ${chat.title}`}
+          className=""
+          onSubmit={(title) => {
+            onRename(chat.id, title);
+            setMode("view");
+          }}
+          onCancel={() => setMode("view")}
+        />
+      </div>
+    );
+  }
+  const hasActions = Boolean(onArchive || onRename || onDelete);
   return (
     <div className="group relative flex items-center">
       <button
@@ -418,7 +653,7 @@ function ChatRow({
         title={chat.title}
         className={`flex h-8 min-w-0 flex-1 items-center truncate rounded-lg text-left text-[14px] transition-colors duration-150 ${focusRing} ${
           nested ? "pl-8" : "pl-2"
-        } ${onArchive ? "pr-2 group-hover:pr-8 group-focus-within:pr-8" : "pr-2"} ${
+        } ${hasActions ? "pr-2 group-hover:pr-[88px] group-focus-within:pr-[88px]" : "pr-2"} ${
           active
             ? "bg-hover text-ink"
             : `hover:bg-hover/60 ${muted ? "text-ink-2" : "text-ink-2"}`
@@ -426,16 +661,42 @@ function ChatRow({
       >
         <span className="truncate">{chat.title}</span>
       </button>
-      {onArchive ? (
-        <button
-          type="button"
-          onClick={() => onArchive(chat.id)}
-          aria-label={`Archive ${chat.title}`}
-          title="Archive"
-          className={`absolute top-1/2 right-1 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-ink-2 opacity-0 transition-[background-color,opacity] duration-150 hover:bg-tray group-hover:opacity-100 focus-visible:opacity-100 ${focusRing}`}
-        >
-          <Archive size={16} strokeWidth={1.75} />
-        </button>
+      {hasActions ? (
+        <div className={revealActions}>
+          {onRename ? (
+            <button
+              type="button"
+              onClick={() => setMode("rename")}
+              aria-label={`Rename ${chat.title}`}
+              title="Rename"
+              className={actionButton}
+            >
+              <Pencil size={16} strokeWidth={1.75} />
+            </button>
+          ) : null}
+          {onArchive ? (
+            <button
+              type="button"
+              onClick={() => onArchive(chat.id)}
+              aria-label={`${chat.archived ? "Unarchive" : "Archive"} ${chat.title}`}
+              title={chat.archived ? "Unarchive" : "Archive"}
+              className={actionButton}
+            >
+              {chat.archived ? <ArchiveRestore size={16} strokeWidth={1.75} /> : <Archive size={16} strokeWidth={1.75} />}
+            </button>
+          ) : null}
+          {onDelete ? (
+            <button
+              type="button"
+              onClick={() => setMode("delete")}
+              aria-label={`Delete ${chat.title}`}
+              title="Delete chat"
+              className={actionButton}
+            >
+              <Trash2 size={16} strokeWidth={1.75} />
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

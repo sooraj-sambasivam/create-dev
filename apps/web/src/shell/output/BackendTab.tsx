@@ -223,7 +223,7 @@ export function BackendTab() {
           {dev && (
             <button className={btn} onClick={exportCode} disabled={exporting}>
               <Download size={16} strokeWidth={1.75} />
-              {exporting ? "Exporting…" : "Export code"}
+              {exporting ? "Exporting…" : "Export HTML"}
             </button>
           )}
         </div>

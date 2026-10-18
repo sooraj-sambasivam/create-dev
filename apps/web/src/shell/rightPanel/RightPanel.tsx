@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, type KeyboardEvent } from "react";
+import { Suspense, lazy, useEffect, useRef, type KeyboardEvent } from "react";
 import { X } from "lucide-react";
 const Inspector = lazy(() => import("../../editor/Inspector").then((m) => ({ default: m.Inspector })));
 import { MotionControls } from "../../motion";
@@ -61,11 +61,10 @@ export function RightPanel() {
   const editMode = useScreenStore((s) => s.editMode);
   const hasScreen = useScreenStore((s) => s.screen !== null);
   const hasSelection = useScreenStore((s) => s.selectedId !== null);
-  const runLogRaw = useWorkspaceStore((s) => s.runLog);
-  const runLog = useMemo(() => runLogRaw.map((e) => ({ ...e, at: new Date(e.at).toISOString() })), [runLogRaw]);
 
-  const canInspect = editMode && hasScreen && hasSelection;
-  const inspectHint = !hasScreen ? "Nothing to inspect yet" : !editMode ? "Turn on Edit to inspect" : "Select an element to inspect";
+  // With nothing selected, Inspect shows the page settings (title, theme, colour, font, files).
+  const canInspect = editMode && hasScreen;
+  const inspectHint = !hasScreen ? "Nothing to inspect yet" : "Turn on Edit to inspect";
   // A stored "inspect" tab with nothing to inspect shows Output instead.
   const active: RightPanelTab = tab === "inspect" && !canInspect ? "output" : tab;
   const enabled = RIGHT_PANEL_TABS.filter((t) => t !== "inspect" || canInspect);
@@ -142,7 +141,7 @@ export function RightPanel() {
                   }`}
                 >
                   {LABELS[t]}
-                  {t === "inspect" && canInspect && !selected && <span aria-label="Element selected" className="ml-1.5 inline-block size-1.5 rounded-full bg-accent align-middle" />}
+                  {t === "inspect" && canInspect && hasSelection && !selected && <span aria-label="Element selected" className="ml-1.5 inline-block size-1.5 rounded-full bg-accent align-middle" />}
                 </button>
               </span>
             );
@@ -160,19 +159,23 @@ export function RightPanel() {
         </button>
       </header>
 
-      <div id="rp-body" role="tabpanel" aria-labelledby={`rp-tab-${active}`} className={`min-h-0 flex-1 ${active === "output" ? "flex flex-col overflow-hidden" : "overflow-y-auto"}`}>
+      <div id="rp-body" role="tabpanel" aria-labelledby={`rp-tab-${active}`} className="flex min-h-0 flex-1 flex-col">
+        {/* Output stays mounted behind the other tabs so the page keeps its state and Export HTML works from Backend. */}
+        <div className={active === "output" ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "hidden"}>
+          <OutputTab />
+        </div>
         {active === "inspect" ? (
-          <div data-right-panel-inspect className="px-4 py-3">
+          <div data-right-panel-inspect className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
             <Suspense fallback={null}>
               <Inspector />
             </Suspense>
             {hasSelection && <MotionControls />}
           </div>
         ) : active === "backend" ? (
-          <BackendTab />
-        ) : (
-          <OutputTab runLog={runLog} />
-        )}
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <BackendTab />
+          </div>
+        ) : null}
       </div>
     </aside>
   );

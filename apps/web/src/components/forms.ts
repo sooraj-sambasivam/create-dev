@@ -91,8 +91,18 @@ export async function submitForm(appId: string, body: FormSubmission): Promise<v
   if (!res.ok) throw new Error(`Couldn't send (${res.status})`);
 }
 
+/** Owner read token for an app; the server only issues it to the web app's own origin. */
+export async function fetchFormsToken(appId: string, signal?: AbortSignal): Promise<string> {
+  const res = await fetch(`/api/forms/${encodeURIComponent(appId)}/token`, { method: "POST", signal });
+  if (!res.ok) throw new Error(`forms token ${res.status}`);
+  const data = (await res.json()) as { token?: unknown };
+  if (typeof data.token !== "string" || !data.token) throw new Error("forms token missing");
+  return data.token;
+}
+
 export async function listSubmissions(appId: string, signal?: AbortSignal): Promise<StoredSubmission[]> {
-  const res = await fetch(`/api/forms/${encodeURIComponent(appId)}`, { signal });
+  const token = await fetchFormsToken(appId, signal);
+  const res = await fetch(`/api/forms/${encodeURIComponent(appId)}`, { signal, headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error(`forms ${res.status}`);
   const data = (await res.json()) as StoredSubmission[] | { submissions: StoredSubmission[] };
   return Array.isArray(data) ? data : data.submissions ?? [];

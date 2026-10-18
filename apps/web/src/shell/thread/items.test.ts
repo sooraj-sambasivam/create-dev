@@ -32,6 +32,15 @@ describe("deriveItems", () => {
     expect(items[items.length - 1]).toEqual({ kind: "error", key: "error", message: "boom", retryPrompt: "x" });
     expect(deriveItems({ history: [], status: "error", error: null })[0]).toMatchObject({ message: "Something went wrong.", retryPrompt: null });
   });
+  it("shows the attempted prompt as the user bubble and retries exactly it", () => {
+    const loading = deriveItems({ history: [], status: "loading", error: null, lastAttempt: "a pricing page" });
+    expect(loading.map((i) => i.kind)).toEqual(["user", "building"]);
+    const failed = deriveItems({ history: [{ prompt: "old", summary: "ok" }], status: "error", error: "x", lastAttempt: "new one" });
+    expect(failed.map((i) => i.kind)).toEqual(["user", "assistant", "user", "error"]);
+    expect(failed[3]).toMatchObject({ retryPrompt: "new one" });
+    const first = deriveItems({ history: [], status: "error", error: "x", lastAttempt: "first" });
+    expect(first[1]).toMatchObject({ retryPrompt: "first" });
+  });
   it("derives answer items with element label, switch-to-code and routed note", () => {
     const items = deriveItems({
       history: [

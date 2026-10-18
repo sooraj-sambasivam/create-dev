@@ -188,11 +188,31 @@ describe("chats", () => {
 
   it("deleting the active chat does not write its page back", () => {
     const keepId = ws().activeChatId!;
+    ws().renameChat(keepId, "Keep");
     const doomedId = ws().newChat();
     live().setScreen(screen("Doomed page"));
     ws().deleteChat(doomedId);
     expect(ws().chats.find((c) => c.id === keepId)?.screen).toBeNull();
     expect(JSON.stringify(ws().chats)).not.toContain("Doomed page");
+  });
+
+  it("newChat reuses an already-blank active chat instead of piling up", () => {
+    const first = ws().activeChatId!;
+    const count = ws().chats.length;
+    expect(ws().newChat()).toBe(first);
+    expect(ws().chats).toHaveLength(count);
+  });
+
+  it("renames and deletes projects, leaving their chats unassigned", () => {
+    const chatId = ws().activeChatId!;
+    const pid = ws().createProject("Site", chatId);
+    ws().renameProject(pid, "  Website ");
+    expect(ws().projects.find((p) => p.id === pid)?.name).toBe("Website");
+    ws().renameProject(pid, "   ");
+    expect(ws().projects.find((p) => p.id === pid)?.name).toBe("Website");
+    ws().deleteProject(pid);
+    expect(ws().projects).toHaveLength(0);
+    expect(ws().chats.find((c) => c.id === chatId)?.projectId).toBeNull();
   });
 
   it("deleting the last chat creates a blank one", () => {
@@ -279,6 +299,7 @@ describe("run log", () => {
 
 describe("persistence", () => {
   it("writes workspace state under the storage key without the live-only fields", () => {
+    ws().renameChat(ws().activeChatId!, "Used");
     ws().newChat();
     ws().log("k", "d");
     const stored = JSON.parse(memory.getItem(WORKSPACE_STORAGE_KEY)!);
@@ -408,6 +429,7 @@ describe("two tabs", () => {
 
   it("does not bring back a chat this tab deleted", () => {
     const mineId = ws().activeChatId!;
+    ws().renameChat(mineId, "Mine");
     const doomedId = ws().newChat();
     ws().selectChat(mineId);
     ws().deleteChat(doomedId);

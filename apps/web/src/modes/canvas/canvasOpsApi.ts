@@ -1,4 +1,5 @@
 import { ScreenOpsSchema, type CanvasOpsRequest, type CanvasOpsResponse } from "@create/shared";
+import { fitDataUrl } from "../../lib/image";
 
 async function readError(res: Response, fallback: string): Promise<string> {
   try {
@@ -14,7 +15,7 @@ export async function requestCanvasOps(req: CanvasOpsRequest, signal?: AbortSign
   const res = await fetch("/api/canvas-ops", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
+    body: JSON.stringify({ ...req, image: await fitDataUrl(req.image) }),
     signal,
   });
   if (!res.ok) throw new Error(await readError(res, `Canvas edit failed (${res.status})`));

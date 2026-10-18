@@ -264,7 +264,9 @@ try {
     const btn = await center('[data-right-panel] [data-node-id="e2e-b"]');
     await clickAt(btn.x, btn.y);
     await sleep(1000); await shot("08-form-submitted");
-    const stored = await fetch(`http://localhost:3001/api/forms/${encodeURIComponent(appId)}`).then((r) => r.json()).catch(() => []);
+    const formsUrl = `http://localhost:3001/api/forms/${encodeURIComponent(appId)}`;
+    const { token } = await fetch(`${formsUrl}/token`, { method: "POST", headers: { Origin: new URL(BASE).origin } }).then((r) => r.json()).catch(() => ({}));
+    const stored = await fetch(formsUrl, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()).catch(() => []);
     console.log(`  appId=${appId} stored=${Array.isArray(stored) ? stored.length : "?"}`);
     if (!Array.isArray(stored) || !stored.some((r) => JSON.stringify(r.fields).includes("e2e@example.com"))) return "submission not stored on the server";
     await ev(`[...document.querySelectorAll('[role="tab"]')].find(e=>e.textContent.trim()==='Backend')?.click()`);

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { ArrowUp, AtSign, AudioWaveform, Crosshair, Laptop, Loader2, Mic, PanelsTopLeft, Square } from "lucide-react";
+import { ArrowUp, AtSign, AudioWaveform, Crosshair, Loader2, Mic, PanelsTopLeft, Square } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useScreenStore } from "../../store/screenStore";
 import { useWorkMode } from "../../store/modeStore";
@@ -20,7 +20,7 @@ import {
   voiceActive,
   voiceReducer,
 } from "./voice";
-import { FilesMenu, ConnectorsMenu, ModelMenu, PermissionsMenu, PluginsMenu, ProjectMenu } from "./menus";
+import { FilesMenu, ProjectMenu } from "./menus";
 import { menuItemClass } from "./Popover";
 import { MAX_FIELD_PX, applyMention, filterMentions, pickFanDir, type FanDir, mentionQuery, isStoreBusy, placeholderFor, routeFor, defaultModeFor, routesToSelection, type WorkMode } from "./logic";
 import { selectedLabel } from "./selection";
@@ -74,7 +74,6 @@ export function Composer() {
   const [mentionDismissed, setMentionDismissed] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [sharing, setSharing] = useState(false);
 
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -172,10 +171,12 @@ export function Composer() {
     // Measure once per open (not while open) so the arc never flips under the pointer.
     if (!fanOpen) {
       const go = goRef.current?.getBoundingClientRect();
-      const card = goRef.current?.closest("form")?.getBoundingClientRect();
+      // The arc may leave the composer; only the right panel (when open) or the window edge clips it.
+      const panel = document.querySelector("[data-right-panel]")?.getBoundingClientRect();
       if (go) {
         const cx = go.left + go.width / 2;
-        setFanDir(pickFanDir(cx, Math.min(window.innerWidth, card?.right ?? window.innerWidth), Math.max(0, card?.left ?? 0)));
+        const right = panel && panel.width > 0 && panel.left > cx ? panel.left : window.innerWidth;
+        setFanDir(pickFanDir(cx, right, 0));
       }
     }
     setFanOpen(true);
@@ -433,10 +434,7 @@ export function Composer() {
         />
         <div className="relative mt-11 flex h-8 items-center gap-1">
           <div className={`flex min-w-0 flex-1 items-center gap-1 ${barOn ? "invisible" : ""}`} aria-hidden={barOn || undefined}>
-            <ConnectorsMenu />
-            <PermissionsMenu />
             <div className="min-w-0 flex-1" />
-            <div className="mr-2"><ModelMenu /></div>
           </div>
           <AnimatePresence>
             {barOn ? (
@@ -519,7 +517,7 @@ export function Composer() {
               items={[
                 {
                   key: "mic",
-                  label: "Mic",
+                  label: "Speak",
                   icon: Mic,
                   active: recording,
                   // Unsupported stays clickable (shows the notice); denied or busy is truly disabled.
@@ -529,8 +527,8 @@ export function Composer() {
                   onClick: () => void onMic(),
                   testId: "mic-button",
                 },
-                { key: "canvas", label: "Canvas", icon: PanelsTopLeft, active: mode === "canvas", onClick: () => pickMode("canvas"), testId: "canvas-button" },
-                { key: "narrate", label: "Narrate", icon: AudioWaveform, active: mode === "narrate", onClick: () => pickMode("narrate"), testId: "narrate-button" },
+                { key: "canvas", label: "Sketch", icon: PanelsTopLeft, active: mode === "canvas", onClick: () => pickMode("canvas"), testId: "canvas-button" },
+                { key: "narrate", label: "Point", icon: AudioWaveform, active: mode === "narrate", onClick: () => pickMode("narrate"), testId: "narrate-button" },
               ]}
             />
           </div>
@@ -553,19 +551,7 @@ export function Composer() {
         <div className="flex items-center gap-1.5">
           <ProjectMenu />
           <FilesMenu assets={assets} inputRef={fileRef} uploading={uploading} error={uploadError} />
-          <PluginsMenu />
         </div>
-        <div className="flex-1" />
-        <button
-          type="button"
-          aria-label="Share screen"
-          aria-pressed={sharing}
-          title={sharing ? "Stop sharing screen" : "Share screen"}
-          onClick={() => setSharing((s) => !s)}
-          className={`grid h-8 w-8 place-items-center rounded-lg text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink)] focus-visible:outline-none ${sharing ? "bg-[var(--c-hover)] text-[var(--c-ink)]" : ""}`}
-        >
-          <Laptop size={16} strokeWidth={1.75} />
-        </button>
       </div>
     </div>
   );

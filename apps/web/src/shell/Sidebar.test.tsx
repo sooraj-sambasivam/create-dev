@@ -11,7 +11,8 @@ const state = {
   archiveChat: vi.fn(),
 };
 
-vi.mock("../store/workspaceStore", () => ({
+vi.mock("../store/workspaceStore", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../store/workspaceStore")>()),
   useWorkspaceStore: (selector: (s: typeof state) => unknown) => selector(state),
 }));
 
@@ -63,13 +64,14 @@ describe("Sidebar", () => {
 
   it("hides blank untitled chats and marks the active chat", () => {
     state.chats = [
-      { id: "blank", title: "New chat", messages: [] },
+      { id: "blank", title: "Untitled chat", messages: [] },
       { id: "c1", title: "Real", messages: [{}] },
     ];
     state.activeChatId = "c1";
     const html = render();
     expect(html).toContain("Real");
     expect(html).toContain('aria-current="true"');
+    expect(html).not.toContain("Untitled chat");
     expect(html.match(/New chat/g)?.length).toBe(1);
   });
 

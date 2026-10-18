@@ -21,6 +21,7 @@ import {
 } from "@create/shared";
 import * as api from "../lib/api";
 import { askHistory } from "./askHistory";
+import { friendlyError } from "../shell/thread/friendlyError";
 
 export type Mode = "text" | "voice" | "canvas" | "narrate";
 export type Status = "idle" | "loading" | "transcribing" | "error";
@@ -50,7 +51,7 @@ export function elementLabel(node: Node): string {
 }
 
 /** Keep the AI's edited element on screen instead of letting the view jump. */
-function revealNode(id: string | null | undefined) {
+export function revealNode(id: string | null | undefined) {
   if (!id || typeof requestAnimationFrame === "undefined") return;
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
@@ -131,6 +132,8 @@ export function cancelInFlight(): void {
   const p = pendingEdit;
   pendingEdit = null;
   p?.resolve({ error: "Cancelled." });
+  // A chat switch or reset must not carry the old attempt into the new thread.
+  useScreenStore.setState({ lastAttempt: null });
 }
 
 interface ScreenState {
@@ -141,6 +144,8 @@ interface ScreenState {
   history: HistoryEntry[];
   /** A Chat-mode question is waiting for its answer. */
   asking: boolean;
+  /** The prompt of the build request in flight or just failed; shown as the user bubble and re-run by Retry. Not persisted. */
+  lastAttempt: string | null;
 
   /** Editor state. Any mode can read `selectedId` (e.g. Narrate: "put a button here"). */
   editMode: boolean;
@@ -313,6 +318,7 @@ export const useScreenStore = create<ScreenState>()(
     error: null,
     history: [],
     asking: false,
+    lastAttempt: null,
 
     editMode: true,
     selectedId: null,
@@ -334,12 +340,12 @@ export const useScreenStore = create<ScreenState>()(
       }));
     },
 
-    setStatus: (status, error = null) => set({ status, error }),
+    setStatus: (status, error = null) => set({ status, error, lastAttempt: null }),
 
     generate: async (prompt) => {
       const trimmed = prompt.trim();
       if (!trimmed || get().status === "loading") return;
-      set({ status: "loading", error: null, editingId: null, lastSummary: null });
+      set({ status: "loading", error: null, editingId: null, lastSummary: null, lastAttempt: trimmed });
       const mine = epoch;
       const ctrl = new AbortController();
       genAbort = ctrl;
@@ -363,6 +369,7 @@ export const useScreenStore = create<ScreenState>()(
           past: before ? [...s.past.slice(-(UNDO_LIMIT - 1)), before] : s.past,
           future: [],
           status: "idle",
+          lastAttempt: null,
           lastSummary: result.summary,
           history: [...s.history, { prompt: trimmed, summary: result.summary, kind: "page" }],
           selectedId: s.selectedId && findNode(result.screen, s.selectedId) ? s.selectedId : null,
@@ -373,7 +380,7 @@ export const useScreenStore = create<ScreenState>()(
         set({
           screen: before,
           status: "error",
-          error: err instanceof Error ? err.message : "Something went wrong.",
+          error: friendlyError(err),
         });
       } finally {
         if (genAbort === ctrl) genAbort = null;
@@ -389,6 +396,7 @@ export const useScreenStore = create<ScreenState>()(
         error: null,
         history: [],
         asking: false,
+        lastAttempt: null,
         selectedId: null,
         editingId: null,
         aiBusyId: null,
@@ -415,9 +423,9 @@ export const useScreenStore = create<ScreenState>()(
           ...(target ? { pointer: { targetId: target.id, label } } : {}),
           history: turns,
         });
-        entry = { prompt: q, summary: res.answer, kind: "answer", ...(res.suggestCode ? { suggestCode: true } : {}), ...(opts.routed ? { routed: true } : {}), ...(label ? { label } : {}) };
+        entry = { prompt: q, summary: res.answer, kind: "answer", ...(res.suggestCode ? { suggestCode: true } : {}), ...(opts.routed ? { routed: true } : {}), ...(label ? { label } : {}), ...(target ? { nodeId: target.id } : {}) };
       } catch (err) {
-        entry = { prompt: q, summary: `I couldn't answer that. ${err instanceof Error ? err.message : "Try again."}`, kind: "answer", ...(label ? { label } : {}) };
+        entry = { prompt: q, summary: `I couldn't answer that. ${err instanceof Error ? err.message : "Try again."}`, kind: "answer", ...(label ? { label } : {}), ...(target ? { nodeId: target.id } : {}) };
       }
       // A chat switch or reset while waiting: the answer belongs to another thread.
       if (epoch !== mine) return;

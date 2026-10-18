@@ -338,7 +338,7 @@ describe("share store choice and limits", () => {
       expect(statuses[SHARE_CREATE_PER_MINUTE]).toBe(429);
       const last = await postTo(base, { screen });
       expect(last.headers.get("retry-after")).toBeTruthy();
-      expect(await last.json()).toEqual({ error: expect.any(String) });
+      expect(await last.json()).toEqual({ error: expect.any(String), retryAfterSec: expect.any(Number) });
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }

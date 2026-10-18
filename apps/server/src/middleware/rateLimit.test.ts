@@ -41,7 +41,7 @@ describe("createRateLimiter", () => {
     const blocked = run(limiter, "1.2.3.4");
     expect(blocked.next).not.toHaveBeenCalled();
     expect(blocked.res.statusCode).toBe(429);
-    expect(blocked.res.body).toEqual({ error: expect.any(String) });
+    expect(blocked.res.body).toEqual({ error: expect.any(String), retryAfterSec: expect.any(Number) });
     expect(blocked.res.headers["Retry-After"]).toBe("60");
   });
 

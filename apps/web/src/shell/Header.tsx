@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Copy, Menu, Monitor, Moon, Share, Sun, X } from "lucide-react";
+import { Contrast, Copy, Moon, PanelRight, Share, Sun, X } from "lucide-react";
 import { useScreenStore } from "../store/screenStore";
 import { ChatMenu, type ChatProject } from "./ChatMenu";
 import { THEME_LABEL, useThemeStore, type ThemePreference } from "./theme";
@@ -39,7 +39,7 @@ export interface WorkspaceActions {
 export type ShareOutcome = boolean | { url: string };
 
 export interface HeaderProps {
-  /** Left-side title: the screen's title, or the chat title when there is none. */
+  /** Left-side title: the chat title, so a rename shows here at once. */
   pageTitle: string;
   chat: HeaderChat;
   projects: ChatProject[];
@@ -163,7 +163,8 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
         }}
         disabled={busy}
         aria-busy={busy}
-        title="Share"
+        title="Copy share link"
+        aria-label={state.kind === "idle" ? "Copy share link" : undefined}
         className={`${ghostButton} gap-1.5 px-2 text-[14px]`}
       >
         <Share size={18} strokeWidth={1.75} aria-hidden="true" />
@@ -221,7 +222,7 @@ export function ShareButton({ onShare }: { onShare?: () => ShareOutcome | Promis
 const THEME_ICON: Record<ThemePreference, typeof Sun> = {
   light: Sun,
   dark: Moon,
-  system: Monitor,
+  system: Contrast,
 };
 
 /** Header control that cycles the shell theme light, dark, system. Persisted by theme.ts. */
@@ -237,9 +238,10 @@ export function ThemeToggle() {
       onClick={cycleTheme}
       aria-label={label}
       title={`${label}. Click to switch`}
-      className={`${ghostButton} w-8`}
+      className={`${ghostButton} gap-1.5 px-2 text-[14px]`}
     >
       <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
+      <span className="hidden sm:inline">{THEME_LABEL[theme]}</span>
     </button>
   );
 }
@@ -270,12 +272,12 @@ export function Header({ pageTitle, chat, projects, outputOpen, actions, onShare
         <button
           type="button"
           onClick={actions.toggleOutput}
-          aria-label="Output"
+          aria-label={outputOpen ? "Hide output panel" : "Show output panel"}
           aria-pressed={outputOpen}
-          title="Output"
+          title={outputOpen ? "Hide output panel" : "Show output panel"}
           className={`${ghostButton} w-8 ${outputOpen ? "bg-hover text-ink" : ""}`}
         >
-          <Menu size={18} strokeWidth={1.75} aria-hidden="true" />
+          <PanelRight size={18} strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>
     </header>
