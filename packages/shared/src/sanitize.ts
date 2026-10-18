@@ -29,10 +29,11 @@ function fixIcon(value: unknown): string | null {
 const routeKey = (r: string) => r.split("?")[0].replace(/\/+$/, "") || "/";
 
 /**
- * `routes` are the backend routes that exist; `data` elements pointing anywhere else are dropped.
- * Without routes, every data element is dropped (there is nothing to read from).
+ * `routes` are the backend routes that exist; `data` elements pointing anywhere else are dropped
+ * (an empty list drops them all). Leave it undefined to keep data elements as they are, e.g. for
+ * callers that only refine a page the user already built.
  */
-export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new Set<string>(), routes: readonly string[] = []): Json[] {
+export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new Set<string>(), routes?: readonly string[]): Json[] {
   if (!Array.isArray(input)) return [];
   const out: Json[] = [];
   for (const raw of input) {
@@ -46,7 +47,7 @@ export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new 
 
     if (type === "data") {
       const route = isObj(node.source) && typeof node.source.route === "string" ? routeKey(node.source.route) : null;
-      if (!route || !routes.some((r) => routeKey(r) === route)) {
+      if (!route || (routes && !routes.some((r) => routeKey(r) === route))) {
         notes.push("Skipped a live-data element because no matching backend route exists.");
         continue;
       }
@@ -106,7 +107,7 @@ export function sanitizeNodes(input: unknown, notes: string[] = [], taken = new 
   return out;
 }
 
-export function sanitizeScreen(input: unknown, notes: string[] = [], routes: readonly string[] = []): unknown {
+export function sanitizeScreen(input: unknown, notes: string[] = [], routes?: readonly string[]): unknown {
   if (!isObj(input)) return input;
   const screen: Json = { ...input };
   if (screen.accent != null && !(typeof screen.accent === "string" && COLOR_RE.test(screen.accent))) delete screen.accent;
