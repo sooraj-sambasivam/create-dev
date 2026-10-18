@@ -7,3 +7,4 @@ dist/
 .cache/
 apps/server/.data
 apps/web/dist
+sandboxes/

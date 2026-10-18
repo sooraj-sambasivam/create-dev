@@ -10,6 +10,7 @@ import { demoRouter } from "./routes/demo";
 import { voiceRouter } from "./routes/voice";
 import { intentRouter } from "./routes/intent";
 import { shareRouter } from "./routes/share";
+import { sandboxRouter } from "./sandbox/router";
 import { DEFAULT_MODEL } from "./ai/claude";
 
 const app = express();
@@ -39,6 +40,9 @@ app.use("/api", imageRouter);
 app.use("/api", assetsRouter);
 app.use("/api", voiceRouter);
 app.use("/api", intentRouter);
+// AI-generated Node backends only. /api/u/:sessionId/* is the session API;
+// /api/p/:slug/* proxies published_<slug>. Localhost CORS above already applies.
+app.use("/api", sandboxRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = err instanceof Error ? err.message : "Unknown error";
