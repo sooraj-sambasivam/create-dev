@@ -169,11 +169,18 @@ export const useScreenStore = create<ScreenState>()(
       const trimmed = prompt.trim();
       if (!trimmed || get().status === "loading") return;
       set({ status: "loading", error: null, editingId: null, lastSummary: null });
+      // The page as it was before this request; restored if the request fails.
+      const before = get().screen;
       try {
         const { screen, history, assets } = get();
-        const result = await api.generate(trimmed, screen, history.map((h) => h.prompt), assets);
-        record(result.screen);
+        const request = { prompt: trimmed, screen, history: history.map((h) => h.prompt).slice(-10), assets };
+        // Sections appear as they finish. These updates are not undo steps.
+        const result = await api.generateStream(request, (partial) => set({ screen: partial }));
+        // One undo entry for the whole generation: the page as it was before.
         set((s) => ({
+          screen: result.screen,
+          past: before ? [...s.past.slice(-(UNDO_LIMIT - 1)), before] : s.past,
+          future: [],
           status: "idle",
           lastSummary: result.summary,
           history: [...s.history, { prompt: trimmed, summary: result.summary, kind: "page" }],
@@ -181,7 +188,11 @@ export const useScreenStore = create<ScreenState>()(
         }));
         revealNode(get().selectedId);
       } catch (err) {
-        set({ status: "error", error: err instanceof Error ? err.message : "Something went wrong." });
+        set({
+          screen: before,
+          status: "error",
+          error: err instanceof Error ? err.message : "Something went wrong.",
+        });
       }
     },
 
