@@ -3,7 +3,7 @@ import express from "express";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { ScreenSchema, type ShapeSummary } from "@create/shared";
-import { buildMockSketchScreen } from "./mock";
+import { buildMockSketchScreen, withVisionProviderSummary } from "./mock";
 import { sketchRouter } from "../routes/sketch";
 
 const sh = (id: string, type: string, x: number, y: number, w: number, h: number, text?: string): ShapeSummary => ({ id, type, x, y, w, h, text });
@@ -35,13 +35,21 @@ describe("buildMockSketchScreen", () => {
   it("falls back to the canned mock when empty", () => {
     expect(ScreenSchema.safeParse(buildMockSketchScreen([], "Cafe").screen).success).toBe(true);
   });
+  it("names the vision provider on the mock summary", () => {
+    const named = withVisionProviderSummary(buildMockSketchScreen(shapes), "grok");
+    expect(named.summary.startsWith("Mock mode (grok):")).toBe(true);
+    expect(ScreenSchema.safeParse(named.screen).success).toBe(true);
+  });
 });
 
 describe("POST /api/generate-sketch", () => {
   let server: Server;
   let base = "";
+  const prevMock = process.env.MOCK_AI;
+  const prevProvider = process.env.VISION_PROVIDER;
   beforeAll(async () => {
     process.env.MOCK_AI = "1";
+    process.env.VISION_PROVIDER = "perceptron";
     const app = express();
     app.use("/api", sketchRouter); // mounted before the global 3mb parser, as in index.ts
     app.use(express.json({ limit: "3mb" }));
@@ -51,14 +59,28 @@ describe("POST /api/generate-sketch", () => {
     await new Promise<void>((r) => { server = app.listen(0, () => r()); });
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/generate-sketch`;
   });
-  afterAll(() => { server.close(); });
+  afterAll(() => {
+    server.close();
+    if (prevMock === undefined) delete process.env.MOCK_AI;
+    else process.env.MOCK_AI = prevMock;
+    if (prevProvider === undefined) delete process.env.VISION_PROVIDER;
+    else process.env.VISION_PROVIDER = prevProvider;
+  });
   const post = (body: unknown) => fetch(base, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
-  it("returns a screen in mock mode", async () => {
-    const r = await post({ image: "iVBORw0KGgo=", shapes: [sh("t", "text", 0, 0, 100, 40, "Hi")] });
-    expect(r.status).toBe(200);
-    const j = await r.json();
-    expect(ScreenSchema.safeParse(j.screen).success).toBe(true);
+  it("returns a screen in mock mode and names the provider", async () => {
+    const prev = process.env.VISION_PROVIDER;
+    process.env.VISION_PROVIDER = "perceptron";
+    try {
+      const r = await post({ image: "iVBORw0KGgo=", shapes: [sh("t", "text", 0, 0, 100, 40, "Hi")] });
+      expect(r.status).toBe(200);
+      const j = await r.json();
+      expect(ScreenSchema.safeParse(j.screen).success).toBe(true);
+      expect(j.summary).toContain("perceptron");
+    } finally {
+      if (prev === undefined) delete process.env.VISION_PROVIDER;
+      else process.env.VISION_PROVIDER = prev;
+    }
   });
   it("400 on bad body", async () => {
     expect((await post({ shapes: [] })).status).toBe(400);
@@ -70,5 +92,16 @@ describe("POST /api/generate-sketch", () => {
   it("413 on oversize", async () => {
     const r = await post({ image: "A".repeat(11 * 1024 * 1024), shapes: [] });
     expect(r.status).toBe(413);
+  });
+  it("400 when VISION_PROVIDER is unknown", async () => {
+    process.env.VISION_PROVIDER = "nope";
+    try {
+      const r = await post({ image: "iVBORw0KGgo=", shapes: [] });
+      expect(r.status).toBe(400);
+      const j = await r.json();
+      expect(j.error).toContain("Unknown vision provider");
+    } finally {
+      process.env.VISION_PROVIDER = "perceptron";
+    }
   });
 });

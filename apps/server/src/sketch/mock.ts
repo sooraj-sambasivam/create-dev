@@ -69,3 +69,11 @@ export function buildMockSketchScreen(shapes: ShapeSummary[], prompt?: string): 
     screen: { title, accent: "#4f46e5", children },
   });
 }
+
+/** Prefix a mock sketch summary with the vision provider that would have answered. */
+export function withVisionProviderSummary(response: GenerateResponse, provider: string): GenerateResponse {
+  const summary = /^Mock mode:/.test(response.summary)
+    ? response.summary.replace(/^Mock mode:/, `Mock mode (${provider}):`)
+    : `Mock mode (${provider}): ${response.summary}`;
+  return { ...response, summary };
+}

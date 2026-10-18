@@ -1,8 +1,8 @@
 import express, { Router } from "express";
 import { SketchRequestSchema } from "@create/shared";
 import { GenerationError } from "../ai/claude";
-import { generateSketchWithClaude } from "../sketch/claude";
-import { buildMockSketchScreen } from "../sketch/mock";
+import { buildMockSketchScreen, withVisionProviderSummary } from "../sketch/mock";
+import { getVisionProvider, resolveVisionProviderId } from "../vision/registry";
 
 export const sketchRouter = Router();
 
@@ -16,14 +16,14 @@ sketchRouter.post("/generate-sketch", async (req, res) => {
     return;
   }
 
-  if (process.env.MOCK_AI === "1" || !process.env.ANTHROPIC_API_KEY) {
-    await new Promise((r) => setTimeout(r, process.env.NODE_ENV === "test" ? 0 : 500));
-    res.json(buildMockSketchScreen(parsed.data.shapes, parsed.data.prompt));
-    return;
-  }
-
   try {
-    res.json(await generateSketchWithClaude(parsed.data));
+    if (process.env.MOCK_AI === "1") {
+      await new Promise((r) => setTimeout(r, process.env.NODE_ENV === "test" ? 0 : 500));
+      const provider = resolveVisionProviderId();
+      res.json(withVisionProviderSummary(buildMockSketchScreen(parsed.data.shapes, parsed.data.prompt), provider));
+      return;
+    }
+    res.json(await getVisionProvider().generate(parsed.data));
   } catch (err) {
     if (err instanceof GenerationError) {
       res.status(err.status).json({ error: err.message });
