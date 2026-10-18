@@ -165,3 +165,29 @@ Rules for the demo:
 - Mock mode must cover every new endpoint. Each new route returns a canned result when
   `MOCK_AI=1`.
 - Abel's files are reused, not forked. If a change is needed there, send it to Abel.
+
+## Canvas ops, live data, library and motion
+
+Everything stays on one engine: Abel's typed Screen tree. No model-written HTML, CSS, JS or server code is
+rendered or executed. The earlier sandbox backends were dropped for security (see the review).
+
+- **Canvas ops** (`POST /api/canvas-ops`, `apps/server/src/routes/canvasOps.ts`): the canvas is a
+  vertical-only page (1200 units wide, no zoom, no horizontal pan). Lifting the pen shows a label popover for
+  the stroke group. Confirm sends `CanvasOpsRequest` `{ image, label, region, shapes[], screen }` and gets
+  `{ summary, ops[], provider, sketchReading? }`. Ops are the typed `ScreenOp` set in
+  `packages/shared/src/ops.ts` (`insert`, `replace`, `remove`, `style`, `update`, `page`), applied with
+  `applyOps`; unknown targets are skipped with a reason. Own 10 MB JSON parser, mounted before the global one.
+- **Perceptron reading** (`apps/server/src/canvasOps/perceptron.ts`): when `PERCEPTRON_API_KEY` is set, the
+  sketch is read first (6 s timeout, never throws) and the reading is passed to Claude. Provider is
+  `perceptron+claude`, `claude` or `mock`. `CANVAS_OPS_FAST=1` picks the faster path.
+- **Library** (`apps/web/src/modes/canvas/library/`): Icons, Photos, Sections (8 templates) and Motion tabs.
+  Items insert through `applyOps` and `useScreenStore.setScreen`, or by drag onto the canvas.
+- **Motion** (`apps/web/src/motion/`): 8 presets stored per chat and node, emitted as CSS wrapped in
+  `prefers-reduced-motion: no-preference`. `MotionStyles` is mounted once in `App.tsx`; `MotionControls`
+  sits under the Inspector in the Inspect tab when a node is selected.
+- **Live data** (`GET /api/live` catalog, `GET /api/live/:id` data, `apps/server/src/routes/live.ts`): sources `weather`, `github-stars`,
+  `crypto-price`, `hn-top`, `time`, `youtube-views`; 60 s cache, 60 requests a minute, 5 s upstream timeout.
+  `youtube-views` needs `YOUTUBE_API_KEY`. Web side in `apps/web/src/live/`.
+- **Health**: `/api/health` now also reports `hasPerceptron` and `hasYoutube`.
+
+New env vars: `PERCEPTRON_API_KEY`, `YOUTUBE_API_KEY`, `CANVAS_OPS_FAST`.

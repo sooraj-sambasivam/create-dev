@@ -10,6 +10,8 @@ import { demoRouter } from "./routes/demo";
 import { voiceRouter } from "./routes/voice";
 import { intentRouter } from "./routes/intent";
 import { shareRouter } from "./routes/share";
+import { canvasOpsRouter } from "./routes/canvasOps";
+import { liveRouter } from "./routes/live";
 import { DEFAULT_MODEL } from "./ai/claude";
 
 const app = express();
@@ -20,6 +22,7 @@ app.use(cors({ origin: [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$
 app.use("/api", sketchRouter);
 app.use("/api", demoRouter);
 app.use("/api", shareRouter);
+app.use("/api", canvasOpsRouter); // own 10mb JSON parser
 app.use(express.json({ limit: "3mb" }));
 
 app.get("/api/health", (_req, res) => {
@@ -31,6 +34,8 @@ app.get("/api/health", (_req, res) => {
     hasElevenLabs: Boolean(process.env.ELEVENLABS_API_KEY),
     hasTypesafe: Boolean(process.env.TYPESAFE_API_KEY?.trim()),
     hasMongo: Boolean(process.env.MONGODB_URI?.trim()),
+    hasPerceptron: Boolean(process.env.PERCEPTRON_API_KEY?.trim()),
+    hasYoutube: Boolean(process.env.YOUTUBE_API_KEY?.trim()),
   });
 });
 app.use("/api", generateRouter);
@@ -39,6 +44,7 @@ app.use("/api", imageRouter);
 app.use("/api", assetsRouter);
 app.use("/api", voiceRouter);
 app.use("/api", intentRouter);
+app.use("/api", liveRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = err instanceof Error ? err.message : "Unknown error";

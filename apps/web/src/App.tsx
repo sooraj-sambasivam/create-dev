@@ -10,6 +10,7 @@ import { SharedView } from "./share/SharedView";
 import { sharedIdFromLocation } from "./share/route";
 import { useWorkspaceStore } from "./store/workspaceStore";
 import { selectOutputOpen, useRightPanel } from "./shell/rightPanel/rightPanelStore";
+import { MotionStyles } from "./motion";
 import { setDemoWorkspaceBridge } from "./modes/narrate/demo/workspaceBridge";
 
 setDemoWorkspaceBridge({
@@ -58,6 +59,7 @@ function Builder() {
         </>
       )}
 
+      <MotionStyles />
       <CanvasHost />
       {mode === "narrate" && <NarrateMode />}
     </AppShell>

@@ -15,7 +15,7 @@ type Props = {
 };
 
 const ghost =
-  "inline-flex h-8 items-center gap-2 rounded-lg px-2 text-sm text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-2 text-sm text-ink-2 transition-colors duration-150 hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export function CanvasToolbar({
   busy,
@@ -32,13 +32,13 @@ export function CanvasToolbar({
     <div
       role="toolbar"
       aria-label="Canvas studio"
-      className="pointer-events-auto flex items-center gap-2 rounded-xl border border-line bg-surface p-2 text-ink shadow-soft"
+      className="pointer-events-auto flex max-w-full items-center gap-1 rounded-xl border border-line bg-surface p-2 text-ink shadow-soft"
     >
       <button type="button" className={ghost} onClick={onBack} aria-label="Back" title="Back">
         <ArrowLeft size={16} strokeWidth={1.75} />
         Back
       </button>
-      <span className="px-2 text-sm font-medium text-ink-2">Canvas</span>
+      <span className="hidden px-2 text-sm lg:inline font-medium text-ink-2">Canvas</span>
       <span className="mx-1 h-5 w-px bg-line" aria-hidden />
       <button
         type="button"
@@ -72,7 +72,7 @@ export function CanvasToolbar({
         disabled={busy || narrating}
         aria-label="Make it"
         aria-busy={busy || undefined}
-        className={`inline-flex h-8 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+        className={`inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
           busy ? "cursor-progress bg-accent text-white" : narrating ? "cursor-not-allowed bg-hover text-ink-3" : "bg-accent text-white hover:bg-accent/90"
         }`}
       >

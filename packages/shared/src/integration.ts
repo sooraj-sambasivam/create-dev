@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ScreenSchema } from "./schema";
+import { ScreenOpSchema } from "./ops";
 
 /**
  * Contracts for the canvas, narrate, share and voice features layered on the core builder.
@@ -93,3 +94,32 @@ export const SharePrototypeRequestSchema = z.object({
 export type SharePrototypeRequest = z.infer<typeof SharePrototypeRequestSchema>;
 export type SharePrototypeResponse = { id: string; url: string };
 export type SharedPrototype = { id: string; title: string; screen: z.infer<typeof ScreenSchema>; createdAt: string };
+
+/** POST /api/canvas-ops: a drawn region (PNG + shapes + label) becomes typed edit ops on the current page. */
+export const CanvasOpsRequestSchema = z.object({
+  /** PNG data URL, at most 6MB. */
+  image: z.string().min(1).max(6_000_000),
+  label: z.string().max(500),
+  /** Region of the page the drawing covers, in page units (page width 1200). */
+  region: z.object({ y: z.number(), h: z.number(), x: z.number().optional(), w: z.number().optional() }),
+  shapes: z.array(ShapeSummarySchema).max(200),
+  screen: ScreenSchema.nullable(),
+});
+export type CanvasOpsRequest = z.infer<typeof CanvasOpsRequestSchema>;
+
+export const CanvasOpsResponseSchema = z.object({
+  summary: z.string(),
+  ops: z.array(ScreenOpSchema),
+  provider: z.enum(["perceptron+claude", "claude", "mock"]),
+  sketchReading: z.string().optional(),
+});
+export type CanvasOpsResponse = z.infer<typeof CanvasOpsResponseSchema>;
+
+/** A live data source an element can show, fetched by the server from a fixed allow-list. */
+export const LiveSourceSchema = z.object({
+  id: z.enum(["weather", "github-stars", "crypto-price", "hn-top", "time", "youtube-views"]),
+  params: z.record(z.string(), z.string()),
+});
+export type LiveSource = z.infer<typeof LiveSourceSchema>;
+
+export type LiveCatalog = { id: LiveSource["id"]; label: string; params: { name: string; example: string }[] }[];

@@ -20,9 +20,14 @@ export function applyMention(value: string, name: string): string {
   return `${base ? `${base} ` : ""}@${name} `;
 }
 
-/** Arc around Go. Go's centre sits 32px from the composer's right edge, so the outer bubbles clear that edge by about 8px. */
-export const FAN_RADIUS = 72;
-export const FAN_ANGLES = [-84, -36, -6];
+/**
+ * Arc around Go: three 32px bubbles at an even 45° step on a 76px radius, so every neighbouring pair
+ * sits ~58px apart centre to centre (~26px gap). The arc sweeps from above Go out past the
+ * composer's right edge, ending just below Go's centre.
+ */
+export const FAN_RADIUS = 76;
+export const FAN_STEP = 45;
+export const FAN_ANGLES = [-75, -75 + FAN_STEP, -75 + 2 * FAN_STEP];
 
 export function fanOffset(index: number): { x: number; y: number } {
   const rad = (FAN_ANGLES[index] * Math.PI) / 180;

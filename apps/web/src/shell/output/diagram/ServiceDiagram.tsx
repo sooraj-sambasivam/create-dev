@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState, type Component
 import { AudioWaveform, Database, Feather, Image as ImageIcon, MessageSquare, Mic, PanelsTopLeft, Server, Shapes, Share, Sparkles, Zap } from "lucide-react";
 import type { Health } from "../routes";
 import { EDGES, NODES, neighbours, nodeStatus, routesFor, statusLabel, type IconName, type Status, type SvcNode } from "./model";
+import { edgeLabelRect, placeTooltip, type Rect } from "./tooltip";
 
 const ICONS: Record<IconName, ComponentType<{ size?: number; strokeWidth?: number; "aria-hidden"?: boolean }>> = {
   message: MessageSquare, canvas: PanelsTopLeft, narrate: AudioWaveform, share: Share, server: Server, database: Database,
@@ -9,6 +10,9 @@ const ICONS: Record<IconName, ComponentType<{ size?: number; strokeWidth?: numbe
 };
 const DOT: Record<Status, string> = { connected: "bg-ok", fallback: "bg-warn", unused: "bg-ink-3", unknown: "bg-ink-3" };
 const WIDE = 520;
+const TIP_W = 240;
+const TIP_PAD = 16;
+const TIP_LINE = 18;
 
 type Pt = { x: number; y: number };
 type Geo = { w: number; h: number; box: Record<string, { x: number; y: number; w: number; h: number }> };
@@ -68,6 +72,23 @@ export function ServiceDiagram({ health }: { health: Health | null }) {
 
   const tip = active && geo?.box[active] ? { node: NODES.find((n) => n.id === active)!, box: geo.box[active] } : null;
   const tipRoutes = tip ? routesFor(tip.node.id) : [];
+  const tipShown = Math.min(tipRoutes.length, 8);
+  const tipLines = 1 + Math.max(tipShown, 1) + (tipRoutes.length > 8 ? 1 : 0);
+  const tipSize = { w: TIP_W, h: TIP_PAD + tipLines * TIP_LINE };
+
+  // Everything the tooltip must not cover: other node cards and the labels of edges lit by the hovered node.
+  let tipPos: ReturnType<typeof placeTooltip> | null = null;
+  if (tip && geo) {
+    const obstacles: Rect[] = Object.entries(geo.box)
+      .filter(([id]) => id !== tip.node.id)
+      .map(([, b]) => b);
+    if (wide) {
+      for (const e of edges) {
+        if (e.from === tip.node.id || e.to === tip.node.id) obstacles.push(edgeLabelRect(e.mid, e.label));
+      }
+    }
+    tipPos = placeTooltip({ bounds: { w: geo.w, h: geo.h }, anchor: tip.box, size: tipSize, obstacles });
+  }
 
   return (
     <div ref={root} className="relative" onMouseLeave={() => setActive(null)}>
@@ -100,8 +121,9 @@ export function ServiceDiagram({ health }: { health: Health | null }) {
       {tip && (
         <div
           role="tooltip"
-          className="pointer-events-none absolute z-10 w-60 max-w-full rounded-xl border border-line bg-surface p-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
-          style={{ top: tip.box.y + tip.box.h + 4, left: Math.max(0, Math.min(tip.box.x, (geo?.w ?? 0) - 240)) }}
+          className="pointer-events-none absolute z-10 rounded-xl border border-line bg-surface p-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
+          data-side={tipPos?.side}
+          style={{ top: tipPos?.y ?? 0, left: tipPos?.x ?? 0, width: TIP_W }}
         >
           <p className="text-[12px] text-ink-2">{tipRoutes.length ? "Routes" : "No routes"}</p>
           {tipRoutes.slice(0, 8).map((r) => (

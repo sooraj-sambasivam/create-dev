@@ -23,6 +23,13 @@ describe("fan + placeholder", () => {
     for (let i = 0; i < 3; i++) expect(fanOffset(i).x).toBeGreaterThan(0);
     expect(fanOffset(0).y).toBeLessThan(0);
   });
+  it("spaces the bubbles evenly with a clear gap", () => {
+    const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+    const d01 = dist(fanOffset(0), fanOffset(1));
+    const d12 = dist(fanOffset(1), fanOffset(2));
+    expect(Math.abs(d01 - d12)).toBeLessThanOrEqual(2);
+    expect(Math.min(d01, d12)).toBeGreaterThanOrEqual(32 + 20);
+  });
   it("placeholder", () => {
     expect(placeholderFor(false)).toBe("Work with Create");
     expect(placeholderFor(true)).toBe("Describe a change…");

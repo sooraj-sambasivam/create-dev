@@ -393,7 +393,7 @@ export function Composer() {
               aria-expanded={fanOpen}
               aria-busy={busy}
               aria-disabled={goDisabled}
-              title={recording ? "Stop recording" : empty ? "Type a message to start" : "Go"}
+              title={recording ? "Stop recording" : empty ? undefined : "Go"}
               data-testid="go"
               whileHover={reduce || goDisabled ? undefined : { scale: 1.06 }}
               transition={{ duration: 0.15 }}
@@ -458,20 +458,6 @@ export function Composer() {
         <div className="flex items-center gap-1.5">
           <ProjectMenu />
           <FilesMenu assets={assets} inputRef={fileRef} uploading={uploading} error={uploadError} />
-          <button
-            type="button"
-            aria-label="Mention a file"
-            title="Mention a file"
-            onClick={() => {
-              // Appending "@" makes mentionQuery() non-null, which opens the Mention a file popover.
-              setMentionDismissed(null);
-              setValue((v) => (/(^|\s)@[^\s@]*$/.test(v) ? v : `${v}${v && !/\s$/.test(v) ? " " : ""}@`));
-              fieldRef.current?.focus();
-            }}
-            className="grid h-8 w-8 place-items-center rounded-lg text-[var(--c-ink-2)] hover:bg-[var(--c-hover)] hover:text-[var(--c-ink)] focus-visible:outline-none"
-          >
-            <AtSign size={16} strokeWidth={1.75} />
-          </button>
           <PluginsMenu />
         </div>
         <div className="flex-1" />

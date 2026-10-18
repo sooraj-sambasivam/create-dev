@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Tldraw, type Editor, type TLComponents } from "tldraw";
-import type { SketchRequest } from "@create/shared";
+import { DefaultColorStyle, DefaultSizeStyle, Tldraw, type Editor, type TLComponents } from "tldraw";
+import { applyOps, type SketchRequest } from "@create/shared";
 import "tldraw/tldraw.css";
 import "./canvas.css";
 import { Check, Info, PanelRight, X } from "lucide-react";
@@ -14,12 +14,27 @@ import { generateSketch } from "./sketchApi";
 import { exportPng, summarizeShapes } from "./shapes";
 import { CanvasNarrate } from "./narrate";
 import { classifyNarrateNotice } from "./notice";
+import { LibraryPanel } from "./library";
+import { PageBackground } from "./PageBackground";
+import { installPageCamera } from "./pageCamera";
+import { BuiltBadges, StrokePopover } from "./StrokeOverlay";
+import { useStrokeGroups } from "./useStrokeGroups";
+import { regionFromBounds } from "./groups";
+import { requestCanvasOps } from "./canvasOpsApi";
 
 /**
  * tldraw chrome we replace: the studio toolbar takes the top of the canvas, so the main/page menus and helper
  * buttons go (undo/redo and the rest stay on their shortcuts). The bottom tool bar, zoom widget and style panel stay.
  */
-const TL_COMPONENTS: TLComponents = { MenuPanel: null, PageMenu: null, HelperButtons: null, Minimap: null };
+const TL_COMPONENTS: TLComponents = {
+  MenuPanel: null,
+  PageMenu: null,
+  HelperButtons: null,
+  Minimap: null,
+  // No zoom widget: the canvas is a page that only scrolls vertically.
+  NavigationPanel: null,
+  Background: PageBackground,
+};
 
 const MIN_PCT = 20;
 const MAX_PCT = 70;
@@ -123,7 +138,11 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
   const abortRef = useRef<AbortController | null>(null);
   const restoreRef = useRef<(() => void) | null>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
+  const cameraOffRef = useRef<(() => void) | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editorState, setEditorState] = useState<Editor | null>(null);
+  const [groupBusy, setGroupBusy] = useState(false);
+  const groups = useStrokeGroups(editorState);
   const [narrating, setNarrating] = useState(false);
   const [hasSelection, setHasSelection] = useState(false);
   const [open, setOpenState] = useState(readPreviewOpen);
@@ -150,6 +169,8 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
       restoreRef.current?.();
       unlistenRef.current?.();
       unlistenRef.current = null;
+      cameraOffRef.current?.();
+      cameraOffRef.current = null;
       // Keep the editor alive while Narrate runs over the canvas.
       if (!useCanvasStore.getState().narrateFromCanvas) setEditor(null);
     },
@@ -179,7 +200,14 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
     (editor: Editor) => {
       editorRef.current = editor;
       setEditor(editor);
+      setEditorState(editor);
       applyScheme(editor);
+      // Page-shaped: no zoom, no horizontal pan; pen is the default tool, in the accent colour.
+      cameraOffRef.current?.();
+      cameraOffRef.current = installPageCamera(editor);
+      editor.setStyleForNextShapes(DefaultColorStyle, "blue");
+      editor.setStyleForNextShapes(DefaultSizeStyle, "m");
+      editor.setCurrentTool("draw");
       setHasSelection(editor.getSelectedShapeIds().length > 0);
       unlistenRef.current?.();
       unlistenRef.current = editor.store.listen(() => setHasSelection(editor.getSelectedShapeIds().length > 0), { scope: "session" });
@@ -274,6 +302,46 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
     [busy, generateAndReveal],
   );
 
+  /** Confirm on the label popover: export the open group, ask for ops, apply them to the page. */
+  const confirmGroup = useCallback(
+    async (label: string) => {
+      const editor = editorRef.current;
+      const ids = groups.state.open;
+      if (!editor || !ids.length || groupBusy) return;
+      const region = regionFromBounds(
+        ids.flatMap((id) => {
+          const b = editor.getShapePageBounds(id as never);
+          return b ? [{ x: b.x, y: b.y, w: b.w, h: b.h }] : [];
+        }),
+      );
+      if (!region) return;
+      setGroupBusy(true);
+      setToast(null);
+      setOpen(true);
+      try {
+        const image = await exportPng(editor, [...ids]);
+        if (!image) throw new Error("Draw something first.");
+        const before = useScreenStore.getState().screen;
+        const res = await requestCanvasOps({ image, label, region, shapes: summarizeShapes(editor, [...ids]).slice(0, 200), screen: before });
+        const next = applyOps(before, res.ops);
+        if (next.applied > 0) {
+          useScreenStore.getState().setScreen(next.screen, res.summary);
+          setNewestId(next.changedIds[next.changedIds.length - 1] ?? null);
+          groups.markBuilt(label);
+          setToast({ kind: "ok", text: res.summary || "Added to the page." });
+        } else {
+          const why = next.skipped[0]?.reason;
+          setToast({ kind: "info", text: why ? `Nothing changed: ${why}` : res.summary || "Nothing changed." });
+        }
+      } catch (e) {
+        setToast({ kind: "error", text: e instanceof Error ? e.message : "Could not build that." });
+      } finally {
+        setGroupBusy(false);
+      }
+    },
+    [groups, groupBusy, setOpen],
+  );
+
   const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     const move = (ev: PointerEvent) => {
@@ -312,7 +380,11 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
     >
       <div className="relative h-full w-full overflow-hidden rounded-xl bg-surface">
       {/* The tldraw area: card width minus the preview pane (plus an 8px gap) so tldraw's own corners, watermark included, stay visible. */}
-      <div className="absolute inset-y-0 left-0" style={{ right: open ? `calc(${pct}% + 8px)` : 0 }}>
+      <div className="absolute inset-y-0 left-0 flex" style={{ right: open ? `calc(${pct}% + 8px)` : 0 }}>
+        <div className="relative z-[510] h-full shrink-0">
+          <LibraryPanel />
+        </div>
+        <div className="relative min-w-0 flex-1">
         <Tldraw
           persistenceKey="create-dev-canvas"
           licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
@@ -321,6 +393,17 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
         />
         {narrating && editorRef.current && (
           <CanvasNarrate editor={editorRef.current} onBuild={buildNarration} onError={narrateError} onClose={closeNarrate} />
+        )}
+        {editorState && <BuiltBadges editor={editorState} groups={groups.state.built} />}
+        {editorState && !narrating && groups.popoverVisible && groups.state.open.length > 0 && (
+          <StrokePopover
+            editor={editorState}
+            ids={groups.state.open}
+            busy={groupBusy}
+            onConfirm={(l) => void confirmGroup(l)}
+            onDiscard={groups.discard}
+            onEscape={groups.dismiss}
+          />
         )}
 
         <div className="pointer-events-none absolute inset-x-0 top-2 z-[500] flex justify-center">
@@ -358,6 +441,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {!open && (

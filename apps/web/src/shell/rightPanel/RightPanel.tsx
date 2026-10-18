@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import { X } from "lucide-react";
 import { Inspector } from "../../editor/Inspector";
+import { MotionControls } from "../../motion";
 import { useScreenStore } from "../../store/screenStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { BackendTab } from "../output/BackendTab";
@@ -155,6 +156,7 @@ export function RightPanel() {
         {active === "inspect" ? (
           <div data-right-panel-inspect className="px-4 py-3">
             <Inspector />
+            {hasSelection && <MotionControls />}
           </div>
         ) : active === "backend" ? (
           <BackendTab />
