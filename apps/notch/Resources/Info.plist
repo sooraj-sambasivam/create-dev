@@ -11,6 +11,7 @@
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSMicrophoneUsageDescription</key><string>Create Tray listens while you hold Option, only when speech is turned on, so "this" binds to what you pointed at.</string>
   <key>NSScreenCaptureUsageDescription</key><string>Create Tray captures a small crop around your cursor when you hold Option, to lift it into Create.</string>
 </dict>
 </plist>

@@ -49,8 +49,11 @@
   };
 
   // Resolves with the anchor once the calibration click is seen in the captured stream.
-  h.startMic = async (token, clickOffsetMs) => {
-    const url = "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&commit_strategy=manual&include_timestamps=true&token=" + token;
+  h.startMic = async (token, clickOffsetMs, commit) => {
+    // commit: "manual" (default; the harness sends the commit) or { vad: silenceSecs } (server commits on silence)
+    h.vad = !!(commit && commit.vad);
+    const strat = h.vad ? "commit_strategy=vad&vad_silence_threshold_secs=" + commit.vad : "commit_strategy=manual";
+    const url = "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&" + strat + "&include_timestamps=true&token=" + token;
     const L = (m) => h.log.push(Math.round(performance.now()) + ' ' + m);
     L('start');
     const ws = new WebSocket(url);
@@ -125,7 +128,7 @@
     const last = words[words.length - 1];
     at(last.end + Math.max(...plan.wsLags) + 250, () => S.ws.feedWebSpeech("u", words.map((x) => x.text).join(" "), true));
     // commit the live Scribe segment (like the user releasing hold-to-talk)
-    at(plan.tA0 + plan.commitAtMs, () => {
+    if (!h.vad) at(plan.tA0 + plan.commitAtMs, () => {
       h.commitSentAt = performance.now();
       h.ws.send(JSON.stringify({ message_type: "input_audio_chunk", audio_base_64: "", sample_rate: 16000, commit: true }));
     });

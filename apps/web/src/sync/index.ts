@@ -115,13 +115,14 @@ export function createSyncSession(opts: SyncSessionOptions = {}): SyncSession {
       });
     }
     out.sort((a, b) => a.word.start - b.word.start);
+    // Listeners may read snapshot().bindings, so it must already be the new list.
+    latest = out;
     for (const b of out) {
       const sig = `${b.target?.targetId ?? ""}|${b.final}|${Math.round(b.confidence * 100)}|${Math.round(b.t / 20)}`;
       if (emitted.get(b.id) === sig) continue;
       emitted.set(b.id, sig);
       for (const cb of listeners) cb(b);
     }
-    latest = out;
     return out;
   }
 

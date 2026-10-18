@@ -734,6 +734,16 @@
   let sticky = false, altDown = false, altUsed = false, altAt = 0, active = false, locked = null, busy = false;
   let mx = -1, my = -1, raf = 0, hover = null, recognition = null, listening = false;
   let drawing = null, suppressClick = false, crawlOn = false, moveAt = 0, labelKey = null;
+  // Capture timeline (timeline.js): what was hovered or circled, stamped on performance.now, so a spoken "this" can bind to its own moment.
+  const tl = globalThis.__createTimeline || null;
+  const caps = tl ? tl.ring(15000) : null;
+  const ptr = tl ? tl.ring(15000) : null; // pointer samples (mousemove timestamps) while pointer mode is on
+  let lastHoverEl;
+  let voiceOn = false, voice = null;
+  try {
+    chrome.storage.sync.get({ voice: false }).then((s) => { voiceOn = !!s.voice; }).catch(() => {});
+    chrome.storage.onChanged.addListener((ch) => { if (ch.voice) voiceOn = !!ch.voice.newValue; });
+  } catch { /* storage unavailable */ }
   const state = (s) => { host.dataset.state = s; };
   state("idle");
   /** A lasso loop; shown from the moment the button goes down in pointer mode (Option held or armed). */
@@ -749,8 +759,13 @@
   function refresh() {
     raf = 0;
     if (!active || locked || drawing) return;
+    const tMove = moveAt || performance.now(); // when the pointer reached this spot, not when the frame painted
     const el = mx >= 0 ? pick(mx, my) : null;
     hover = el ? detect(el) : null;
+    if (caps) {
+      const k = hover ? hover.el || hover : null;
+      if (k !== lastHoverEl) { lastHoverEl = k; caps.push({ t: tMove, kind: "hover", d: hover }); }
+    }
     if (hover) {
       const r = showRing(hover.el.getBoundingClientRect()); setChip(hover.label, { rect: r }); state("hover");
       // hover -> label latency: from the pointer move that led here to the label being painted.
@@ -772,6 +787,7 @@
     schedule();
   }
   function deactivate() {
+    voiceClose();
     if (drawing) endDraw(true);
     active = false; locked = null; hover = null; busy = false; crawlOn = false;
     hideEl(pill); hideAll(); hideEl(loopSvg); state("idle");
@@ -783,7 +799,7 @@
   /* ---------- circle drawing ---------- */
   function startDraw(e) {
     const p = { x: e.clientX, y: e.clientY };
-    drawing = { id: e.pointerId, pts: [p], d: `M${p.x.toFixed(1)} ${p.y.toFixed(1)}`, c: p, dirty: true, preview: 0, last: p };
+    drawing = { t0: performance.now(), id: e.pointerId, pts: [p], d: `M${p.x.toFixed(1)} ${p.y.toFixed(1)}`, c: p, dirty: true, preview: 0, last: p };
     altUsed = true; hover = null;
     hideEl(ring); hideEl(chip);
     state("drawing");
@@ -837,6 +853,7 @@
     lpL.setAttribute("d", closed); lpG1.setAttribute("d", closed); lpG2.setAttribute("d", closed); lpF.setAttribute("d", closed);
     tip.setAttribute("cx", "-10");
     const target = resolveCircle(simplify(dr.pts, 2.5));
+    caps?.push({ t: dr.t0, tEnd: performance.now(), kind: "lasso", d: target });
     hideEl(loopSvg, { duration: 420, easing: "cubic-bezier(.2,.7,.2,1)", fill: "forwards" });
     // Save the circled snippet to the tray first (host is hidden for two frames for a clean shot), then ask what to do with it.
     trayCapture(target).finally(() => { if (active && !locked) lock(target); });
@@ -857,7 +874,13 @@
   for (const t of ["selectstart", "dragstart"]) addEventListener(t, (e) => { if (drawing) e.preventDefault(); }, true);
 
   /* ---------- input handlers (always on, cheap) ---------- */
-  addEventListener("mousemove", (e) => { mx = e.clientX; my = e.clientY; if (!moveAt) moveAt = performance.now(); if (active && !locked && !drawing) schedule(); }, true);
+  addEventListener("mousemove", (e) => {
+    mx = e.clientX; my = e.clientY;
+    const t = e.timeStamp || performance.now(); // event time on the performance.now clock
+    if (!moveAt) moveAt = t;
+    if (ptr && active) { const list = e.getCoalescedEvents ? e.getCoalescedEvents() : []; for (const c of list.length ? list : [e]) ptr.push({ t: c.timeStamp || t, x: c.clientX, y: c.clientY }); }
+    if (active && !locked && !drawing) schedule();
+  }, true);
   addEventListener("scroll", () => { if (active && !locked && !drawing) schedule(); }, true);
   addEventListener("blur", () => { if (altDown && !locked) { altDown = false; if (drawing) endDraw(true); if (!sticky) deactivate(); } });
   addEventListener("keydown", (e) => {
@@ -866,6 +889,7 @@
       if (editable(document.activeElement)) return;
       altDown = true; altUsed = false; altAt = Date.now(); activate();
       document.documentElement.style.cursor = "crosshair";
+      voiceStart();
     } else if (e.key === "Escape" && active) { e.preventDefault(); release(); }
     else if (altDown && e.key !== "Alt") { altUsed = true; altDown = false; if (!sticky) deactivate(); }
   }, true);
@@ -874,6 +898,18 @@
     if (drawing) { altDown = false; return; } // finish the loop on pointer release
     const used = altUsed, long = Date.now() - altAt >= 200;
     altDown = false;
+    if (voice && !used && long) {
+      // The line may still be on its way: let it finish, then lock the thing its "this" was said over (else what is hovered now).
+      voiceCommit();
+      voiceThen((res) => {
+        if (locked) return;
+        const bound = res && res.target;
+        const stale = bound && bound.el && !bound.el.isConnected;
+        const d = bound && !stale ? bound : hover;
+        if (d) { lock(d); if (res && res.text) fillFromSpeech(res.text); } else if (!sticky) deactivate();
+      });
+      return;
+    }
     if (!used && long && hover) lock(hover); else if (!sticky) deactivate();
   }, true);
   addEventListener("click", (e) => {
@@ -903,6 +939,8 @@
     showEl(pill, "flex", [{ opacity: 0, translate: "0 12px", scale: ".98" }, { opacity: 1, translate: "0 0", scale: "1" }]);
     mic.hidden = !window.webkitSpeechRecognition;
     input.focus({ preventScroll: true }); input.select();
+    // A circle drawn while talking: the line goes into the pill when it lands.
+    if (voice && !voice.resolved) { voiceCommit(); voiceThen((res) => { if (locked === d && res && res.text) fillFromSpeech(res.text); }); }
   }
   pagesBtn.addEventListener("click", () => { crawlOn = !crawlOn; pagesBtn.setAttribute("aria-pressed", String(crawlOn)); input.focus(); });
   // Keep typing away from page hotkeys (bubble phase on the shadow root, after the input's own handler).
@@ -936,6 +974,132 @@
     try { performance.measure(`create:${stage}:${provider}`, { start: performance.now() - ms, duration: ms }); } catch {}
     send({ type: "trace", stage, provider, ms, ok: !error || /budget/.test(error), ...(error ? { error } : {}) }).then((r) => { if (!r?.ok) console.info("Create: trace not recorded", r?.error); });
   }
+  /* ---------- voice: Scribe realtime through the background, bound to the capture timeline ---------- */
+  const SPEECH_PREFIX = /^\s*(?:please\s+)?turn (?:this|it|that) into\s*/i;
+  function fillFromSpeech(text) {
+    const v = clean(text).replace(SPEECH_PREFIX, "").replace(/[.!?]+$/, "");
+    if (!v) return;
+    input.value = v; input.select();
+  }
+  const WORKLET = "class C extends AudioWorkletProcessor{constructor(){super();this.b=[];this.n=0;this.f=0}process(i){const c=i[0]&&i[0][0];if(!c)return true;if(!this.n)this.f=currentFrame;this.b.push(new Float32Array(c));this.n++;if(this.n>=8){const o=new Float32Array(this.n*128);this.b.forEach((x,k)=>o.set(x,k*128));this.port.postMessage({f:this.f,p:o},[o.buffer]);this.b=[];this.n=0}return true}}registerProcessor('c',C)";
+  const toB64 = (i16) => { const u = new Uint8Array(i16.buffer); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+  const ctxToPage = (ctx, c) => { const ts = ctx.getOutputTimestamp(); return ts && ts.performanceTime > 0 ? ts.performanceTime + (c - ts.contextTime) * 1000 : performance.now() + (c - ctx.currentTime) * 1000; };
+
+  async function voiceStart() {
+    if (!voiceOn || !tl || voice) return;
+    const v = voice = { port: null, stream: null, ctx: null, audioStart: null, parts: [], partial: null, committed: false, resolved: false, cb: null, res: null, timers: [], pendingText: "" };
+    const tok = await send({ type: "voice-token" });
+    if (voice !== v) return;
+    if (!tok.ok) { console.info("Create: no realtime voice:", tok.error); voiceClose(); return; }
+    try {
+      v.port = chrome.runtime.connect({ name: "scribe" });
+      v.port.onMessage.addListener((m) => { if (voice !== v) return; if (m.type === "msg") onScribe(v, m.msg, performance.now()); else if (m.type === "closed") voiceResolve(v); });
+      v.port.postMessage({ type: "open", token: tok.token });
+      v.stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+      if (voice !== v) { v.stream.getTracks().forEach((t) => t.stop()); return; }
+      const ctx = v.ctx = new AudioContext({ sampleRate: 16000 });
+      const lat = Number(v.stream.getAudioTracks()[0]?.getSettings?.().latency);
+      const latMs = Number.isFinite(lat) ? Math.min(250, Math.max(0, lat * 1000)) : 0;
+      const src = ctx.createMediaStreamSource(v.stream);
+      const sendPcm = (f32, startMs) => {
+        if (v.audioStart == null) { v.audioStart = Math.min(performance.now(), startMs()) - latMs; host.dataset.voiceStart = String(v.audioStart); }
+        const i16 = new Int16Array(f32.length);
+        for (let i = 0; i < f32.length; i++) i16[i] = Math.max(-1, Math.min(1, f32[i])) * 32767;
+        try { v.port.postMessage({ type: "audio", b64: toB64(i16) }); } catch { /* port closed */ }
+      };
+      let worklet = false;
+      try {
+        const url = URL.createObjectURL(new Blob([WORKLET], { type: "text/javascript" }));
+        try { await ctx.audioWorklet.addModule(url); } finally { URL.revokeObjectURL(url); }
+        const node = new AudioWorkletNode(ctx, "c"), sink = ctx.createGain();
+        sink.gain.value = 0; src.connect(node); node.connect(sink); sink.connect(ctx.destination);
+        node.port.onmessage = (e) => { if (voice === v) sendPcm(e.data.p, () => ctxToPage(ctx, e.data.f / ctx.sampleRate)); };
+        worklet = true;
+      } catch { /* the page's CSP forbids blob worklets: use the main-thread processor */ }
+      if (!worklet) {
+        const sp = ctx.createScriptProcessor(2048, 1, 1);
+        sp.onaudioprocess = (e) => { if (voice === v) { const d = new Float32Array(e.inputBuffer.getChannelData(0)); sendPcm(d, () => performance.now() - (d.length / ctx.sampleRate) * 1000); } };
+        src.connect(sp); sp.connect(ctx.destination);
+      }
+      await ctx.resume();
+    } catch (err) { console.info("Create: voice unavailable:", err && err.message); voiceClose(); }
+  }
+
+  function onScribe(v, msg, arrival) {
+    if (msg.message_type === "partial_transcript") {
+      if (msg.text && msg.text.trim()) v.partial = { text: msg.text.trim(), arrival };
+    } else if (msg.message_type === "committed_transcript") {
+      v.pendingText = (msg.text || "").trim(); v.pendingAt = arrival;
+      clearTimeout(v.waitT); v.waitT = setTimeout(() => voicePart(v, null), 250); // the word times follow within ~20 ms
+    } else if (msg.message_type === "committed_transcript_with_timestamps") {
+      clearTimeout(v.waitT);
+      voicePart(v, msg);
+    }
+  }
+  /** One committed segment: exact words when the timestamps came, else estimated from the text. */
+  function voicePart(v, msg) {
+    if (v.resolved) return;
+    const text = ((msg && msg.text) || v.pendingText || "").trim();
+    if (text) {
+      const exact = msg && tl.scribeWords(msg, v.audioStart);
+      v.parts.push({ text, words: exact || tl.estimateWords(text, v.pendingAt || performance.now(), 80) });
+    }
+    v.pendingText = ""; v.partial = null;
+    // After release the next commit answers it (an empty one when VAD already took everything).
+    if (v.committed) voiceResolve(v);
+  }
+  function voiceResolve(v) {
+    if (v.resolved) return;
+    v.resolved = true;
+    clearTimeout(v.waitT);
+    if (!v.parts.length && v.partial) v.parts.push({ text: v.partial.text, words: tl.estimateWords(v.partial.text, v.partial.arrival, 200) });
+    const text = v.parts.map((p) => p.text).join(" ").trim();
+    const binds = tl.bindDeictics(v.parts.flatMap((p) => p.words), caps);
+    // A word said over nothing the hover tracker named: ask what the pointer sample at that moment was on.
+    for (const b of binds) {
+      if (b.bound) continue;
+      const T = b.word.exact ? b.word.start : (b.word.start + b.word.end) / 2, s = ptr && ptr.at(T);
+      const el = s && pick(s.x, s.y), d = el && detect(el);
+      if (d) b.bound = { cap: { d }, mode: "pointer", t: T };
+    }
+    const bound = binds.find((b) => b.bound);
+    const res = text ? { text, target: bound ? bound.bound.cap.d : null, mode: bound ? bound.bound.mode : null, word: bound ? bound.word.text : null } : null;
+    v.res = res;
+    host.dataset.voice = JSON.stringify(res ? { text: res.text, word: res.word, mode: res.mode, label: res.target ? res.target.label : null } : null);
+    const cb = v.cb; v.cb = null;
+    voiceTeardown(v);
+    if (cb) cb(res);
+  }
+  /** Release: tell the server the line is over (shortly, so the last audio block is out), and give up after 2 s. */
+  function voiceCommit() {
+    const v = voice;
+    if (!v || v.committed) return;
+    v.committed = true;
+    v.timers.push(setTimeout(() => { try { v.port && v.port.postMessage({ type: "commit" }); } catch { /* closed */ } }, 100));
+    v.timers.push(setTimeout(() => voiceResolve(v), 2000));
+  }
+  /** Run cb with the finished line (null when nothing was said). */
+  function voiceThen(cb) {
+    const v = voice;
+    if (!v) { cb(null); return; }
+    if (v.resolved) { cb(v.res); return; }
+    v.cb = cb;
+  }
+  function voiceTeardown(v) {
+    v.timers.forEach(clearTimeout); clearTimeout(v.waitT);
+    try { v.stream && v.stream.getTracks().forEach((t) => t.stop()); } catch { /* stopped */ }
+    try { v.ctx && v.ctx.close(); } catch { /* closed */ }
+    try { v.port && v.port.disconnect(); } catch { /* closed */ }
+    v.stream = v.ctx = v.port = null;
+    if (voice === v) voice = null;
+  }
+  function voiceClose() {
+    const v = voice;
+    if (!v) return;
+    v.resolved = true; v.cb = null;
+    voiceTeardown(v);
+  }
+
   const frames = (n) => new Promise((r) => { const step = () => (n-- > 0 ? requestAnimationFrame(step) : r()); step(); });
 
   /** Tab screenshot crop of the target (the loop's bounding box for a region). */

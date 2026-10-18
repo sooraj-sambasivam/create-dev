@@ -19,10 +19,14 @@ import { useProfile } from "./onboarding/profile";
 import { shouldShowOnboarding } from "./onboarding/steps";
 import { HoldToTalk } from "./modes/narrate/overlay/HoldToTalk";
 import { registerAnswerSink } from "./narrate/answerSink";
+import { applyVariantFromLocation } from "./shell/variant";
 import { setDemoWorkspaceBridge } from "./modes/narrate/demo/workspaceBridge";
 
 const CanvasHost = lazy(() => import("./modes/canvas/CanvasMode").then((m) => ({ default: m.CanvasHost })));
 const SharedView = lazy(() => import("./share/SharedView").then((m) => ({ default: m.SharedView })));
+
+// Dev builds only: ?variant=graphite|warm|ink swaps the colour tokens for comparison.
+applyVariantFromLocation(import.meta.env.DEV);
 
 setDemoWorkspaceBridge({
   logDemo: (e) => useWorkspaceStore.getState().log("demo", `${e.title}${e.mock ? " (mock)" : ""}: ${e.summary}`),
@@ -80,7 +84,7 @@ function Builder() {
               variants={v(fadeUp)}
               initial="hidden"
               animate="show"
-              className="text-[28px] leading-9 font-normal tracking-[-0.01em] text-ink"
+              className="text-[28px] leading-9 font-normal tracking-[-0.022em] text-ink"
             >
               What should we work on?
             </motion.h2>

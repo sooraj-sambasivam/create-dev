@@ -30,24 +30,25 @@ export function SignIn() {
 
   return (
     <main className="fixed inset-0 z-[200] grid place-items-center bg-shell p-4">
-      <div className="w-full max-w-[360px] rounded-xl border border-line bg-surface p-6 shadow-soft">
-        <h1 className="text-[28px] leading-9 font-normal tracking-[-0.01em] text-ink">Create</h1>
-        <p className={`${text.ui} mt-1 text-ink-2`}>{mode === "login" ? "Sign in to continue." : "Make an account to get more daily usage."}</p>
+      <div className="w-full max-w-[360px] rounded-xl bg-surface p-6 shadow-card">
+        <h1 className="text-[28px] leading-9 font-normal tracking-[-0.022em] text-ink">Create</h1>
+        <p className={`${text.ui} mt-1 text-ink-2`}>{mode === "login" ? "Welcome back." : "An account gets you a bigger daily allowance."}</p>
         <form onSubmit={submit} className="mt-5 flex flex-col gap-3">
           {mode === "signup" && (
             <label className="flex flex-col gap-1">
-              <span className={text.meta}>Name (optional)</span>
+              <span className="text-[12px] leading-4 text-ink-2">Name (optional)</span>
               <input className={input} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
             </label>
           )}
           <label className="flex flex-col gap-1">
-            <span className={text.meta}>Email</span>
-            <input className={input} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
+            <span className="text-[12px] leading-4 text-ink-2">Email</span>
+            <input className={input} type="email" required aria-invalid={error ? true : undefined} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
           </label>
           <label className="flex flex-col gap-1">
-            <span className={text.meta}>Password</span>
+            <span className="text-[12px] leading-4 text-ink-2">Password</span>
             <input
               className={input}
+              aria-invalid={error ? true : undefined}
               type="password"
               required
               minLength={mode === "signup" ? 8 : undefined}
@@ -56,9 +57,9 @@ export function SignIn() {
               autoComplete={mode === "login" ? "current-password" : "new-password"}
             />
           </label>
-          {error && <p role="alert" className="text-[12px] leading-4 text-bad">{error}</p>}
+          {error && <p role="alert" className="flex items-center gap-1.5 text-[12px] leading-4 text-bad"><span aria-hidden className="size-1.5 shrink-0 rounded-full bg-bad" />{error}</p>}
           <button type="submit" disabled={busy} className={`${button.primary} w-full`}>
-            {mode === "login" ? "Sign in" : "Create account"}
+            {busy ? (mode === "login" ? "Signing in…" : "Creating account…") : mode === "login" ? "Sign in" : "Create account"}
           </button>
         </form>
         <div className="my-4 h-px bg-line" />

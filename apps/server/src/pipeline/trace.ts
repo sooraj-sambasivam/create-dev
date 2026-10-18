@@ -50,3 +50,18 @@ export async function readTraces(limit: number, dir?: string): Promise<PipelineT
 }
 
 export const newTraceId = (): string => `tr_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+/** Appends client-side stage timings (extension, web) to client-YYYYMMDD.jsonl next to the pipeline traces. Never throws. */
+export async function writeClientTrace(entry: { source: string; traceId?: string; stages: unknown[] }, dir?: string): Promise<boolean> {
+  if (process.env.VERCEL) return false;
+  try {
+    const d = traceDir(dir);
+    await mkdir(d, { recursive: true });
+    const at = Date.now();
+    await appendFile(path.join(d, `client-${dayStamp(at)}.jsonl`), JSON.stringify({ at, ...entry }) + "\n");
+    return true;
+  } catch (err) {
+    console.warn("[trace] client write failed:", err instanceof Error ? err.message : "unknown");
+    return false;
+  }
+}

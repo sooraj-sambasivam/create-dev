@@ -166,9 +166,22 @@ async function runTool<T>(opts: {
       (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === opts.tool.name,
     );
     messages.push({ role: "assistant", content: response.content });
+    // Every tool_use block in the assistant turn needs a matching tool_result in the next user turn,
+    // or the API answers 400. The model sometimes emits extra or repeated calls.
+    const otherToolResults: Anthropic.ToolResultBlockParam[] = response.content
+      .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b !== toolUse)
+      .map((b) => ({
+        type: "tool_result",
+        tool_use_id: b.id,
+        is_error: true,
+        content: `Only ${opts.tool.name} is available. Call it once with the complete input.`,
+      }));
     if (!toolUse) {
       lastProblem = "The model answered without calling the tool.";
-      messages.push({ role: "user", content: `Now call ${opts.tool.name} with the result.` });
+      messages.push({
+        role: "user",
+        content: [...otherToolResults, { type: "text", text: `Now call ${opts.tool.name} with the result.` }],
+      });
       continue;
     }
 
@@ -191,6 +204,7 @@ async function runTool<T>(opts: {
     messages.push({
       role: "user",
       content: [
+        ...otherToolResults,
         {
           type: "tool_result",
           tool_use_id: toolUse.id,

@@ -53,26 +53,90 @@ final class CaptureController {
     private var pending: Pending?
     private var gen = 0
     private var timings: [String] = []
+    /// The line spoken for the capture in flight (speech mode), carried to the lift step.
+    private var utteranceInFlight: String?
 
-    func tick(screen _: NSScreen, mouse: NSPoint) {
-        let flags = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard flags == .option else { optionSince = nil; fired = false; return }
-        if optionSince == nil { optionSince = Date() }
-        guard !fired, !busy, let t = optionSince, Date().timeIntervalSince(t) >= 0.4 else { return }
+    /// Pointer history (global mouseMoved monitor, mach-clock stamps). Set by the app delegate.
+    weak var pointer: PointerTimeline?
+    private var holdWork: DispatchWorkItem?
+    private var voice: VoiceLine?
+    /// `defaults write dev.create.tray speech -bool YES`: hold Option and talk; the capture happens on release, at the
+    /// pointer position of the first "this/that/here", and the line becomes the lift instruction. Off by default.
+    private var speechEnabled: Bool { UserDefaults.standard.bool(forKey: "speech") }
+
+    /// Option went down (alone) or up. Event driven: the tray no longer polls modifier flags.
+    func optionChanged(down: Bool) {
+        if down {
+            guard optionSince == nil else { return }
+            optionSince = Date()
+            fired = false
+            if speechEnabled { startVoice(); return }
+            let work = DispatchWorkItem { [weak self] in self?.fireHold() }
+            holdWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+        } else {
+            holdWork?.cancel()
+            holdWork = nil
+            let wasDown = optionSince != nil
+            optionSince = nil
+            fired = false
+            if wasDown, let v = voice { endVoice(v) }
+        }
+    }
+
+    /// 400 ms hold: capture at the cursor.
+    private func fireHold() {
+        guard !fired, !busy, optionSince != nil else { return }
         fired = true
+        launch(mouse: NSEvent.mouseLocation, utterance: nil)
+    }
+
+    private func launch(mouse: NSPoint, utterance: String?) {
         guard CGPreflightScreenCaptureAccess() else {
             CGRequestScreenCaptureAccess()
             show(.error("Screen Recording is not granted. Enable Create Tray in Privacy & Security, then relaunch.", tip: "capture blocked"), hold: 10)
             return
         }
         if !AXProbe.trusted && !promptedAX { promptedAX = true; AXProbe.ensureTrust(prompt: true) }
+        guard !busy else { return }
         busy = true
         pending = nil
         gen += 1
         onStatus?("Capturing\u{2026}")
         Task { @MainActor in
-            await self.run(mouse: mouse)
+            await self.run(mouse: mouse, utterance: utterance)
             self.busy = false
+        }
+    }
+
+    // MARK: Speech (opt-in)
+
+    private func startVoice() {
+        guard voice == nil else { return }
+        let line = VoiceLine()
+        voice = line
+        Task { @MainActor in
+            guard await VoiceLine.micAllowed(), let token = await VoiceLine.fetchToken() else {
+                self.show(.error("Voice is not available (microphone or realtime token). Release Option to capture without it.", tip: "speech"), hold: 5)
+                if self.voice === line { self.voice = nil }
+                return
+            }
+            guard self.voice === line, self.optionSince != nil else { return }
+            if !line.start(token: token) { self.voice = nil }
+        }
+    }
+
+    /// Option released while a line was open: wait for its words, then capture where the first "this/that/here" was said.
+    private func endVoice(_ line: VoiceLine) {
+        voice = nil
+        line.finish { [weak self] result in
+            guard let self else { return }
+            let said = result?.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            var mouse = NSEvent.mouseLocation
+            if let result, let word = result.words.first(where: { Deixis.isDeictic($0.text) }), let p = self.pointer?.position(forWordStart: word.start) {
+                mouse = p
+            }
+            self.launch(mouse: mouse, utterance: (said?.isEmpty ?? true) ? nil : said)
         }
     }
 
@@ -94,8 +158,9 @@ final class CaptureController {
 
     // MARK: Pipeline
 
-    private func run(mouse: NSPoint) async {
+    private func run(mouse: NSPoint, utterance: String?) async {
         timings = []
+        utteranceInFlight = utterance
         let localTrace = "n-" + String(UUID().uuidString.prefix(6)).lowercased()
         let screens = NSScreen.screens
         guard let primary = screens.first else { show(.error("No display found", tip: localTrace), hold: 6); return }
@@ -124,6 +189,7 @@ final class CaptureController {
             "cursor": ["x": Double((cursor.x - shot.cropTL.minX) * shot.scale), "y": Double((cursor.y - shot.cropTL.minY) * shot.scale)],
         ]
         if let ax { input["ax"] = AXProbe.json(ax, origin: shot.cropTL.origin, scale: shot.scale) }
+        if let utterance { input["utterance"] = String(utterance.prefix(1000)) }
 
         onStatus?("Locating\u{2026}")
         let resp: [String: Any]
@@ -169,6 +235,7 @@ final class CaptureController {
 
     /// extract -> lift -> tray chip. `box` is in image pixels.
     private func finish(_ shot: Shot, box: CGRect?, label: String, kind: String, trace: String, tip: String, keepChip: Bool = false) async {
+        let said = utteranceInFlight
         let myGen = gen
         if !keepChip { show(.label(kind: kind, text: label, tip: tip, working: "Reading\u{2026}"), hold: 12) }
         let img = Self.cropped(shot.image, to: box) ?? shot.image
@@ -181,7 +248,12 @@ final class CaptureController {
             guard let entity = ext["entity"] else { throw PipeError(message: "no entity in response") }
             if !keepChip { show(.label(kind: kind, text: label, tip: tip, working: "Lifting\u{2026}"), hold: 12) }
             onStatus?("Lifting\u{2026}")
-            let lift = try await stage("lift", trace) { try await self.post("api/lift", ["entity": entity], timeout: 30) }
+            var liftBody: [String: Any] = ["entity": entity]
+            if let said {
+                let want = said.replacingOccurrences(of: "(?i)^\\s*(please\\s+)?turn (this|it|that) into\\s*", with: "", options: .regularExpression).trimmingCharacters(in: CharacterSet(charactersIn: " .!?"))
+                if !want.isEmpty { liftBody["instruction"] = "Turn this into " + want.prefix(900) }
+            }
+            let lift = try await stage("lift", trace) { try await self.post("api/lift", liftBody, timeout: 30) }
             guard let link = lift["url"] as? String else { throw PipeError(message: "no url in response") }
             let e = entity as? [String: Any]
             let title = (e?["title"] as? String) ?? (e?["name"] as? String) ?? (label.isEmpty ? "Capture" : label)

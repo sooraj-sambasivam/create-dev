@@ -5,12 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import http from "node:http";
 import { fileURLToPath } from "node:url";
+import { BEATS } from "./beats.mjs";
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const VIDEO_DIR =
   process.env.VIDEO_DIR ||
   "/private/tmp/claude-501/-Users-soorajsambasivam-Documents-projects-create-dev/781b2c7e-b0d6-487c-909d-9cb6fda3c63e/scratchpad/video";
-export const BEATS_FILE = process.env.BEATS_FILE || path.join(VIDEO_DIR, "beats.json");
 export const FFMPEG = process.env.FFMPEG || "/opt/homebrew/bin/ffmpeg";
 export const FFPROBE = process.env.FFPROBE || "/opt/homebrew/bin/ffprobe";
 export const CHROME =
@@ -18,6 +18,7 @@ export const CHROME =
   path.join(os.homedir(), "Library/Caches/ms-playwright/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing");
 export const EXT_DIR = path.join(REPO, "apps/extension");
 export const DEMO_DIR = path.join(EXT_DIR, "demo");
+export const PAGES_DIR = path.join(REPO, "scripts/video/pages");
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const log = (...a) => console.log(`[video ${new Date().toISOString().slice(11, 19)}]`, ...a);
@@ -26,8 +27,7 @@ export const readJson = (p, d) => { try { return JSON.parse(fs.readFileSync(p, "
 export const writeJson = (p, v) => (mkdir(path.dirname(p)), fs.writeFileSync(p, JSON.stringify(v, null, 1)));
 
 export function loadBeats() {
-  let beats = readJson(BEATS_FILE);
-  if (!Array.isArray(beats)) throw new Error(`Cannot read beats at ${BEATS_FILE}`);
+  let beats = BEATS;
   const only = (process.env.BEAT || "").split(",").map((s) => s.trim()).filter(Boolean);
   if (only.length) beats = beats.filter((b) => only.some((o) => b.id === o || b.id.startsWith(o)));
   return beats;
@@ -43,8 +43,9 @@ export function sentences(text) {
 export function serveDemo(port = 5199) {
   const types = { ".html": "text/html", ".svg": "image/svg+xml", ".png": "image/png", ".js": "text/javascript", ".css": "text/css" };
   const srv = http.createServer((req, res) => {
-    const p = path.join(DEMO_DIR, decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/^\/+/, ""));
-    if (!p.startsWith(DEMO_DIR) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404).end("nf"); return; }
+    const rel = decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/^\/+/, "");
+    const p = [DEMO_DIR, PAGES_DIR].map((d) => path.join(d, rel)).find((f) => (f.startsWith(DEMO_DIR) || f.startsWith(PAGES_DIR)) && fs.existsSync(f) && !fs.statSync(f).isDirectory());
+    if (!p) { res.writeHead(404).end("nf"); return; }
     res.writeHead(200, { "content-type": types[path.extname(p)] || "application/octet-stream" }).end(fs.readFileSync(p));
   });
   return new Promise((resolve, reject) => { srv.once("error", reject); srv.listen(port, "127.0.0.1", () => resolve(srv)); });

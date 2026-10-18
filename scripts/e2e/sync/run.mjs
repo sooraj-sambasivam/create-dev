@@ -17,6 +17,8 @@ const ROOT = path.resolve(HERE, "../../..");
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf("--" + n); return i < 0 ? d : args[i + 1]; };
 const REPS = +opt("reps", 3), CONC = +opt("concurrency", 3);
+// The product commits on silence (server VAD, 0.5 s); "--commit manual" reproduces the old manual-commit baseline.
+const COMMIT = opt("commit", process.env.SYNC_VAD ? process.env.SYNC_VAD : "0.5") === "manual" ? "manual" : +opt("commit", process.env.SYNC_VAD ?? "0.5");
 const ONLY = opt("only", "")?.split(",").filter(Boolean);
 const OUT = opt("out", "/private/tmp/claude-501/-Users-soorajsambasivam-Documents-projects-create-dev/781b2c7e-b0d6-487c-909d-9cb6fda3c63e/scratchpad/sync");
 const CHROME = path.join(os.homedir(), "Library/Caches/ms-playwright/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing");
@@ -87,7 +89,7 @@ async function runOne(sc, truth, rep, port) {
     const token = await mintToken();
     const dbg = (m) => process.env.SYNC_DEBUG && console.log(`[${sc.id}#${rep}]`, m);
     dbg('page ready');
-    const anchor = await withTimeout(15000, 'anchor (mic click not detected?)', cdp.eval(`__h.startMic(${JSON.stringify(token)}, ${CLICK_MS})`), () => cdp.eval("JSON.stringify([__h.log, (__h.peaks||[]).filter((x,i)=>i%8==0).join(' ')])"));
+    const anchor = await withTimeout(15000, 'anchor (mic click not detected?)', cdp.eval(`__h.startMic(${JSON.stringify(token)}, ${CLICK_MS}, ${COMMIT === "manual" ? "null" : JSON.stringify({ vad: COMMIT })})`), () => cdp.eval("JSON.stringify([__h.log, (__h.peaks||[]).filter((x,i)=>i%8==0).join(' ')])"));
     dbg('anchor ' + JSON.stringify(anchor.diag));
     const tA0 = anchor.tA0;
     // plan

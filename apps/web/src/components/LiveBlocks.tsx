@@ -118,7 +118,7 @@ export function TableBlock({ node, style }: { node: TableNode; style: CSSPropert
   );
 }
 
-const SERIES_COLORS = ["var(--accent)", "var(--fg-muted)", "var(--color-ok)", "var(--color-warn)"];
+const DEFAULT_SERIES_COLORS = ["var(--accent)", "var(--fg-muted)", "var(--color-ok)", "var(--color-warn)"];
 const W = 640;
 const H = 280;
 const PAD = { l: 44, r: 12, t: 12, b: 32 };
@@ -139,6 +139,9 @@ export function ChartBlock({ node, style }: { node: ChartNode; style: CSSPropert
     [node.labels, node.series, subs],
   );
   const { labels, series } = data;
+  // A color set on the chart (e.g. "make this blue") recolors the first series; the others keep their defaults.
+  const custom = node.style?.color || (typeof style.color === "string" ? style.color : undefined);
+  const SERIES_COLORS = custom ? [custom, ...DEFAULT_SERIES_COLORS.slice(1)] : DEFAULT_SERIES_COLORS;
   const { reduce } = useReducedMotionSafe();
   const svgRef = useRef<SVGSVGElement>(null);
   const { px: labelPx, width: svgWidth } = useScreenMinPx(svgRef);

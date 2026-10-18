@@ -39,7 +39,8 @@ describe("intent", () => {
     ["turn this into an app", "container"],
     ["make an app from this table", "container"],
     ["track this sales table", "container"],
-    ["track this train", "row"],
+    ["track this train", "container"],
+    ["track this row", "row"],
     ["open this entry", "row"],
     ["this row", "row"],
     ["what time is this train?", "cell"],
@@ -150,7 +151,7 @@ describe("corpus dom.json / ax.json with ancestors", () => {
   const dir = path.resolve(__dirname, "../../../../eval/pointer/corpus");
   const load = (id: string, f: string) => JSON.parse(readFileSync(path.join(dir, id, f), "utf8"));
   const ids = [
-    ["t12-wiki-companies-row", "track this company", "row"],
+    ["t12-wiki-companies-row", "open this company", "row"],
     ["t14-wiki-seattle-temp-row", "track this table", "container"],
     ["t07-gsheet-sales-total", "track this number", "cell"],
   ] as const;

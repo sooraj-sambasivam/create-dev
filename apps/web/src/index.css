@@ -19,10 +19,10 @@
   /* Alpha fills for rows that sit on the shell: they stay correct on any shell tone. */
   --color-hover-shell: rgb(0 0 0 / 0.05);
   --color-selected: rgb(0 0 0 / 0.08);
-  --color-line: #e6e6e6;
+  --color-line: #e2e2e2;
   --color-ink: #0d0d0d;
   --color-ink-2: #5d5d5d;
-  --color-ink-3: #767676;
+  --color-ink-3: #6b6b6b;
   --color-accent: #3e7bf0;
   --color-on-accent: #ffffff;
   --color-ok: #1f8a4c;
@@ -43,10 +43,14 @@
   --default-transition-duration: 120ms;
   --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 
+  /* -apple-system first: macOS picks SF Display or SF Text per size (optical sizing). Inter Variable elsewhere. */
   --font-sans:
-    "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter Variable", system-ui,
-    sans-serif;
+    -apple-system, BlinkMacSystemFont, "Inter Variable", system-ui, sans-serif;
 
+  /* Tracking scale: tight on display sizes, neutral on UI, open on small meta. */
+  --tracking-display: -0.022em;
+  --tracking-ui: -0.006em;
+  --tracking-meta: 0.01em;
 }
 
 @layer base {
@@ -66,6 +70,27 @@
   body {
     @apply bg-shell text-ink font-sans antialiased;
     min-height: 100dvh;
+    letter-spacing: var(--tracking-ui);
+    font-optical-sizing: auto;
+    font-kerning: normal;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Headings balance their lines (no orphans); paragraphs avoid a lonely last word. */
+  h1,
+  h2 {
+    text-wrap: balance;
+    letter-spacing: var(--tracking-display);
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* Anything that counts or measures keeps its digits the same width. */
+  [role="meter"],
+  time,
+  output,
+  .num {
+    font-variant-numeric: tabular-nums;
   }
 
   button,
@@ -95,17 +120,17 @@
     --color-hover: #2a2a2a;
     --color-hover-shell: rgb(255 255 255 / 0.06);
     --color-selected: rgb(255 255 255 / 0.1);
-    --color-line: #2e2e2e;
+    --color-line: #333333;
     --color-ink: #f2f2f2;
     --color-ink-2: #b4b4b4;
-    --color-ink-3: #828282;
+    --color-ink-3: #8c8c8c;
     --color-accent: #6e9cf5;
     --color-on-accent: #0d0d0d;
     --color-ok: #3fcf7a;
     --color-warn: #f5b041;
     --color-bad: #f2706b;
     --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.45);
-    --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.06);
+    --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.09);
     --menu-surface: var(--color-tray);
     --menu-hover: var(--color-hover);
     color-scheme: dark;
@@ -119,20 +144,101 @@ html[data-theme="dark"] {
   --color-hover: #2a2a2a;
   --color-hover-shell: rgb(255 255 255 / 0.06);
   --color-selected: rgb(255 255 255 / 0.1);
-  --color-line: #2e2e2e;
+  --color-line: #333333;
   --color-ink: #f2f2f2;
   --color-ink-2: #b4b4b4;
-  --color-ink-3: #828282;
+  --color-ink-3: #8c8c8c;
   --color-accent: #6e9cf5;
   --color-on-accent: #0d0d0d;
   --color-ok: #3fcf7a;
   --color-warn: #f5b041;
   --color-bad: #f2706b;
   --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.06);
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.09);
   --menu-surface: var(--color-tray);
   --menu-hover: var(--color-hover);
   color-scheme: dark;
+}
+
+/*
+ * Dev-only palette variants (?variant=graphite|warm|ink, see shell/variant.ts). Colour tokens only:
+ * type, radius, spacing and motion never change. Each variant sets the same tokens in light and dark.
+ * Light rules exclude .dark so they never override a dark palette.
+ */
+html[data-variant="graphite"]:not(.dark) {
+  --color-shell: #eceef0;
+  --color-surface: #fbfbfc;
+  --color-tray: #f0f1f3;
+  --color-hover: #e6e8eb;
+  --color-line: #d9dce1;
+  --color-ink: #121417;
+  --color-ink-2: #525861;
+  --color-ink-3: #666d77;
+  --color-accent: #3a74e8;
+}
+html[data-variant="graphite"].dark {
+  --color-shell: #111214;
+  --color-surface: #191a1d;
+  --color-tray: #212327;
+  --color-hover: #292b30;
+  --color-line: #2f3237;
+  --color-ink: #eef0f2;
+  --color-ink-2: #aeb4bc;
+  --color-ink-3: #8a919a;
+  --color-accent: #6a9bf4;
+  --menu-surface: #212327;
+  --menu-hover: #292b30;
+}
+html[data-variant="warm"]:not(.dark) {
+  --color-shell: #f3f0ea;
+  --color-surface: #fffefb;
+  --color-tray: #f6f3ee;
+  --color-hover: #ece8e0;
+  --color-line: #e3ded4;
+  --color-ink: #1b1915;
+  --color-ink-2: #5c564c;
+  --color-ink-3: #6e675b;
+  --color-accent: #3e7bf0;
+}
+html[data-variant="warm"].dark {
+  --color-shell: #161411;
+  --color-surface: #1d1b17;
+  --color-tray: #25221d;
+  --color-hover: #2d2a24;
+  --color-line: #36322b;
+  --color-ink: #f3efe7;
+  --color-ink-2: #b9b2a5;
+  --color-ink-3: #8f887b;
+  --color-accent: #6e9cf5;
+  --menu-surface: #25221d;
+  --menu-hover: #2d2a24;
+}
+html[data-variant="ink"]:not(.dark) {
+  --color-shell: #f7f7f7;
+  --color-surface: #ffffff;
+  --color-tray: #f1f1f1;
+  --color-hover: #e8e8e8;
+  --color-line: #cfcfcf;
+  --color-ink: #000000;
+  --color-ink-2: #3d3d3d;
+  --color-ink-3: #575757;
+  --color-accent: #1f5fe0;
+  --color-selected: rgb(0 0 0 / 0.1);
+  --shadow-card: 0 0 0 1px rgb(0 0 0 / 0.14);
+}
+html[data-variant="ink"].dark {
+  --color-shell: #0a0a0a;
+  --color-surface: #121212;
+  --color-tray: #1a1a1a;
+  --color-hover: #222222;
+  --color-line: #3a3a3a;
+  --color-ink: #ffffff;
+  --color-ink-2: #c4c4c4;
+  --color-ink-3: #9a9a9a;
+  --color-accent: #7aa6f7;
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.16);
+  --menu-surface: #1a1a1a;
+  --menu-hover: #222222;
 }
 
 /*

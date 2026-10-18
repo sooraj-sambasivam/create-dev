@@ -4,6 +4,8 @@ import type { NarrationSession } from "@create/shared";
 import { useScreenStore } from "../../../store/screenStore";
 import { createRecorder } from "../../../narrate/session";
 import { createVoice, DRAIN_TIMEOUT_MS } from "../../../narrate/voice";
+import { createNarrateSync, type NarrateSync } from "../../../narrate/syncBridge";
+import { planDeixis } from "../../../narrate/deixisPlan";
 import { Lasso, type LassoEvent } from "./Lasso";
 import { consumeLassoClick } from "./lassoGesture";
 import { TrayPill } from "./TrayPill";
@@ -72,6 +74,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
 
   const recorder = useRef<ReturnType<typeof createRecorder> | null>(null);
   const voice = useRef<ReturnType<typeof createVoice> | null>(null);
+  const sync = useRef<NarrateSync | null>(null);
   const lastLasso = useRef<LassoMemo | null>(null);
   const pointer = usePagePointer(true);
   const [phase, setPhase] = useState<PointerPhase>({ kind: "idle" });
@@ -82,7 +85,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
   const utterStart = useRef<number | null>(null);
   /** The latest final line that had nothing to act on yet; a lasso within 4s after it still claims it. */
   const pendingSpeech = useRef<{ t: number; text: string } | null>(null);
-  const runCommand = useRef<(text: string, req: IntentRequest, areas: Record<string, number>) => void>(() => {});
+  const runCommand = useRef<(text: string, req: IntentRequest, areas: Record<string, number>, sourceId?: string) => void>(() => {});
   const offered = useRef<Offered | null>(null);
   const cmdCtx = useRef<CommandCtx | null>(null);
   const done = useRef(false);
@@ -126,19 +129,36 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
       offer: (o) => { offered.current = o; },
     };
     cmdCtx.current = ctx;
-    runCommand.current = (text, req, areas) => runPointerCommand(ctx, text, req, areas);
+    runCommand.current = (text, req, areas, sourceId) => runPointerCommand(ctx, text, req, areas, sourceId ? { sourceId } : undefined);
+    // One sync session per narration: the pointer ring plus the words as they are spoken (Scribe times, or estimated).
+    const ns = createNarrateSync();
+    sync.current = ns;
+    const log: Array<Record<string, unknown>> = [];
+    // The bubble names what "this" is bound to the moment the first (estimated) binding lands, then follows refinements.
+    const offBound = ns.onBound(({ bound, final }) => {
+      const first = bound[0];
+      if (import.meta.env.DEV) log.push({ t: performance.now(), final, targets: bound.map((b) => ({ b: b.id, w: b.word, id: b.targetId, s: b.wordStart, c: +b.confidence.toFixed(2), f: b.final })) });
+      if (!first || done.current || usePin.getState().pinned) return;
+      if (phaseRef.current.kind === "listening") setPhase({ kind: "listening", targetId: first.targetId, label: first.label });
+    });
     const onTranscript = (text: string, final: boolean) => {
       setTranscript(text);
       emitCompanion({ type: final ? "final" : "interim", text });
       if (!final) {
-        if (utterStart.current === null) utterStart.current = Date.now();
+        if (utterStart.current === null) {
+          utterStart.current = Date.now();
+          ns.begin();
+        }
         const k = phaseRef.current.kind;
         if (k === "idle" || k === "done" || k === "failed" || k === "ask" || k === "answer") {
-          const hit = hoverFor(utterStart.current);
+          const first = usePin.getState().pinned ? null : ns.current().bound[0];
+          const hit = first ? { id: first.targetId, label: first.label } : hoverFor(utterStart.current);
           setPhase({ kind: "listening", targetId: hit?.id ?? null, label: hit?.label ?? null });
         }
         return;
       }
+      if (utterStart.current === null) ns.begin();
+      const fin = ns.finish();
       add({ kind: "speech", text, final });
       finalWaiter.current?.();
       const tFinal = Date.now();
@@ -158,8 +178,14 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
         return;
       }
       const lasso = lastLasso.current;
-      const hover = hoverFor(startT);
-      const req = buildIntentRequest(text, lasso, tFinal, hover);
+      // Each "this/that/here" uses the target it was bound to when it was said; an explicit pin still wins.
+      const pinnedHit = usePin.getState().pinned;
+      const lassoDt = lasso ? tFinal - lasso.t : Infinity;
+      const lassoLive = !!lasso && lasso.targets.length > 0 && lassoDt <= LASSO_SPEECH_AFTER_MS && lassoDt >= -LASSO_SPEECH_BEFORE_MS;
+      const plan = planDeixis(text, fin, ns.hit, { pinned: !!pinnedHit, lassoLive, screen: useScreenStore.getState().screen });
+      const hover = pinnedHit ?? plan.first ?? hoverFor(startT);
+      const { multi, spoken } = plan;
+      const req = plan.req ?? buildIntentRequest(text, lasso, tFinal, hover);
       if (!req && useWorkMode.getState().mode === "chat" && cmdCtx.current) {
         // Chat still answers with nothing pointed at ("what is this page for?").
         pendingSpeech.current = null;
@@ -175,12 +201,13 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
       pendingSpeech.current = null;
       const dt = lasso ? tFinal - lasso.t : Infinity;
       const usedLasso = !!lasso && lasso.targets.length > 0 && dt <= LASSO_SPEECH_AFTER_MS && dt >= -LASSO_SPEECH_BEFORE_MS;
-      const areas = usedLasso ? lasso.areas : hover ? { [hover.id]: hover.area } : {};
+      const areas = usedLasso ? lasso.areas : multi ? plan.areas : hover ? { [hover.id]: hover.area } : {};
       if (usedLasso) lastLasso.current = null;
-      runCommand.current(text, req, areas);
+      runCommand.current(spoken, req, areas, plan.sourceId);
     };
     const v = createVoice({
       onTranscript,
+      sync: ns.sink,
       onEngine: () => setMicHint(BROWSER_SPEECH_HINT),
       onState: (s) => {
         micRef.current = s as MicState;
@@ -193,12 +220,17 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
     if (!v.available) setMic("unavailable");
     const unbind = v.bindKeys();
     // Dev/test hook: feed a transcript line through the same path the speech engine uses.
-    const w = window as unknown as { __createNarrate?: { say(text: string, final?: boolean): void } };
-    if (import.meta.env.DEV) w.__createNarrate = { say: (text, final = true) => onTranscript(text, final) };
+    const w = window as unknown as { __createNarrate?: { say(text: string, final?: boolean): void; log: unknown[]; sync: NarrateSync } };
+    if (import.meta.env.DEV) {
+      Object.assign(w, { __createNarrate: { say: (text: string, final = true) => onTranscript(text, final), log, sync: ns } });
+    }
     return () => {
       if (import.meta.env.DEV) delete w.__createNarrate;
       unbind();
       v.destroy();
+      offBound();
+      ns.dispose();
+      sync.current = null;
     };
   }, []);
 
@@ -374,7 +406,7 @@ export function NarrateOverlay({ onFinish, onCancel }: NarrateOverlayProps) {
             micHint={micHint}
             text={finishing ? "Finishing…" : tail || "Listening…"}
             finishing={finishing}
-            hint={<KeyHintBar pinned={Boolean(pinnedNow)} />}
+            hint={({ compact }) => <KeyHintBar pinned={Boolean(pinnedNow)} compact={compact} />}
             onFinish={() => void finish()}
             onCancel={cancel}
           />

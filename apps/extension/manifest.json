@@ -1,19 +1,44 @@
 {
   "manifest_version": 3,
   "name": "Create: Point at any website",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Point at a table, list, cards or chart on any page and turn it into a live app you own.",
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["<all_urls>"],
-  "background": { "service_worker": "background.js" },
-  "content_scripts": [
-    { "matches": ["http://*/*", "https://*/*", "file:///*"], "js": ["content.js"], "run_at": "document_idle", "all_frames": false }
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
   ],
-  "action": { "default_title": "Point at a table or chart (hold Option, or Alt+Shift+P)" },
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file:///*"
+      ],
+      "js": [
+        "timeline.js",
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_title": "Point at a table or chart (hold Option, or Alt+Shift+P)"
+  },
   "options_page": "options.html",
   "commands": {
     "_execute_action": {
-      "suggested_key": { "default": "Alt+Shift+P", "mac": "Alt+Shift+P" },
+      "suggested_key": {
+        "default": "Alt+Shift+P",
+        "mac": "Alt+Shift+P"
+      },
       "description": "Arm pointer mode"
     }
   }

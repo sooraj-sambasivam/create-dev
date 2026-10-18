@@ -7,15 +7,17 @@ import path from "node:path";
 import { launchChrome, serveDemo, loadBeats, VIDEO_DIR, mkdir, readJson, writeJson, sleep, log } from "./lib.mjs";
 
 const WEB = process.env.WEB_ORIGIN || "http://localhost:5175";
-const REAL = process.env.USE_REAL === "1";
+const REAL = process.env.USE_REAL !== "0"; // the canonical demo is recorded against the real server (:3002); USE_REAL=0 for the mock
 const API = process.env.API_ORIGIN || (REAL ? "http://localhost:3002" : "http://localhost:3001");
 const LOOK = process.env.LOOK || "paper";
 const DEMO_PORT = 5199;
+const DRIVER_VERSION = 2; // 2 = real workspace (Remix), canonical demo set; bump to invalidate stored captures
 const W = 1920, H = 1080;
 const demoUrl = (u) => (u || "").replace(/^file:\/\/.*\/apps\/extension\/demo\//, `http://localhost:${DEMO_PORT}/`);
 
 const beats = loadBeats();
-const pending = beats.filter((b) => process.env.FORCE === "1" || !fs.existsSync(path.join(VIDEO_DIR, "frames", b.id, "meta.json")));
+const captured = (b) => readJson(path.join(VIDEO_DIR, "frames", b.id, "meta.json"), {}).driver === DRIVER_VERSION;
+const pending = beats.filter((b) => !b.card && (process.env.FORCE === "1" || !captured(b)));
 if (!pending.length) { log("capture: all beats already captured (FORCE=1 to redo)"); process.exit(0); }
 for (const [name, url] of [["web", WEB + "/"], ["api", API + "/api/health"]]) {
   try { await fetch(url, { signal: AbortSignal.timeout(3000) }); } catch { console.error(`capture: ${name} not reachable at ${url}`); process.exit(2); }
@@ -66,7 +68,13 @@ const OVERLAY = `(() => {
   };
 })();`;
 
-const state = { src: null, app: null, pos: [W / 2, H / 2], warnings: [], rec: null, paused: false };
+const state = { src: null, app: null, pos: [W / 2, H / 2], warnings: [], rec: null };
+// Paused time is cut out of the take: frame times are shifted back by the accumulated pause so holds never appear.
+let _paused = false, _pauseT = 0;
+Object.defineProperty(state, "paused", {
+  get: () => _paused,
+  set: (v) => { const now = Date.now() / 1000; if (v && !_paused) _pauseT = now; if (!v && _paused && state.rec) state.rec.skew += now - _pauseT; _paused = v; },
+});
 const tabs = new Map(); // sessionId -> tab
 
 async function attach(targetId, opts = {}) {
@@ -102,7 +110,7 @@ cdp.on(async (m) => {
     if (r && r.tab.sessionId === m.sessionId && !state.paused) {
       const f = `${String(r.frames.length).padStart(5, "0")}.jpg`;
       fs.writeFileSync(path.join(r.dir, f), Buffer.from(m.params.data, "base64"));
-      r.frames.push({ f, t: m.params.metadata.timestamp });
+      r.frames.push({ f, t: m.params.metadata.timestamp - r.skew });
     }
     ack();
   }
@@ -119,7 +127,8 @@ async function recStart(tab) {
 async function beginBeat(id) {
   const dir = path.join(VIDEO_DIR, "frames", id);
   fs.rmSync(dir, { recursive: true, force: true }); mkdir(dir);
-  state.warnings = []; state.rec = { dir, frames: [], tab: null, startedAt: Date.now() / 1000 };
+  state.warnings = []; state.rec = { dir, frames: [], tab: null, startedAt: Date.now() / 1000, skew: 0 };
+  if (_paused) _pauseT = Date.now() / 1000;
 }
 async function endBeat(id, extra = {}) {
   const r = state.rec;
@@ -127,13 +136,19 @@ async function endBeat(id, extra = {}) {
   const fr = r.frames;
   writeJson(path.join(r.dir, "meta.json"), {
     id, frames: fr.length, startT: fr[0]?.t ?? 0, endT: fr.at(-1)?.t ?? 0,
-    duration: fr.length ? fr.at(-1).t - fr[0].t : 0, index: fr, warnings: state.warnings, real: REAL, startedAt: r.startedAt, endedAt: Date.now() / 1000, ...extra,
+    duration: fr.length ? fr.at(-1).t - fr[0].t : 0, index: fr, warnings: state.warnings, real: REAL, startedAt: r.startedAt, endedAt: Date.now() / 1000 - r.skew - (_paused ? Date.now() / 1000 - _pauseT : 0), driver: DRIVER_VERSION, ...extra,
   });
   log(`${id}: ${fr.length} frames, ${(fr.length ? fr.at(-1).t - fr[0].t : 0).toFixed(1)}s, ${state.warnings.length} warning(s)`);
   state.rec = null;
 }
 async function step(name, fn) {
-  try { return await fn(); } catch (e) { state.warnings.push(`${name}: ${e.message}`); log(`  warn ${name}: ${e.message}`); }
+  try { return await fn(); } catch (e) {
+    state.warnings.push(`${name}: ${e.message}`); log(`  warn ${name}: ${e.message}`);
+    try { // evidence for the failure
+      const t = state.rec?.tab || state.app || state.src; const { data } = await t.send("Page.captureScreenshot", { format: "png" });
+      fs.writeFileSync(path.join(mkdir(path.join(VIDEO_DIR, "debug")), `${name}.png`), Buffer.from(data, "base64"));
+    } catch {}
+  }
 }
 
 // ---- input primitives
@@ -180,7 +195,7 @@ async function key(tab, k, down, mods = 0, text) {
 }
 const press = async (tab, k, mods = 0) => { await key(tab, k, true, mods); await sleep(60); await key(tab, k, false, mods); };
 async function smoothScrollTo(tab, sel, ms = 4000) {
-  await tab.eval(`(() => { const el = window.__find(${JSON.stringify(sel)}); if (!el) return; const y = el.getBoundingClientRect().top + scrollY - innerHeight / 3; const y0 = scrollY, t0 = performance.now(); const f = (n) => { const k = Math.min(1, (n - t0) / ${ms}), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; scrollTo(0, y0 + (y - y0) * e); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); })()`);
+  await tab.eval(`(() => { const el = window.__find(${JSON.stringify(sel)}); if (!el) return; let sc = el.parentElement; while (sc && !(sc.scrollHeight > sc.clientHeight + 4 && /(auto|scroll)/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement; const root = sc || document.scrollingElement; const rr = sc ? sc.getBoundingClientRect() : { top: 0, height: innerHeight }; const y = el.getBoundingClientRect().top - rr.top + root.scrollTop - rr.height / 3; const y0 = root.scrollTop, t0 = performance.now(); const f = (n) => { const k = Math.min(1, (n - t0) / ${ms}), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; root.scrollTop = y0 + (y - y0) * e; if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); })()`);
   await sleep(ms + 200);
 }
 
@@ -209,152 +224,179 @@ async function waitForAppTab(known, timeout = 45000) {
   throw new Error("lifted app tab did not open");
 }
 
-// ---- the extension lift (shared by b1, b7 and silent setup)
+// ---- the extension lift (L02 sales spreadsheet, the canonical demo set)
+const SALES_URL = "http://localhost:5199/sales-sheet.html";
 async function pointAndAsk(tab, targetSel, askText) {
   await hover(tab, targetSel, 1100); await sleep(700);
   await key(tab, "Alt", true, 1); await sleep(1300); await key(tab, "Alt", false, 0); await sleep(700);
   await typeText(tab, askText);
   await sleep(500); await press(tab, "Enter");
 }
-async function liftTable({ silent = false } = {}) {
+const ASK = "turn this into something I can track and add to";
+async function liftSheet({ silent = false } = {}) {
   const prev = state.paused; state.paused = silent;
   try {
     const tab = state.src;
-    await goto(tab, "http://localhost:5199/route-44-schedule.html", "table#timetable");
+    await goto(tab, SALES_URL, "table#sales");
     const known = new Set((await pageTargets()).map((t) => t.targetId));
-    await pointAndAsk(tab, "table#timetable tbody tr:nth-child(4)", "turn this into something I can track");
-    if (silent) { state.app = await waitForAppTab(known); await waitFor(state.app, `document.querySelectorAll('table tbody tr').length>=3`, 30000).catch(() => {}); }
-    if (!silent) state.known = known;
+    await pointAndAsk(tab, "table#sales tbody tr:nth-child(3)", ASK);
+    if (silent) { state.app = await waitForAppTab(known); await toWorkspace(state.app); }
+    else state.known = known;
     return known;
   } finally { state.paused = prev; }
 }
+
+// ---- the real workspace. The lift opens a read-only "Made with Create" page (/?p=id); Remix loads it into a workspace chat.
+const APP = "[data-right-panel] [data-screen-root]";
+const ROWS = `${APP} table:not(.sr-only) tbody tr`;
+async function guestIfGated(tab) {
+  const guest = await tab.eval(`(() => { const b = [...document.querySelectorAll('button')].find((x) => /continue as guest/i.test(x.textContent)); if (b) { b.click(); return true; } return false; })()`).catch(() => false);
+  if (guest) await sleep(2500);
+}
+async function toWorkspace(tab) {
+  const prev = state.paused; state.paused = true; // the page load and reload are not shown
+  try {
+    await waitFor(tab, `!!window.__find && !!window.__find("button:has-text('Remix')") && document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length >= 3`, 60000);
+    state.shareUrl = await tab.eval("location.href");
+    await tab.eval(`[...document.querySelectorAll('button')].find((b) => /^\\s*remix\\s*$/i.test(b.textContent))?.click()`);
+    await sleep(2500);
+    await guestIfGated(tab);
+    await waitFor(tab, `!!document.querySelector('[data-testid=message-input]')`, 40000);
+    await tab.eval(`(() => { if (!document.querySelector('[data-right-panel]')) document.querySelector('[aria-label="Show side panel"]')?.click(); })()`);
+    await waitFor(tab, `document.querySelectorAll(${JSON.stringify(ROWS)}).length >= 3`, 30000);
+    await tab.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] }).catch(() => {});
+    await tab.eval(`window.__ccMove&&window.__ccMove(${state.pos[0]},${state.pos[1]})`).catch(() => {});
+    state.inWorkspace = true;
+  } catch (e) {
+    try { const { data } = await tab.send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(path.join(mkdir(path.join(VIDEO_DIR, "debug")), "to-workspace.png"), Buffer.from(data, "base64")); log("  url:", await tab.eval("location.href"), "|", (await tab.eval("document.body.innerText")).slice(0, 200).replace(/\n/g, " / ")); } catch {}
+    throw e;
+  } finally { state.paused = prev; }
+}
+/** Guest sign-in once, unrecorded, so the workspace never shows the gate during a take. */
+async function warmGuest() {
+  const prev = state.paused; state.paused = true;
+  try { const t = await newTab(WEB + "/"); await sleep(3000); await guestIfGated(t); await cdp.send("Target.closeTarget", { targetId: t.targetId }); }
+  catch (e) { log("guest warm-up:", e.message); } finally { state.paused = prev; }
+}
 async function ensureApp() {
-  if (state.app && (await pageTargets()).some((t) => t.targetId === state.app.targetId)) return;
-  log("  (setting up app silently)");
-  await step("silent-lift", () => liftTable({ silent: true }));
+  if (state.app && state.inWorkspace && (await pageTargets()).some((t) => t.targetId === state.app.targetId)) return;
+  log("  (setting up the workspace app silently)");
+  state.inWorkspace = false;
+  await step("silent-lift", () => liftSheet({ silent: true }));
   if (!state.app) { state.app = await newTab(WEB + "/"); await sleep(2500); }
 }
-
-// ---- workspace (home composer). The real API gates it behind sign-in: continue as guest (unrecorded).
-async function openWorkspace({ resetModel = false } = {}) {
-  state.paused = true;
-  state.ws = state.ws || await newTab(WEB + "/");
-  await state.ws.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] }).catch(() => {});
-  await state.ws.send("Page.navigate", { url: WEB + "/" }); await sleep(2500);
-  const guest = await state.ws.eval(`(() => { const b = [...document.querySelectorAll('button')].find((x) => /continue as guest/i.test(x.textContent)); if (b) { b.click(); return true; } return false; })()`).catch(() => false);
-  if (guest) await sleep(2500);
-  await state.ws.eval(`(() => { const b = [...document.querySelectorAll('button,a')].find((x) => /^\\s*new chat\\s*$/i.test(x.textContent)); if (b) b.click(); })()`).catch(() => {});
-  await sleep(600);
-  await waitSel(state.ws, "[data-testid=message-input]", 15000).catch((e) => state.warnings.push("workspace: " + e.message));
-  if (resetModel) { // the model choice persists across beats: start from Sonnet (unrecorded)
-    await state.ws.eval(`document.querySelector('[data-testid=model-picker]')?.click()`).catch(() => {}); await sleep(400);
-    await state.ws.eval(`document.querySelector('[data-testid=model-sonnet]')?.click()`).catch(() => {}); await sleep(400);
-  }
-  await state.ws.eval(`window.__ccMove&&window.__ccMove(${state.pos[0]},${state.pos[1]})`).catch(() => {});
-  await recStart(state.ws); await sleep(300); state.paused = false;
+async function leaveNarrate(tab) {
+  await press(tab, "Escape"); await sleep(400);
+  await tab.eval(`(() => { const t = document.querySelector('[data-testid=narrate-button]'); return !!t; })()`).catch(() => {});
 }
+
 // ---- beat drivers
 const drivers = {
   async "b1-point"() {
     await recStart(state.src);
-    await step("lift", () => liftTable());
+    await step("lift", () => liftSheet());
     await sleep(2500); // chip: Reading table / Building your app
   },
   async "b2-app"() {
     if (state.known && !state.app) {
       await recStart(state.src);
       await step("app-tab", async () => { state.app = await waitForAppTab(state.known, 60000); });
-      if (!state.app) await ensureApp();
+      if (state.app) await step("workspace", () => toWorkspace(state.app));
+      if (!state.app || !state.inWorkspace) await ensureApp();
     } else await ensureApp();
     await recStart(state.app);
-    state.paused = true; // skip the blank load
-    await step("rows", () => waitFor(state.app, `document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length>=3`, 30000));
-    await sleep(500); state.paused = false; await sleep(300);
-    await step("hover-row", () => hover(state.app, "[data-screen-root] table:not(.sr-only) tbody tr:nth-child(4)", 1000));
+    await sleep(500);
+    await step("hover-row", () => hover(state.app, `${ROWS}:nth-child(3)`, 1000));
     await sleep(1500);
-    await step("scroll", () => smoothScrollTo(state.app, "[data-screen-root] table:not(.sr-only) tbody tr:nth-child(12)", 4500));
+    await step("scroll", () => smoothScrollTo(state.app, `${APP} figure, ${APP} svg`, 3500));
   },
   async "b3-gap"() {
     await ensureApp(); state.paused = true; await recStart(state.app);
-    await state.app.eval("scrollTo(0,0)"); await sleep(600); state.paused = false;
+    await state.app.eval("document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; })"); await sleep(600); state.paused = false;
     await sleep(800);
-    await step("form", () => smoothScrollTo(state.app, "[data-screen-root] input", 4500));
-    await sleep(3500);
+    await step("form", () => smoothScrollTo(state.app, `${APP} input`, 3500));
+    await sleep(3000);
   },
   async "b4-qr-atlas"() {
     await ensureApp(); state.paused = true; await recStart(state.app);
-    await state.app.eval("scrollTo(0,0)"); await sleep(600); state.paused = false;
-    await step("qr", () => clickAny(state.app, ["button:has-text('Show QR')"]));
-    await sleep(4500);
-    await step("close-qr", () => press(state.app, "Escape"));
+    await state.app.eval("document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; })"); await sleep(600); state.paused = false;
+    await step("preview", () => state.app.eval(`[...document.querySelectorAll('[data-right-panel] button')].find((b) => /^\\s*preview\\s*$/i.test(b.textContent))?.click()`)); // live rows render in Preview
+    await step("copy-link", () => click(state.app, "[data-right-panel] button:has-text('Copy link')"));
+    await step("qr", () => click(state.app, "button:has-text('Show QR')"));
+    await sleep(4000);
+    await step("close-qr", () => click(state.app, "[role=dialog] button[aria-label=Close]")); // Escape would also close the side panel
     await sleep(500);
-    await step("second-tab-add-row", async () => { // stands in for the phone: unrecorded, then the row arrives live in the app
-      const url = await state.app.eval("location.href");
-      const prev = state.paused; state.paused = true;
-      const t2 = await newTab(url); await sleep(4000);
-      const ok = await t2.eval(`(() => { const ins = [...document.querySelectorAll('[data-screen-root] input:not([type=hidden])')]; if (ins.length < 2) return false; const set = (i, v) => { if (!i) return; const s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; s.call(i, v); i.dispatchEvent(new Event('input', { bubbles: true })); }; ['University District','6:58 AM','12:58 PM','11:30 PM'].forEach((v, k) => set(ins[k], v)); const b = [...document.querySelectorAll('[data-screen-root] button')].find((x) => /add row/i.test(x.textContent)); if (b) b.click(); return !!b; })()`);
-      await sleep(2000); await cdp.send("Target.closeTarget", { targetId: t2.targetId }); state.paused = prev;
-      if (!ok) throw new Error("add-row form not found in second tab");
+    // The form in the workspace posts to this chat's app id, which is where the table reads live rows from.
+    await step("scroll-form", () => smoothScrollTo(state.app, `${APP} input`, 2500));
+    await step("fill-form", async () => {
+      const vals = ["Events", "$60", "5.5%"];
+      for (let i = 0; i < vals.length; i++) {
+        const r = await state.app.eval(`(() => { const e = [...document.querySelectorAll(${JSON.stringify(APP + " input")})].filter((x) => x.type !== "hidden")[${i}]; if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+        if (!r) throw new Error("form input " + i + " missing");
+        await glide(state.app, r.x, r.y, 700);
+        await state.app.send("Input.dispatchMouseEvent", { type: "mousePressed", x: r.x, y: r.y, button: "left", clickCount: 1 }); await sleep(60);
+        await state.app.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: r.x, y: r.y, button: "left", clickCount: 1 });
+        await typeText(state.app, vals[i], 45);
+      }
+      await click(state.app, `${APP} *:has-text('Add row')`);
     });
-    await state.app.send("Page.bringToFront").catch(() => {});
-    await step("live-row", () => waitFor(state.app, `/University District/.test(document.querySelector('[data-screen-root] table:not(.sr-only) tbody')?.textContent||'')`, 20000));
-    await step("show-row", () => smoothScrollTo(state.app, "[data-screen-root] table:not(.sr-only) tbody tr:last-child", 2500));
-    await sleep(2500);
+    await step("live-row", () => waitFor(state.app, `/Events/.test(document.querySelector(${JSON.stringify(APP + " table:not(.sr-only)")})?.textContent||'')`, 25000));
+    if (process.env.VIDEO_DEBUG) log("  workspace panel:", (await state.app.eval("document.hidden + ' | ' + (document.querySelector('[data-right-panel] [data-screen-root]')?.innerText.slice(-400)||'none')")).replace(/\n/g, " / "));
+    await step("show-row", () => smoothScrollTo(state.app, `${APP} td:has-text('Events')`, 2500));
+    await sleep(2000);
+    state.paused = true; await step("edit", () => state.app.eval(`[...document.querySelectorAll('[data-right-panel] button')].find((b) => /^\\s*edit\\s*$/i.test(b.textContent))?.click()`)); await sleep(500); state.paused = false;
   },
   async "b5-chat"() {
-    await openWorkspace();
-    await step("chat-mode", () => click(state.ws, "[data-testid=work-mode-chat]"));
-    await step("pick-inkling", async () => { await click(state.ws, "[data-testid=model-picker]"); await sleep(500); await click(state.ws, "[data-testid=model-inkling]"); await sleep(500); });
+    await ensureApp(); state.paused = true; await recStart(state.app);
+    await state.app.eval("document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; })"); await sleep(400); state.paused = false;
+    await step("chat-mode", () => click(state.app, "[data-testid=work-mode-chat]"));
+    await sleep(500);
     await step("ask", async () => {
-      await click(state.ws, "[data-testid=message-input]");
-      await typeText(state.ws, "In two sentences, how do I read a bus timetable?"); await sleep(400); await press(state.ws, "Enter");
+      await click(state.app, "[data-testid=message-input]");
+      await typeText(state.app, "Which category is biggest, and what share of the total is it?"); await sleep(400); await press(state.app, "Enter");
     });
-    await step("answer", () => waitFor(state.ws, `document.querySelectorAll('[data-testid=answer]').length>0`, 25000));
-    await sleep(4000);
+    await step("answer", () => waitFor(state.app, `document.querySelectorAll('[data-testid=answer]').length>0`, 30000));
+    await sleep(3500);
+    state.paused = true; await step("work-mode", () => state.app.eval(`document.querySelector('[data-testid=work-mode-code]')?.click()`)); await sleep(600); state.paused = false;
   },
   async "b6-this"() {
-    await openWorkspace({ resetModel: true });
-    state.paused = true; // the build and its model time are not shown: the beat starts on the finished page
-    await step("prompt", async () => {
-      await click(state.ws, "[data-testid=message-input]");
-      await typeText(state.ws, "A landing page for a coffee shop called Ember", 25); await sleep(300); await press(state.ws, "Enter");
-    });
-    await step("built", () => waitFor(state.ws, `(() => { if (document.querySelectorAll('[data-screen-root] [data-node-id]').length > 0) return true; const r = [...document.querySelectorAll('button')].find((b) => /^\\s*retry\\s*$/i.test(b.textContent)); if (r && /reach the server/i.test(document.body.innerText)) r.click(); return false; })()`, 150000, 1500));
-    await step("settled", () => waitFor(state.ws, `!/Building/.test(document.body.innerText)`, 60000));
-    await sleep(1500); state.paused = false; await sleep(600);
+    await ensureApp(); state.paused = true; await recStart(state.app);
+    await step("work-mode", () => state.app.eval(`document.querySelector('[data-testid=work-mode-code]')?.click()`));
+    await state.app.eval("document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; })"); await sleep(800); state.paused = false;
     await step("open-narrate", async () => {
-      await hover(state.ws, "[data-testid=go]", 900); await sleep(900);
-      await click(state.ws, "[data-testid=narrate-button]"); await sleep(1000);
+      await hover(state.app, "[data-testid=go]", 900); await sleep(900);
+      await click(state.app, "[data-testid=narrate-button]"); await sleep(1000);
     });
     let target = null;
     await step("hover-title", async () => {
-      target = await state.ws.eval(`(() => { const els = [...document.querySelectorAll('[data-right-panel] [data-screen-root] [data-node-id]')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > 10 && r.top >= 0 && r.bottom <= innerHeight; }); const leaf = els.filter((e) => e.textContent.trim().length > 3 && ![...e.children].some((c) => c.hasAttribute('data-node-id'))); const h = leaf.sort((a, b) => parseFloat(getComputedStyle(b).fontSize) - parseFloat(getComputedStyle(a).fontSize))[0]; if (!h) return null; const r = h.getBoundingClientRect(); const mf = (n) => Math.max(...[n, ...n.querySelectorAll('*')].map((x) => parseFloat(getComputedStyle(x).fontSize) || 0)); return { id: h.getAttribute('data-node-id'), x: r.left + Math.min(r.width / 2, 60), y: r.top + r.height / 2, fs: mf(h) }; })()`);
+      target = await state.app.eval(`(() => { const els = [...document.querySelectorAll('[data-right-panel] [data-screen-root] [data-node-id]')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > 10 && r.top >= 0 && r.bottom <= innerHeight; }); const leaf = els.filter((e) => e.textContent.trim().length > 3 && ![...e.children].some((c) => c.hasAttribute('data-node-id'))); const h = leaf.sort((a, b) => parseFloat(getComputedStyle(b).fontSize) - parseFloat(getComputedStyle(a).fontSize))[0]; if (!h) return null; const r = h.getBoundingClientRect(); const mf = (n) => Math.max(...[n, ...n.querySelectorAll('*')].map((x) => parseFloat(getComputedStyle(x).fontSize) || 0)); return { id: h.getAttribute('data-node-id'), x: r.left + Math.min(r.width / 2, 60), y: r.top + r.height / 2, fs: mf(h) }; })()`);
       if (!target) throw new Error("no visible node in right panel");
-      await glide(state.ws, target.x - 40, target.y, 900); await glide(state.ws, target.x, target.y, 500); await sleep(1500);
+      await glide(state.app, target.x - 40, target.y, 900); await glide(state.app, target.x, target.y, 500); await sleep(1500);
     });
-    await step("say", async () => {
-      await state.ws.eval(`Promise.resolve(window.__createNarrate.say("make this bigger", true)).then(() => 1)`);
-    });
-    await step("grew", () => waitFor(state.ws, `(() => { const e = document.querySelector('[data-node-id="${target?.id}"]'); if (!e) return false; return Math.max(...[e, ...e.querySelectorAll('*')].map((x) => parseFloat(getComputedStyle(x).fontSize) || 0)) > ${target?.fs ?? 0}; })()`, 20000));
+    await step("say", async () => { await state.app.eval(`Promise.resolve(window.__createNarrate.say("make this bigger", true)).then(() => 1)`); });
+    await step("grew", () => waitFor(state.app, `(() => { const e = document.querySelector('[data-node-id="${target?.id}"]'); if (!e) return false; return Math.max(...[e, ...e.querySelectorAll('*')].map((x) => parseFloat(getComputedStyle(x).fontSize) || 0)) > ${target?.fs ?? 0}; })()`, 20000));
     await sleep(3000);
-    await step("undo", async () => { await press(state.ws, "z", 4); });
-    await sleep(2500);
+    await step("undo", async () => { await press(state.app, "z", 4); });
+    await sleep(2000);
+    state.paused = true; await step("leave-narrate", () => leaveNarrate(state.app)); state.paused = false;
   },
-  async "b7-pixels"() {
-    const tab = state.src; await recStart(tab);
-    await step("lift-chart", async () => {
-      await goto(tab, "http://localhost:5199/chart.html", "img, svg");
-      const known = new Set((await pageTargets()).map((t) => t.targetId));
-      await pointAndAsk(tab, "img, svg", "turn this into something I can track");
-      await sleep(2000);
-      const app = await waitForAppTab(known, 45000); await recStart(app); state.app2 = app;
-      await step("rows", () => waitFor(app, `document.querySelectorAll('[data-screen-root] table:not(.sr-only) tbody tr').length>=2`, 30000));
-      await sleep(4000);
+  async "b7-build"() {
+    await ensureApp(); state.paused = true; await recStart(state.app);
+    await step("work-mode", () => state.app.eval(`document.querySelector('[data-testid=work-mode-code]')?.click()`));
+    await sleep(300); state.paused = false;
+    await step("new-project", () => click(state.app, "[data-testid=new-project]"));
+    await sleep(600);
+    await step("prompt", async () => {
+      await click(state.app, "[data-testid=message-input]");
+      await typeText(state.app, "a sign-up sheet for study nights", 35); await sleep(300); await press(state.app, "Enter");
     });
+    await step("built", () => waitFor(state.app, `document.querySelectorAll(${JSON.stringify(APP + " [data-node-id]")}).length > 0`, 90000, 500));
+    await step("settled", () => waitFor(state.app, `!/Building/.test(document.body.innerText)`, 60000));
+    await sleep(3500);
   },
   async "b8-surfaces"() {
-    await openWorkspace({ resetModel: true });
-    await step("lift-button", () => hover(state.ws, "[data-testid=lift-button]", 1100));
+    await ensureApp(); await recStart(state.app);
+    await step("lift-button", () => hover(state.app, "[data-testid=lift-button]", 1100));
     await sleep(2500);
   },
   async "b9-end"() { /* card beat: rendered in assemble.mjs, nothing to capture */ },
@@ -379,12 +421,13 @@ try {
     await swUrl.eval(`chrome.storage.sync.set({ apiOrigin: ${JSON.stringify(API)}, webOrigin: ${JSON.stringify(WEB)} })`).catch((e) => log("ext storage:", e.message));
     log(`extension ready (api ${API}, web ${WEB}, real=${REAL})`);
   } else log("WARNING: extension service worker not found");
+  await warmGuest();
 
   for (const b of beats) {
-    if (!pending.includes(b)) { log(`${b.id}: skip (captured)`); continue; }
+    if (!pending.includes(b)) { log(`${b.id}: skip (${b.card ? "card" : "captured"})`); continue; }
     log(`${b.id}: capturing`);
     await beginBeat(b.id);
     await step("driver", () => drivers[b.id]?.() ?? (state.warnings.push("no driver for beat"), undefined));
-    await endBeat(b.id, { card: b.steps?.some((s) => s.do === "card") || undefined });
+    await endBeat(b.id);
   }
 } finally { cleanup(); }

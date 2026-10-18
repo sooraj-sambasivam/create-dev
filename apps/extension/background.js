@@ -1,6 +1,6 @@
 // Lift: the toolbar / Alt+Shift+P arms pointer mode; content.js (also auto-injected) does the pointing.
 // Network calls and tab capture run here so page CSP and CORS never apply.
-const DEFAULTS = { apiOrigin: "http://localhost:3001", webOrigin: "http://localhost:5173" };
+const DEFAULTS = { apiOrigin: "http://localhost:3001", webOrigin: "http://localhost:5173", voice: false };
 
 async function settings() {
   const s = await chrome.storage.sync.get(DEFAULTS);
@@ -10,7 +10,7 @@ async function settings() {
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.id) return;
   try {
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["timeline.js", "content.js"] });
     await chrome.tabs.sendMessage(tab.id, { type: "arm" });
   } catch (err) {
     console.warn("Create: cannot point on this page", err);
@@ -22,6 +22,19 @@ async function post(path, body) {
   let res;
   try {
     res = await fetch(`${apiOrigin.replace(/\/+$/, "")}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  } catch {
+    throw new Error("Cannot reach Create. Is it running?");
+  }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `Create said ${res.status}`);
+  return json;
+}
+
+async function getJson(path) {
+  const { apiOrigin } = await settings();
+  let res;
+  try {
+    res = await fetch(`${apiOrigin.replace(/\/+$/, "")}${path}`, { cache: "no-store" });
   } catch {
     throw new Error("Cannot reach Create. Is it running?");
   }
@@ -137,6 +150,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return { ok: true };
     },
     traces: async () => ({ ok: true, traces: globalThis.__createTraces }),
+    // Single-use ElevenLabs realtime token (the API key stays on the server). A batch answer means no realtime voice.
+    "voice-token": async () => {
+      const r = await getJson("/api/voice-token");
+      return r.provider === "elevenlabs" && r.token ? { ok: true, token: r.token } : { ok: false, error: r.reason || "No realtime voice" };
+    },
     lift: async () => {
       const snap = msg.snapshot && JSON.stringify(msg.snapshot).length <= 150_000 ? { snapshot: msg.snapshot } : {};
       const r = await post("/api/lift", { entity: msg.entity, ...(msg.instruction ? { instruction: msg.instruction } : {}), ...snap });
@@ -151,4 +169,41 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!run) return false;
   run().then(sendResponse, (err) => sendResponse({ ok: false, error: err instanceof Error ? err.message : "Failed" }));
   return true;
+});
+
+/**
+ * Scribe realtime for the content script. The socket lives here (page CSP never applies); the content script captures the mic,
+ * stamps the first sample on its own performance.now clock and streams 16 kHz PCM over a port. Server messages go back unchanged:
+ * word times arrive as seconds from the first sample sent, so the content script can place them on the page timeline.
+ * VAD commit after 0.5 s of silence, word timestamps on.
+ */
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== "scribe") return;
+  let ws = null;
+  let closed = false;
+  const queue = [];
+  const send = (obj) => {
+    const data = JSON.stringify(obj);
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(data);
+    else if (!closed) queue.push(data);
+  };
+  const safePost = (m) => { try { port.postMessage(m); } catch { /* tab went away */ } };
+  port.onMessage.addListener((m) => {
+    if (m?.type === "open" && !ws && typeof m.token === "string") {
+      const q = new URLSearchParams({
+        model_id: "scribe_v2_realtime", audio_format: "pcm_16000", commit_strategy: "vad", vad_silence_threshold_secs: "0.5",
+        include_timestamps: "true", token: m.token,
+      });
+      ws = new WebSocket(`wss://api.elevenlabs.io/v1/speech-to-text/realtime?${q}`);
+      ws.onopen = () => { for (const d of queue.splice(0)) ws.send(d); };
+      ws.onmessage = (e) => { try { safePost({ type: "msg", msg: JSON.parse(e.data) }); } catch { /* not JSON */ } };
+      ws.onerror = () => safePost({ type: "closed", error: "socket error" });
+      ws.onclose = () => { if (!closed) safePost({ type: "closed" }); };
+    } else if (m?.type === "audio" && typeof m.b64 === "string") {
+      send({ message_type: "input_audio_chunk", audio_base_64: m.b64, sample_rate: 16000, commit: false });
+    } else if (m?.type === "commit") {
+      send({ message_type: "input_audio_chunk", audio_base_64: "", sample_rate: 16000, commit: true });
+    }
+  });
+  port.onDisconnect.addListener(() => { closed = true; queue.length = 0; try { ws?.close(); } catch { /* not open */ } });
 });

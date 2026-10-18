@@ -119,7 +119,7 @@ export async function answerAsk(
         })
       : null;
     if (text) return { answer: text, provider: choice, ...(suggestCode ? { suggestCode } : {}) };
-    if (req.model) opts.onFallback?.(req.model);
+    opts.onFallback?.(choice);
   }
   if (process.env.MOCK_AI === "1") {
     return { answer: mockAnswer(req, reading), provider: "mock", ...(suggestCode ? { suggestCode } : {}) };

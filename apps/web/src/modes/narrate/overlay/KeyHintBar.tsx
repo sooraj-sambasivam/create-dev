@@ -13,11 +13,16 @@ export function keyHints(o: { pinned: boolean }): KeyHint[] {
   ];
 }
 
-/** The always-on key-hint bar, small and quiet, above the narrate bar. */
-export function KeyHintBar({ pinned }: { pinned: boolean }) {
-  const hints = keyHints({ pinned });
+/** The compact set: the two keys that always matter (finish and leave), for narrow windows. */
+export function compactKeyHints(o: { pinned: boolean }): KeyHint[] {
+  return keyHints(o).filter((h) => h.key === "↵" || h.key === "esc");
+}
+
+/** The always-on key-hint bar, small and quiet, docked above the narrate bar. */
+export function KeyHintBar({ pinned, compact = false }: { pinned: boolean; compact?: boolean }) {
+  const hints = compact ? compactKeyHints({ pinned }) : keyHints({ pinned });
   return (
-    <span className="flex items-center gap-1.5" data-testid="key-hint-bar">
+    <span className="flex items-center gap-1.5" data-testid="key-hint-bar" data-compact={compact || undefined}>
       {hints.map((h, i) => (
         <Fragment key={h.key}>
           {i > 0 && <span aria-hidden="true" className="text-ink-3">·</span>}

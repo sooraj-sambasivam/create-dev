@@ -5,7 +5,9 @@ import { useWorkMode } from "../../../store/modeStore";
 import { usePin } from "../../../narrate/pinStore";
 import { HOLD_KEY } from "../../../narrate/keys";
 import { initialHold, reduceHold, type HoldState } from "../../../narrate/holdToggle";
-import { createVoice } from "../../../narrate/voice";
+import { createVoice, type VoiceSyncSink } from "../../../narrate/voice";
+import { createNarrateSync, type NarrateSync } from "../../../narrate/syncBridge";
+import { planDeixis } from "../../../narrate/deixisPlan";
 import { PointerBubble, PointerLiveRegion, type PointerPhase } from "./PointerBubble";
 import { answerOffered, runAsk, runPointerCommand, type CommandCtx, type Offered } from "./pointerCommand";
 import { usePagePointer } from "./usePagePointer";
@@ -18,6 +20,10 @@ import { handleAgentCommand } from "../../../ghost/agentRow";
 export const HOLD_TO_TALK_KEY = HOLD_KEY;
 const HOVER_FALLBACK_MS = 1500;
 const CLEAR_MS = { done: 2500, failed: 4000, ask: 5000, answer: 12000, cancelled: 1500 } as const;
+/** The sync session outlives the key release by this long, so the final transcript can still bind its words. */
+const SYNC_LINGER_MS = 8000;
+/** The pointer is believed to have rested where it last moved for at most this long before the key went down. */
+const SEED_MAX_MS = 2000;
 /** A done chip with an Undo button stays this long. */
 const UNDO_MS = 5000;
 const IN_FLIGHT = new Set<PointerPhase["kind"]>(["listening", "understanding", "editing"]);
@@ -68,12 +74,53 @@ export function HoldToTalk() {
       };
     };
     let hold: HoldState = initialHold;
+    // One sync session per hold (or toggled listening): created at keydown, dropped shortly after release.
+    let ns: NarrateSync | null = null;
+    let offBound: (() => void) | null = null;
+    let lingerTimer: ReturnType<typeof setTimeout> | undefined;
+    /** What the first deictic word is bound to right now (set from the sync session, cleared with each line). */
+    let live: { id: string; label: string } | null = null;
+    const dropSync = () => {
+      clearTimeout(lingerTimer);
+      offBound?.();
+      offBound = null;
+      ns?.dispose();
+      ns = null;
+    };
+    const startSync = () => {
+      dropSync();
+      const next = createNarrateSync();
+      ns = next;
+      // The pointer rested somewhere before the key went down: lay that dwell into the ring so "this" can bind to it.
+      const l = pointer.latest();
+      const nowP = performance.now();
+      if (l) {
+        const since = Math.max(nowP - SEED_MAX_MS, nowP - (Date.now() - l.t));
+        for (let t = since; t < nowP; t += 50) next.session.pointer.ingest(l.x, l.y, t);
+      }
+      live = null;
+      next.begin();
+      offBound = next.onBound(({ bound }) => {
+        const first = bound[0];
+        if (!first || usePin.getState().pinned) return;
+        live = { id: first.targetId, label: first.label };
+        // Name the thing the moment the first (estimated) binding lands, then follow the final one.
+        if (phaseRef.current.kind === "listening") setPhase({ kind: "listening", targetId: first.targetId, label: first.label });
+      });
+    };
+    const sink: VoiceSyncSink = {
+      scribe: (m, a) => ns?.sink.scribe(m, a),
+      audioStart: (ms) => ns?.sink.audioStart(ms),
+      speech: (k, t, f, a) => ns?.sink.speech(k, t, f, a),
+    };
     const onTranscript = (text: string, final: boolean) => {
       if (muted) return;
       const hit = bound.current;
       emitCompanion({ type: final ? "final" : "interim", text });
       if (!final) {
-        setPhase({ kind: "listening", targetId: hit?.id ?? null, label: hit?.label ?? null });
+        ns?.begin();
+        const shown = live ?? hit;
+        setPhase({ kind: "listening", targetId: shown?.id ?? null, label: shown?.label ?? null });
         return;
       }
       if (handleAgentCommand(text)) {
@@ -82,19 +129,25 @@ export function HoldToTalk() {
       }
       const ctx = newCtx();
       const now = Date.now();
+      const fin = ns?.finish() ?? { bound: [], bindings: [], final: false };
+      live = null;
       const picked = answerOffered(offered.current, text, now);
       if (picked) {
         offered.current = null;
         runPointerCommand(ctx, picked.transcript, picked, {});
         return;
       }
-      const req = buildIntentRequest(text, null, now, hit);
-      if (req) runPointerCommand(ctx, text, req, hit ? { [hit.id]: hit.area } : {});
+      const plan = planDeixis(text, fin, (id) => ns?.hit(id), { pinned: !!usePin.getState().pinned, screen: useScreenStore.getState().screen });
+      const target = usePin.getState().pinned ?? plan.first ?? hit;
+      const req = plan.req ?? buildIntentRequest(text, null, now, target);
+      if (req) runPointerCommand(ctx, plan.spoken, req, plan.multi ? plan.areas : target ? { [target.id]: target.area } : {}, plan.sourceId ? { sourceId: plan.sourceId } : undefined);
       else if (ctx.mode() === "chat") void runAsk(ctx, text, { id: null, label: null });
       else setPhase({ kind: "failed", targetId: null, label: null, message: "Point at something first" });
     };
     const voice = createVoice({
       onTranscript,
+      sync: sink,
+      joinUntilRelease: true,
       onState: (s) => {
         if (s === "unavailable") setPhase({ kind: "failed", targetId: null, label: null, message: "Microphone unavailable" });
         else if (s === "listening" || s === "locked") emitCompanion({ type: "listening" });
@@ -115,12 +168,15 @@ export function HoldToTalk() {
       bound.current = usePin.getState().pinned ?? (l?.hit && Date.now() - l.t < HOVER_FALLBACK_MS ? l.hit : null);
       setHeld(true);
       setPhase({ kind: "listening", targetId: bound.current?.id ?? null, label: bound.current?.label ?? null });
+      startSync();
       voice.start();
     };
     const release = () => {
       hold = initialHold;
       setHeld(false);
       voice.stop();
+      clearTimeout(lingerTimer);
+      lingerTimer = setTimeout(dropSync, SYNC_LINGER_MS);
     };
     const up = (e: KeyboardEvent) => {
       if (e.key !== HOLD_TO_TALK_KEY) return;
@@ -146,6 +202,7 @@ export function HoldToTalk() {
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", release);
       voice.destroy();
+      dropSync();
       setHeld(false);
     };
   }, [narrating, pointer]);

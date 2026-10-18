@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BAR_CARD_GUTTER, BAR_GAP, narrateBarPlacement, rectsOverlap, type Rect } from "./narrateBar";
+import { BAR_CARD_GUTTER, BAR_GAP, HINT_CLEARANCE, HINT_GAP, HINT_SIZE, hintPlacement, narrateBarPlacement, rectsOverlap, type Rect } from "./narrateBar";
 
 // A 1200x900 window. The sidebar ends at x=268; the main card runs from there to the right panel's
 // slot at x=1000, with the header across the top and the composer near the bottom.
@@ -99,5 +99,58 @@ describe("rectsOverlap", () => {
   });
   it("detects a real overlap", () => {
     expect(rectsOverlap({ left: 0, right: 10, top: 0, bottom: 10 }, { left: 5, right: 20, top: 5, bottom: 20 })).toBe(true);
+  });
+});
+
+describe("hintPlacement", () => {
+  const bar: Rect = { left: 514, right: 754, top: 700, bottom: 732 };
+  const base = { bar, card, viewportW: 1440, header };
+  const hintBox = (mode: "full" | "compact", dx: number, b: Rect = bar): Rect => {
+    const { w, h } = HINT_SIZE[mode];
+    const left = (b.left + b.right) / 2 - w / 2 + dx;
+    return { left, right: left + w, top: b.top - HINT_GAP - h, bottom: b.top - HINT_GAP };
+  };
+
+  it("docks the full hint above the bar, centred, when nothing is in the way", () => {
+    expect(hintPlacement(base)).toEqual({ mode: "full", dx: 0 });
+  });
+
+  it("starts compact below 900px", () => {
+    expect(hintPlacement({ ...base, viewportW: 880 }).mode).toBe("compact");
+  });
+
+  it("drops to compact, then hides, rather than touch a thread action row", () => {
+    const wide: Rect = { left: 280, right: 520, top: 660, bottom: 690 }; // row under the full hint, left of the compact one
+    expect(hintPlacement({ ...base, avoid: [wide] }).mode).toBe("compact");
+    const everywhere: Rect = { left: 268, right: 1000, top: 640, bottom: 690 };
+    expect(hintPlacement({ ...base, avoid: [everywhere] }).mode).toBe("hidden");
+  });
+
+  it("keeps a clearance from the action row it avoids", () => {
+    const row: Rect = { left: 280, right: 470, top: 640, bottom: 640 + HINT_SIZE.full.h + HINT_GAP + 8 - 1 };
+    const p = hintPlacement({ ...base, avoid: [row] });
+    if (p.mode !== "hidden") {
+      const box = hintBox(p.mode, p.dx);
+      expect(rectsOverlap(box, { ...row, top: row.top - HINT_CLEARANCE, bottom: row.bottom + HINT_CLEARANCE, left: row.left - HINT_CLEARANCE, right: row.right + HINT_CLEARANCE })).toBe(false);
+    }
+  });
+
+  it("shifts sideways to stay inside the card gutters", () => {
+    const nearEdge: Rect = { left: 276, right: 516, top: 700, bottom: 732 };
+    const p = hintPlacement({ ...base, bar: nearEdge });
+    expect(p.mode).toBe("full");
+    const box = hintBox("full", p.dx, nearEdge);
+    expect(box.left).toBeGreaterThanOrEqual(card.left + BAR_CARD_GUTTER);
+    expect(box.right).toBeLessThanOrEqual(card.right - BAR_CARD_GUTTER);
+  });
+
+  it("never sits under the header", () => {
+    const high: Rect = { left: 514, right: 754, top: 70, bottom: 102 };
+    expect(hintPlacement({ ...base, bar: high }).mode).toBe("hidden");
+  });
+
+  it("hides when even the compact hint is wider than the card", () => {
+    const tiny: Rect = { left: 0, right: 200, top: 20, bottom: 52 };
+    expect(hintPlacement({ bar: { ...bar, top: 700 }, card: tiny, viewportW: 600 }).mode).toBe("hidden");
   });
 });

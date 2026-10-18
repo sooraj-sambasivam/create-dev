@@ -12,6 +12,18 @@ Add `"eval:sync": "node --env-file=apps/server/.env scripts/e2e/sync/run.mjs"` w
 
 Output (default `scratchpad/sync/`): `report.md`, `report.json`, `runs/*.json` (raw emissions), `audio/*` (TTS, truth, WAV).
 
+## Product scenarios (real app, real Chromium, real Scribe)
+```
+node --env-file=apps/server/.env scripts/e2e/sync/narrate.mjs [--reps 3] [--only id,id]       # through the real Narrate overlay
+node --env-file=apps/server/.env scripts/e2e/sync/narrate-hold.mjs [--reps 1]                 # Option hold-to-talk, no Narrate
+node --env-file=apps/server/.env scripts/e2e/sync/extension.mjs [--reps 2]                    # extension content script + background
+node --test scripts/e2e/sync/extension-timeline.test.mjs
+node scripts/e2e/sync/narrate-shots.mjs                                                       # overlay screenshots at 1440 / 1024 / 880
+```
+They need the web dev server on :5175 (BASE_URL) proxying to the mock API on :3001, and the harness audio (`run.mjs` caches it in `scratchpad/sync/audio`). The page shim (`narrate-lib.mjs`) turns off echo cancellation, gives the keydown MediaRecorder buffer a silent stream (the fake device would otherwise share its one file between two streams), and taps the live stream with its own AudioWorklet to find the calibration click, an independent audio clock for scoring. `/api/voice-token` is limited to 10 per minute per IP, so the scripts retry; do not run two of them at once. Output: `scratchpad/sync-e2e/report-overlay.md`, `report-hold.md`, `report-extension.md`.
+
+`run.mjs` commits like the product now (server VAD, 0.5 s of silence); `--commit manual` reproduces the old baseline.
+
 ## Pipeline
 1. `synth.mjs`: ElevenLabs TTS (George) per scenario, then batch STT (`scribe_v2`, `timestamps_granularity=word`) for ground-truth word times. Builds the fake-mic WAV: 2 s lead with a calibration click at 800 ms, the speech, 2.5 s tail (48 kHz stereo s16).
 2. `scenarios.mjs` + `path.mjs`: pointer paths (bezier sweeps, dwells, fast passes) laid out relative to the measured deictic word times, so the intended target per word is known.

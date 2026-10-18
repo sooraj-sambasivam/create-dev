@@ -65,7 +65,7 @@ export function NotesCard({ notes, reduced }: { notes: Note[]; reduced: boolean 
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, transition: { duration: duration.fast, ease: ease.exit } }}
           transition={reduced ? { duration: duration.fast } : { ...spring.gentle, opacity: { duration: duration.base, ease: ease.standard } }}
-          className={`pointer-events-auto w-[200px] p-3 ${surface.card}`}
+          className={`pointer-events-auto w-[224px] p-3 ${surface.card}`}
         >
           <div className={`mb-1.5 flex items-center gap-1.5 ${text.meta}`}>
             <NotebookPen size={ICON.sm} strokeWidth={STROKE} />
@@ -85,7 +85,7 @@ export function NotesCard({ notes, reduced }: { notes: Note[]; reduced: boolean 
                     className="flex items-start gap-2 text-[14px] leading-5 text-ink"
                   >
                     <Icon size={ICON.sm} strokeWidth={STROKE} className={`mt-[3px] shrink-0 ${cls}`} />
-                    <span className="min-w-0 truncate">
+                    <span className="line-clamp-2 min-w-0 break-words">
                       <Typed value={n.text} animate={!reduced && n.id === newest} />
                     </span>
                   </motion.li>

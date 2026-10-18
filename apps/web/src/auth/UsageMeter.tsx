@@ -20,10 +20,10 @@ export function UsageMeter({ compact = false }: { compact?: boolean }) {
           <div key={id} className="flex flex-col gap-1">
             <div className="flex items-baseline justify-between">
               <span className={compact ? text.meta : text.ui}>{BUCKET_LABEL[id].name}</span>
-              <span className={text.meta}>{b.remaining} of {b.limit} left</span>
+              <span className={`${text.meta} tabular-nums`}>{b.remaining} of {b.limit} left</span>
             </div>
             <div className="h-1 overflow-hidden rounded-full bg-tray" role="progressbar" aria-label={`${BUCKET_LABEL[id].name} used`} aria-valuemin={0} aria-valuemax={b.limit} aria-valuenow={b.used}>
-              <div className={`h-full rounded-full ${b.remaining === 0 ? "bg-bad" : "bg-accent"}`} style={{ width: `${pct}%` }} />
+              <div className={`h-full rounded-full ${b.remaining === 0 ? "bg-bad" : "bg-ink-2"}`} style={{ width: `${pct}%` }} />
             </div>
           </div>
         );

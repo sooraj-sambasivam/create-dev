@@ -1,4 +1,5 @@
 import type { VoiceTokenResult } from "@create/shared";
+import { connectScribeLive, VAD_SILENCE_SECS } from "./scribeLive";
 import { HOLD_KEY, initialKeyState, reduceKey, type KeyEvent, type KeyState } from "./keys";
 
 /**
@@ -37,9 +38,30 @@ export type VoiceOptions = {
   onError?: (message: string) => void;
   /** Called when the controller switches to the browser's SpeechRecognition (server transcription unavailable). */
   onEngine?: (engine: "browser") => void;
+  /**
+   * Hold-to-talk is one line per hold: transcripts the server commits on a pause while the key is still down are kept and
+   * delivered together as one final when it is released, so "move this ... over here" is not cut in two. Narrate leaves this
+   * off: it listens continuously and each pause ends a line.
+   */
+  joinUntilRelease?: boolean;
+  /** Receives raw timing data (Scribe messages, audio start, browser speech results) for the sync core. Optional. */
+  sync?: VoiceSyncSink;
   /** Injected collaborators; defaults use the browser, fetch and the API client. Mainly for tests. */
   deps?: VoiceDeps;
 };
+
+/** What the voice controller tells the sync core. Times are performance.now milliseconds. */
+export type VoiceSyncSink = {
+  /** A Scribe realtime message (partial, committed, or committed with word timestamps). */
+  scribe(msg: { message_type: string; text?: string; words?: ScribeEventData["words"] }, arrival: number): void;
+  /** performance.now of the first audio sample sent on the realtime socket. */
+  audioStart(ms: number): void;
+  /** A browser SpeechRecognition result; `key` is stable per result so growing interims replace each other. */
+  speech(key: string, transcript: string, isFinal: boolean, arrival: number): void;
+};
+
+/** How long a committed transcript waits for its word timestamps (they follow within ~20 ms). */
+export const WORDS_GRACE_MS = 250;
 
 export type VoiceDeps = {
   fetchToken?: () => Promise<VoiceTokenResult>;
@@ -94,19 +116,31 @@ export type VoiceController = {
   bindKeys(target?: KeyTarget | null): () => void;
 };
 
-export type ScribeEventData = { text?: string; error?: string };
+export type ScribeEventData = {
+  text?: string;
+  error?: string;
+  words?: Array<{ text: string; start?: number; end?: number; type?: string }>;
+};
 
 /** The subset of a Scribe RealtimeConnection this module uses. Events are the RealtimeEvents string values. */
 export type ScribeConnection = {
   on(event: string, listener: (data: ScribeEventData) => void): void;
   commit(): void;
   close(): void;
+  /** True when the connection delivers committed_transcript_with_timestamps after each committed_transcript. */
+  readonly expectsTimestamps?: boolean;
+  /** Calls back with performance.now of the first audio sample sent (immediately if already known). */
+  onAudioStart?(cb: (ms: number) => void): void;
 };
 
 export type ScribeConnectOptions = {
   token: string;
   modelId: "scribe_v2_realtime";
   microphone: { echoCancellation: boolean; noiseSuppression: boolean };
+  /** Ask for word timestamps on committed transcripts. */
+  includeTimestamps?: boolean;
+  /** Commit automatically after this much silence (seconds), cutting the wait after the last word. */
+  vadSilenceSecs?: number;
 };
 
 export type RecorderLike = {
@@ -178,6 +212,11 @@ export async function fetchVoiceToken(fetchImpl?: typeof fetch): Promise<VoiceTo
 
 /** The realtime path for one segment: connects, streams, and commits on release. */
 async function defaultConnectScribe(opts: ScribeConnectOptions): Promise<ScribeConnection> {
+  try {
+    return await connectScribeLive(opts);
+  } catch {
+    /* no AudioWorklet or 16 kHz context: use the SDK's own microphone path (no exact audio clock) */
+  }
   // Scribe lives in @elevenlabs/client, re-exported by @elevenlabs/react (a web dependency).
   const mod = await import("@elevenlabs/react");
   const conn = mod.Scribe.connect({
@@ -185,6 +224,7 @@ async function defaultConnectScribe(opts: ScribeConnectOptions): Promise<ScribeC
     modelId: opts.modelId,
     commitStrategy: mod.CommitStrategy.MANUAL,
     microphone: opts.microphone,
+    ...(opts.includeTimestamps ? { includeTimestamps: true } : {}),
   });
   return conn as unknown as ScribeConnection;
 }
@@ -253,6 +293,7 @@ export function createVoice(opts: VoiceOptions): VoiceController {
   /** Set once the server cannot transcribe (503): later segments use the browser's SpeechRecognition. */
   let browserSpeech = false;
   let current: Segment | null = null;
+  let speechSegments = 0;
 
   const setMode = (m: VoiceState) => {
     if (m === mode) return;
@@ -342,12 +383,15 @@ export function createVoice(opts: VoiceOptions): VoiceController {
 
   /** Realtime Scribe for one segment. Falls back to batch for this segment on a fatal error. */
   const startRealtime = async (seg: Segment, token: string) => {
+    const sync = opts.sync;
     let conn: ScribeConnection;
     try {
       conn = await connectScribe({
         token,
         modelId: "scribe_v2_realtime",
         microphone: { echoCancellation: true, noiseSuppression: true },
+        includeTimestamps: Boolean(sync),
+        vadSilenceSecs: VAD_SILENCE_SECS,
       });
     } catch (err) {
       realtimeDisabled = true;
@@ -358,10 +402,13 @@ export function createVoice(opts: VoiceOptions): VoiceController {
 
     let closed = false;
     let drainTimer: ReturnType<typeof setTimeout> | undefined;
+    let pending: { text: string | undefined; timer: ReturnType<typeof setTimeout> } | null = null;
     const closeConn = () => {
       if (closed) return;
       closed = true;
       clearTimeout(drainTimer);
+      if (pending) clearTimeout(pending.timer);
+      pending = null;
       try {
         conn.close();
       } catch {
@@ -396,21 +443,53 @@ export function createVoice(opts: VoiceOptions): VoiceController {
         done();
         return;
       }
-      drainTimer = setTimeout(done, DRAIN_TIMEOUT_MS);
+      drainTimer = setTimeout(() => {
+        flushPending();
+        if (held.length && !destroyed) emit(held.splice(0).join(" "), true);
+        done();
+      }, DRAIN_TIMEOUT_MS);
     };
 
+    // The sync sink listens first, so the timeline already holds a transcript's words when its text is delivered.
+    if (sync) {
+      conn.onAudioStart?.((ms) => sync.audioStart(ms));
+      for (const ev of ["partial_transcript", "committed_transcript", "committed_transcript_with_timestamps"]) {
+        conn.on(ev, (d) => sync.scribe({ message_type: ev, text: d.text, words: d.words }, performance.now()));
+      }
+    }
+    // A committed transcript waits briefly for its word timestamps so the first command already has exact times.
+    const waitForWords = Boolean(sync) && conn.expectsTimestamps === true;
+    const held: string[] = [];
+    const deliver = (text: string | undefined) => {
+      const t = text?.trim();
+      if (opts.joinUntilRelease && !seg.ended) {
+        if (t) held.push(t);
+        return;
+      }
+      const all = [...held.splice(0), ...(t ? [t] : [])].join(" ");
+      if (!destroyed) emit(all, true);
+      // After release the next commit is the one that closes the segment; before it, keep listening.
+      if (seg.ended) done();
+    };
+    const flushPending = () => {
+      if (!pending) return;
+      clearTimeout(pending.timer);
+      const text = pending.text;
+      pending = null;
+      deliver(text);
+    };
     conn.on("partial_transcript", (d) => {
       if (!seg.finished && !destroyed) emit(d.text, false);
     });
     conn.on("committed_transcript", (d) => {
-      if (!seg.ended) {
-        // Committed mid-listen: deliver it but keep listening.
-        if (!destroyed) emit(d.text, true);
+      flushPending();
+      if (waitForWords && d.text && d.text.trim()) {
+        pending = { text: d.text, timer: setTimeout(flushPending, WORDS_GRACE_MS) };
         return;
       }
-      if (!destroyed) emit(d.text, true);
-      done();
+      deliver(d.text);
     });
+    conn.on("committed_transcript_with_timestamps", () => flushPending());
     conn.on("insufficient_audio_activity", () => {
       // A release with no speech: nothing to transcribe.
       if (seg.ended) done();
@@ -498,6 +577,7 @@ export function createVoice(opts: VoiceOptions): VoiceController {
 
   /** Browser SpeechRecognition for one segment (used once the server cannot transcribe). */
   const startSpeech = (seg: Segment) => {
+    const segN = ++speechSegments;
     const rec = createSpeech();
     if (!rec) {
       markUnavailable();
@@ -511,7 +591,9 @@ export function createVoice(opts: VoiceOptions): VoiceController {
       if (destroyed) return;
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
-        emit(r?.[0]?.transcript, !!r?.isFinal);
+        const transcript = r?.[0]?.transcript;
+        if (transcript && transcript.trim()) opts.sync?.speech(`${segN}:${i}`, transcript.trim(), !!r?.isFinal, performance.now());
+        emit(transcript, !!r?.isFinal);
       }
     };
     rec.onerror = (e) => {

@@ -39,6 +39,8 @@ const TITLES = [
 ];
 const lg = { size: ICON.lg, strokeWidth: STROKE } as const;
 const card = "rounded-xl border border-line bg-surface p-4";
+/** Permission rows: a hairline between them, no boxes. */
+const rowSection = "border-t border-line pt-4 first:border-t-0 first:pt-0";
 const optionOf = <T extends { id: string; label: string; hint: string }>(list: T[], id: string) => list.find((o) => o.id === id);
 
 /** The pointer chip, same look as the live one in the Narrate overlay (modes/narrate/overlay/PointerBubble.tsx). */
@@ -152,8 +154,8 @@ function StepPermissions({ onBusy }: { onBusy: (b: boolean) => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mic.status]);
   return (
-    <div className="mt-6 flex flex-col gap-3 text-left">
-      <section aria-labelledby="onb-mic" className={card}>
+    <div className="mt-6 flex flex-col gap-4 text-left">
+      <section aria-labelledby="onb-mic" className={rowSection}>
         <div className="flex items-center gap-2">
           <Mic {...lg} className="text-ink-2" aria-hidden="true" />
           <h3 id="onb-mic" className={`${text.ui} flex-1`}>Microphone</h3>
@@ -162,7 +164,7 @@ function StepPermissions({ onBusy }: { onBusy: (b: boolean) => void }) {
         <p className="mb-3 mt-2 text-[14px] leading-5 text-ink-2">So you can say what to change instead of typing it. The microphone is only on while you hold the key or switch listening on.</p>
         <MicBody mic={mic} onTypeInstead={mic.notNow} />
       </section>
-      <section aria-labelledby="onb-key" className={card}>
+      <section aria-labelledby="onb-key" className={rowSection}>
         <div className="flex items-center gap-2">
           <Keyboard {...lg} className="text-ink-2" aria-hidden="true" />
           <h3 id="onb-key" className={text.ui}>Talk key</h3>
@@ -175,7 +177,7 @@ function StepPermissions({ onBusy }: { onBusy: (b: boolean) => void }) {
           </span>
         </div>
       </section>
-      <details className="text-[14px] leading-5 text-ink-2">
+      <details className="border-t border-line pt-3 text-[14px] leading-5 text-ink-2">
         <summary className={`w-fit cursor-pointer rounded-md py-1 hover:text-ink ${focusRing}`}>Use Create on any website</summary>
         <ol className="mt-2 list-decimal space-y-1 pl-5">
           <li>Open chrome://extensions and turn on Developer mode.</li>
@@ -441,7 +443,7 @@ export function Onboarding() {
         <span className="text-[14px] text-ink-2">Create</span>
         <button type="button" onClick={() => finish(true)} aria-label="Skip setup" className={button.ghost}>Skip</button>
       </header>
-      <main className="mx-auto flex w-full max-w-[560px] flex-1 flex-col justify-center px-4 pb-8">
+      <main className="mx-auto flex w-full max-w-[560px] flex-1 flex-col justify-start px-4 pb-8 pt-[min(16vh,144px)]">
         <AnimatePresence mode="wait" initial={false} custom={dir}>
           <motion.div
             key={step}
@@ -452,7 +454,7 @@ export function Onboarding() {
             animate="center"
             exit="exit"
           >
-            <h2 id="onb-title" ref={titleRef} tabIndex={-1} className="text-[28px] font-normal leading-9 tracking-[-0.01em] text-ink outline-none">{TITLES[step]}</h2>
+            <h2 id="onb-title" ref={titleRef} tabIndex={-1} className="text-[28px] font-normal leading-9 tracking-[-0.022em] text-ink outline-none">{TITLES[step]}</h2>
             {step === STEP.you && <p className="mt-3 text-[16px] leading-6 text-ink-2">You can change this any time in Settings.</p>}
             {step === STEP.permissions && <p className="mt-3 text-[16px] leading-6 text-ink-2">Talking is optional. If you&rsquo;d rather type, skip this.</p>}
             {step === STEP.done && <p className="mt-3 text-[16px] leading-6 text-ink-2">Here is what we set up.</p>}
@@ -466,7 +468,7 @@ export function Onboarding() {
       </main>
       <footer className="mx-auto flex w-full max-w-[560px] shrink-0 flex-col items-center gap-4 px-4 pb-8">
         <div className="flex w-full flex-col-reverse items-stretch justify-between gap-2 min-[480px]:flex-row min-[480px]:items-center">
-          <div className="flex gap-2">
+          <div className="-ml-2.5 flex gap-2">
             {step > 0 && <button type="button" onClick={() => setStep(prevStep(step))} className={button.ghost}>Back</button>}
             {welcome && <button type="button" onClick={() => setStep(STEP.permissions)} className={button.ghost}>I&rsquo;ve used Create before</button>}
             {step === STEP.permissions && <button type="button" onClick={() => setStep(nextStep(step))} className={button.ghost}>Skip for now</button>}

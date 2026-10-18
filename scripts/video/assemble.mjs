@@ -37,11 +37,15 @@ async function render(name, html, transparent) {
   fs.writeFileSync(f, Buffer.from(data, "base64"));
   return f;
 }
-const captionHtml = (t) => `<div style="position:absolute;left:0;right:0;bottom:64px;display:flex;justify-content:center"><div style="max-width:1560px;padding:18px 34px;border-radius:20px;background:rgba(12,12,16,.78);color:#fff;font-size:40px;line-height:1.28;font-weight:560;text-align:center;letter-spacing:-.01em">${esc(t)}</div></div>`;
-const chipHtml = (sponsor, label) => `<div style="position:absolute;left:36px;top:17px;display:flex;gap:12px;align-items:center">
+// Captions on app clips sit in the top banner (the 81px strip above the frame), never over the app or the extension pill
+// (bottom centre). Card clips have no app UI, so their caption sits low.
+const captionHtml = (t, card = false) => card
+  ? `<div style="position:absolute;left:0;right:0;bottom:64px;display:flex;justify-content:center"><div style="max-width:1560px;padding:0 34px;color:#fff;font-size:38px;line-height:1.28;font-weight:520;text-align:center;letter-spacing:-.01em">${esc(t)}</div></div>`
+  : `<div style="position:absolute;left:460px;right:460px;top:0;height:81px;display:flex;align-items:center;justify-content:center"><div style="color:#fff;font-size:29px;line-height:1.14;font-weight:520;text-align:center;letter-spacing:-.005em">${esc(t)}</div></div>`;
+const chipHtml = (sponsor, label) => `<div style="position:absolute;left:36px;top:21px;display:flex;gap:12px;align-items:center">
  <div style="padding:9px 18px;border-radius:999px;background:rgba(12,12,16,.78);color:#fff;font-size:24px;font-weight:650"><span style="color:#8ab4ff">Create</span>${sponsor ? ` <span style="opacity:.55">·</span> ${esc(sponsor)}` : ""}</div></div>
- ${source.placeholder ? `<div style="position:absolute;right:36px;top:17px;padding:9px 18px;border-radius:999px;background:#fff3c4;color:#6b4e00;font-size:22px;font-weight:650">Placeholder voice (macOS say)</div>` : ""}`;
-const cardBg = `background:radial-gradient(1200px 700px at 78% 8%,rgba(59,130,246,.30),transparent 60%),radial-gradient(900px 600px at 10% 100%,rgba(148,163,184,.18),transparent 60%),#0b0b10`;
+ ${source.placeholder ? `<div style="position:absolute;right:36px;top:21px;padding:9px 18px;border-radius:999px;background:#fff3c4;color:#6b4e00;font-size:22px;font-weight:650">Placeholder voice (macOS say)</div>` : ""}`;
+const cardBg = `background:#0b0b10`;
 const cardHtml = (lines, sub) => `<div style="position:absolute;inset:0;${cardBg};color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 140px;gap:26px">
  <div style="font-size:176px;font-weight:760;letter-spacing:-.04em;line-height:1">Create</div>
  ${lines.map((l, i) => `<div style="font-size:${i === 0 ? 50 : 34}px;font-weight:${i === 0 ? 600 : 500};opacity:${i === 0 ? 1 : 0.78};line-height:1.3">${esc(l)}</div>`).join("")}
@@ -80,7 +84,7 @@ async function makeCard(id, T, html, audio, A, captions) {
   if (process.env.FORCE !== "1" && fs.existsSync(out) && fs.existsSync(keyf) && fs.readFileSync(keyf, "utf8") === key) { log(`${id}: clip cached`); return out; }
   const ins = ["-loop", "1", "-framerate", String(FPS), "-t", T.toFixed(3), "-i", png];
   const caps = [];
-  for (const c of captions) caps.push(await render("cap", captionHtml(c.text), true));
+  for (const c of captions) caps.push(await render("capcard", captionHtml(c.text, true), true));
   const capIns = caps.flatMap((p) => ["-i", p]);
   let fc = "[0:v]format=yuv420p[b0]", last = "b0";
   captions.forEach((c, i) => { fc += `;[${last}][${i + 1}:v]overlay=0:0:enable='between(t,${c.a.toFixed(3)},${c.b.toFixed(3)})'[b${i + 1}]`; last = `b${i + 1}`; });
@@ -101,13 +105,13 @@ try {
   for (const beat of allBeats) {
     const A = durations[beat.id];
     if (!A) throw new Error(`no audio for ${beat.id}; run voice.mjs first`);
-    const hasCard = beat.steps?.some((s) => s.do === "card");
+    const hasCard = !!beat.card;
     const fdir = path.join(VIDEO_DIR, "frames", beat.id), meta = readJson(path.join(fdir, "meta.json"));
     const caps = spans(beat.narration, A);
     const audio = path.join(audioDir, `${beat.id}.mp3`);
     if (hasCard || !meta?.frames) {
       if (!hasCard) log(`${beat.id}: WARNING no captured frames, using a caption card (run capture.mjs)`);
-      const cs = beat.steps?.find((s) => s.do === "card")?.text?.split("\n") || [beat.caption];
+      const cs = beat.card || [beat.caption];
       const T = A + LEAD + (hasCard ? 3 : TAIL);
       const f = await makeCard(beat.id, T, cardHtml(cs, placeholderNote), audio, A, caps);
       clips.push({ id: beat.id, file: f, dur: T, caps }); continue;
@@ -142,3 +146,4 @@ let t = 0, n = 1, srt = "";
 for (const c of clips) { for (const s of c.caps) { srt += `${n++}\n${srtTime(t + s.a)} --> ${srtTime(t + s.b)}\n${s.text}\n\n`; } t += c.dur; }
 fs.writeFileSync(path.join(VIDEO_DIR, `${outName}.srt`), srt);
 log(`wrote ${mp4} (${(await ffprobeDuration(mp4)).toFixed(1)}s) and ${outName}.srt`);
+await import("./docs.mjs"); // keep docs/pitch/video-script.md in step with the beats

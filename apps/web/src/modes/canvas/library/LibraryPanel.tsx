@@ -242,8 +242,13 @@ function MotionTab() {
   );
 }
 
-export function LibraryPanel() {
-  const [open, setOpen] = useState(true);
+export function LibraryPanel({ open: openProp, onOpenChange }: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
+  const [openState, setOpenState] = useState(true);
+  const open = openProp ?? openState;
+  const setOpen = (v: boolean) => {
+    setOpenState(v);
+    onOpenChange?.(v);
+  };
   const [tab, setTab] = useState<Tab>("icons");
   if (!open) {
     return (

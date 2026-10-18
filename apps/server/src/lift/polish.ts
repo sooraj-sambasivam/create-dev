@@ -46,7 +46,7 @@ export async function polishCopy(entity: Entity, instruction: string | undefined
         messages: [
           {
             role: "user",
-            content: `Table: ${entity.title}\nColumns: ${entity.columns.map((c) => c.label).join(", ")}\nSample rows:\n${sample}\nThe user's request (context only, not a title): ${instruction?.trim() || "track this"}`,
+            content: `Table: ${entity.title}\n${entity.source.title ? `Source page heading: ${entity.source.title}\n` : ""}Columns: ${entity.columns.map((c) => c.label).join(", ")}\nSample rows:\n${sample}\nThe user's request (context only, not a title): ${instruction?.trim() || "track this"}`,
           },
         ],
       },

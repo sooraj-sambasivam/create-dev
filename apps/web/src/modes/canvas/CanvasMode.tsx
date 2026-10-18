@@ -38,6 +38,12 @@ const TL_COMPONENTS: TLComponents = {
   Background: PageBackground,
 };
 
+/** The drawing area never gets narrower than this, so the page frame inside it stays at least 480px and the bottom toolbar fits. */
+const MIN_ARTBOARD_PX = 540;
+const LIBRARY_PX = 260;
+const LIBRARY_COLLAPSED_PX = 32;
+/** Below this card width the library and an open preview cannot both be expanded. */
+const ROOMY_PX = 1500;
 const MIN_PCT = 20;
 const MAX_PCT = 70;
 const FRAME_MS = 110;
@@ -162,6 +168,21 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
     });
   }, []);
   const [pct, setPct] = useState(40);
+  const [libOpen, setLibOpen] = useState(true);
+  const [vw, setVw] = useState(() => (typeof window === "undefined" ? 1440 : window.innerWidth));
+  useEffect(() => {
+    const on = () => setVw(window.innerWidth);
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  const cardW = vw - 16;
+  // With the preview open on a narrow window, the library folds to its icon so the artboard keeps its width.
+  useEffect(() => {
+    if (open && cardW < ROOMY_PX) setLibOpen(false);
+  }, [open, cardW]);
+  const libW = libOpen ? LIBRARY_PX : LIBRARY_COLLAPSED_PX;
+  const maxPctForArtboard = ((cardW - libW - 8 - MIN_ARTBOARD_PX) / cardW) * 100;
+  const effPct = Math.max(15, Math.min(pct, maxPctForArtboard));
   const [toast, setToast] = useState<Toast>(null);
   const [newestId, setNewestId] = useState<string | null>(null);
   const count = countNodes(screen?.children ?? []);
@@ -385,9 +406,9 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
     >
       <div className="relative h-full w-full overflow-hidden rounded-xl bg-surface">
       {/* The tldraw area: card width minus the preview pane (plus an 8px gap) so tldraw's own corners, watermark included, stay visible. */}
-      <div className="absolute inset-y-0 left-0 flex" style={{ right: open ? `calc(${pct}% + 8px)` : 0 }}>
+      <div className="absolute inset-y-0 left-0 flex" style={{ right: open ? `calc(${effPct}% + 8px)` : 0 }}>
         <div className="relative z-[510] h-full shrink-0">
-          <LibraryPanel />
+          <LibraryPanel open={libOpen} onOpenChange={setLibOpen} />
         </div>
         <div
           className="relative min-w-0 flex-1"
@@ -478,7 +499,7 @@ export function CanvasMode({ hidden = false }: { hidden?: boolean } = {}) {
         <aside
           aria-label="Preview"
           className="canvas-slide-in absolute inset-y-2 right-2 z-[500]"
-          style={{ width: `calc(${pct}% - 8px)` }}
+          style={{ width: `calc(${effPct}% - 8px)` }}
         >
           <div
             role="separator"

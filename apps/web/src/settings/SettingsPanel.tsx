@@ -69,14 +69,15 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  // The wrapper centres the window so the window itself is free to animate transform.
+  // The wrapper centres the window so the window itself is free to animate transform. It is an invisible click-away layer (the design has no scrim).
   return createPortal(
     <motion.div
       variants={v(fade)}
       initial="hidden"
       animate="show"
       exit="exit"
-      className="pointer-events-none fixed inset-0 z-[90] grid place-items-center p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-[90] grid place-items-center p-4"
     >
     <motion.div
       ref={ref}
@@ -85,7 +86,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       tabIndex={-1}
       onKeyDown={onKeyDown}
       variants={v(scaleIn)}
-      className={`${surface.card} pointer-events-auto flex max-h-full w-full max-w-[480px] flex-col overflow-hidden outline-none`}
+      className={`${surface.card} flex max-h-full w-full max-w-[480px] flex-col overflow-hidden outline-none`}
     >
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-line pl-5 pr-2">
         <h2 className={text.ui}>Settings</h2>

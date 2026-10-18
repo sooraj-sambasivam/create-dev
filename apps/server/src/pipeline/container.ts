@@ -4,16 +4,20 @@ import { area, contains, iou } from "./geometry";
 /** What the utterance wants to point at. "unknown" falls back to what the structure offers. */
 export type PointIntent = LocateScope | "unknown";
 
-// Order matters: a value question wins over a row noun ("what time is this train?" is a cell), a row noun over a container verb ("track this train" is a row).
+// Order matters: a value question wins over a row noun ("what time is this train?" is a cell), an explicit "row" over a lift verb, a lift verb over a row noun ("track this train" lifts the whole timetable).
 const CELL_RE = /\b(how (much|many)|what time|when|number|value|price|prices|amount|total|percent(age)?|cost|costs|column|header|heading|title|label|cell|button|link|text|name|date|sum|average|count)\b|[%$\d]/i;
 const ROW_RE = /\b(row|one|entry|item|company|train|bus|person|order|record|listing|result|product|flight|game|team|employee|customer)\b/i;
 const CONTAINER_RE = /\b(table|list|chart|graph|sheet|grid|schedule|pricing|dashboard|data|cards?|app|track|monitor|watch|turn|make|build|convert)\b/i;
+/** Verbs that mean "make an app out of the whole thing": they beat a row noun ("track this train" lifts the timetable, not one train). */
+const LIFT_VERB_RE = /\b(track|monitor|watch|turn|make|build|convert|lift)\b/i;
 const ACTION_RE = /^\W*(please\s+)?(open|click|press|switch|start|sign|select|go|toggle|submit|buy|subscribe|explain)\b/i;
 
 export function classifyIntent(utterance?: string): PointIntent {
   const u = (utterance ?? "").trim();
   if (!u) return "unknown";
   if (CELL_RE.test(u)) return "cell";
+  if (/\b(row|entry)\b/i.test(u)) return "row";
+  if (LIFT_VERB_RE.test(u)) return "container";
   if (ROW_RE.test(u)) return "row";
   if (CONTAINER_RE.test(u)) return "container";
   if (ACTION_RE.test(u)) return "cell";

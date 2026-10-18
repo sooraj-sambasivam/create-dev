@@ -116,7 +116,17 @@ async function runLift(s) {
   rec.latency.locate = loc.ms; rec.locate = { status: loc.status, error: loc.error, result: loc.json?.result ?? null, ask: loc.json?.ask, stages: loc.json?.trace?.stages };
   let box = loc.json?.result?.box; rec.boxSource = "locate";
   if (!box) { box = target.box; rec.boxSource = "ground-truth-fallback"; }
-  const crop = join(OUT, `${s.id}.crop.png`); cropPng(shot, box, crop);
+  // A table taller than the viewport is clipped by locate to the screenshot. When the corpus holds a full-page capture,
+  // read the whole table from it (what a scroll capture would give the extension); the viewport shot only shows the visible rows.
+  let cropSrc = shot;
+  const full = join(dir, "full.png");
+  const tableAnc = dom?.ancestors?.find((a) => a.kind === "table");
+  if (loc.json?.result && tableAnc && existsSync(full) && box.y + box.h >= target.imageSize.h - 2 && tableAnc.rect.h > box.h) {
+    const fullH = Number(execFileSync("sips", ["-g", "pixelHeight", full]).toString().match(/pixelHeight: (\d+)/)?.[1] ?? 0);
+    const h = Math.min(tableAnc.rect.h, fullH - box.y);
+    if (h > box.h) { box = { ...box, h }; cropSrc = full; rec.boxSource = "locate+full-page"; }
+  }
+  const crop = join(OUT, `${s.id}.crop.png`); cropPng(cropSrc, box, crop);
   const ext = await call("/api/extract", { image: dataUrl(crop), hint: s.utterance, box });
   rec.latency.extract = ext.ms; rec.extract = { status: ext.status, error: ext.error, provider: ext.json?.provider, entity: ext.json?.entity };
   if (!ext.json?.entity) { rec.error = `extract failed: ${ext.error}`; return rec; }

@@ -39,3 +39,9 @@ export class Path {
     return this;
   }
 }
+
+/** Re-point the letter targets (A-F) and HOME at real coordinates (the overlay scenario uses the live page). */
+export function setLayout(centers, home) {
+  for (const k of Object.keys(centers)) CENTER[k] = centers[k];
+  if (home) { HOME[0] = home[0]; HOME[1] = home[1]; }
+}

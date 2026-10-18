@@ -227,6 +227,23 @@ describe("trace + route", () => {
   });
 });
 
+describe("POST /api/traces", () => {
+  it("accepts client stages with 204 and rejects bad bodies", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "client-trace-"));
+    process.env.TRACE_DIR = dir;
+    try {
+      const app = express().use("/api", locateRouter);
+      const ok = await postJson(app, "/api/traces", { source: "extension", traceId: "tr_x", stages: [{ stage: "act", provider: "ext", ms: 12, ok: true }] });
+      expect(ok.status).toBe(204);
+      expect((await postJson(app, "/api/traces", { stages: [] })).status).toBe(400);
+      const f = readdirSync(dir).find((n) => n.startsWith("client-"));
+      expect(f).toBeTruthy();
+    } finally {
+      delete process.env.TRACE_DIR;
+    }
+  });
+});
+
 describe("fusion: viewport-sized boxes", () => {
   it("prefers a smaller box over a whole-window box from a higher-prior source", () => {
     const win: LocateResult = { box: { x: 0, y: 0, w: 1440, h: 900 }, kind: "other", label: "window", source: "ax", confidence: 0.6 };

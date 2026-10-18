@@ -156,3 +156,12 @@ describe("cleanEntity and planChart", () => {
     expect(cleanEntity(e).columns[1]!.type).toBe("text");
   });
 });
+
+describe("request-echo titles", () => {
+  it("rejects titles made of the request's own words", async () => {
+    const { isEchoTitle } = await import("./clean");
+    expect(isEchoTitle("Track this invoice", "track this invoice")).toBe(true);
+    expect(isEchoTitle("This invoice", "track this invoice")).toBe(true);
+    expect(isEchoTitle("Espresso beans invoice", "track this invoice")).toBe(false);
+  });
+});

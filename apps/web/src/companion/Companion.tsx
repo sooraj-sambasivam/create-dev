@@ -128,7 +128,7 @@ export function Companion() {
         {visible && shown === "on" && (
           <motion.div
             key="full"
-            className="flex items-end gap-3"
+            className="flex flex-col items-end gap-3"
             variants={fadeUp}
             initial="hidden"
             animate="show"

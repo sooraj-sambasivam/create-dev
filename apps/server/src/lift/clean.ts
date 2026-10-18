@@ -70,6 +70,11 @@ export function isEchoTitle(title: string, instruction: string | undefined): boo
   if (/^(untitled|extracted data|table|chart|list|schedule)$/.test(t)) return true;
   if (/^(track|turn|make|lift|build|save|create|add)\b/.test(t)) return true;
   const i = (instruction ?? "").trim().toLowerCase();
+  // Every word of the title comes from the request ("this invoice", "the train"): it is an echo, not a name.
+  const words = (x: string) => x.split(/[^a-z0-9]+/).filter((w) => w && !/^(the|this|that|a|an|my|of|it|into|app)$/.test(w));
+  const tw = words(t);
+  const iw = new Set(words(i));
+  if (tw.length > 0 && iw.size > 0 && tw.every((w) => iw.has(w))) return true;
   return !!i && (t === i || i.includes(t) && t.split(/\s+/).length <= 3 && /^(track|turn|make)/.test(i));
 }
 

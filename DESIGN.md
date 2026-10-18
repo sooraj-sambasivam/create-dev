@@ -20,10 +20,10 @@ Defined once as CSS variables in `src/index.css` (`@theme` for Tailwind 4) and u
 | `--hover` | `#EDEDED` | Hover on surface and tray controls |
 | `--hover-shell` | `rgb(0 0 0 / .05)` (dark `rgb(255 255 255 / .06)`) | Row hover on the shell (sidebar). Alpha, so it holds on any shell tone |
 | `--selected` | `rgb(0 0 0 / .08)` (dark `rgb(255 255 255 / .10)`) | Selected sidebar row; always visibly stronger than hover |
-| `--line` | `#E6E6E6` | All borders and dividers (1px) |
+| `--line` | `#E2E2E2` (dark `#333333`) | All borders and dividers (1px) |
 | `--ink` | `#0D0D0D` | Primary text, headline |
 | `--ink-2` | `#5D5D5D` | Icons, secondary labels |
-| `--ink-3` | `#767676` | Placeholder, disabled, effort label (4.5:1 on white) |
+| `--ink-3` | `#6B6B6B` (dark `#8C8C8C`) | Placeholder, disabled, effort label (5.3:1 on the shell, 5.9:1 on white) |
 | `--accent` | `#3E7BF0` | Go button (the only accent fill), unread dots, focus ring |
 | `--on-accent` | `#FFFFFF` (dark: `#0D0D0D`) | Glyph on a filled Go |
 | `--ok` / `--warn` / `--bad` | `#1F8A4C` / `#C27803` / `#C93C37` | ✓ / ⚠ / ✕ only, always with their symbol |
@@ -41,8 +41,9 @@ One minimal look: neutral grays, a single blue accent (`#3E7BF0` light, `#6E9CF5
 ## Type
 
 - **Scale:** 12 (meta, chips, captions) · 14 (UI, buttons, menus) · 16 (body, composer input) · 28 (page headline). Sentence case everywhere; single-word tabs are capitalised. Ellipsis is "…" and only for in-progress or "opens an input" text, never in placeholders. No em dashes in UI copy.
-- **Family:** `"SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter Variable", system-ui, sans-serif`. That is SF on the demo Mac, matching the reference, and bundled Inter (`@fontsource-variable/inter`) everywhere else.
-- **Sizes:** headline 28/36 weight 400, tracking −0.01em · body and composer input 16 · controls and menus 14 · tray labels 14 weight 400 · captions 12.
+- **Family:** `-apple-system, BlinkMacSystemFont, "Inter Variable", system-ui, sans-serif`. `-apple-system` first so macOS applies SF Display or SF Text by size (optical sizing); bundled Inter (`@fontsource-variable/inter`) everywhere else. Do not name "SF Pro Text" directly: it pins the text cut at display sizes.
+- **Tracking:** display −0.022em (`--tracking-display`, applied to h1 and h2) · UI −0.006em (`--tracking-ui`, the body default) · meta +0.01em (`--tracking-meta`). Headings use `text-wrap: balance`, paragraphs `text-wrap: pretty`. Digits that change (timers, counts, sizes, usage) use tabular numerals (`tabular-nums`, or `.num`).
+- **Sizes:** headline 28/36 weight 400, tracking −0.022em · body and composer input 16 · controls and menus 14 · tray labels 14 weight 400 · captions 12.
 - **Ink:** `--ink` for headline, input text and model name. `--ink-2` for tray labels and control labels such as "Approve for me". `--ink-3` for the placeholder and effort ("Medium").
 
 ## Icons
@@ -146,3 +147,13 @@ Menu panels (`role="menu"`) repoint `--surface` and `--tray` through `--menu-sur
 Four ways to start: Type · Speak · Sketch · Narrate. Narrate is the mode; "point" is only the gesture ("Point at the heading"). Chat and Code are the work modes. The right-hand column is the side panel (Output, Inspect, Backend). Copy a link with "Copy link"; "Share" is the header button; "Export" is the HTML file. Say "microphone" in sentences and errors, "Speak" for the control.
 
 Toasts: `toast("Link copied")` from `ui/toastStore.ts`; `ToastHost` (mounted in AppShell) shows at most three, bottom centre, as `surface.pill` with a `Check`.
+
+## Dev-only palette variants
+
+`?variant=graphite|warm|ink` (dev builds only, `shell/variant.ts`) swaps colour tokens for comparison; it never changes type, radius, spacing or motion. The default refined minimal look applies without the param and in production. Token sets live at the end of the colour section of `src/index.css`. See `docs/design/before-after.md` for screenshots.
+
+| Variant | Idea |
+|---|---|
+| Graphite | Cool neutral grays, slightly deeper line |
+| Warm White | Warm neutrals (paper-adjacent without texture), same blue accent |
+| Ink | Higher contrast: pure ink on white, 1px lines one step darker, deeper blue accent |

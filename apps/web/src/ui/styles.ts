@@ -85,13 +85,13 @@ export const surface = {
 
 export const menuItem = `flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[14px] text-ink hover:bg-tray ${focusRing}`;
 
-export const input = `h-8 w-full rounded-lg border border-line bg-surface px-3 text-[14px] text-ink placeholder:text-ink-3 ${focusRing}`;
+export const input = `h-8 w-full rounded-lg border border-line bg-surface px-3 text-[14px] text-ink transition-colors duration-120 placeholder:text-ink-3 hover:border-ink-3 aria-invalid:border-bad ${focusRing}`;
 
 /** Type scale: 12 meta, 14 UI, 16 body; display sizes only for page-level headings. */
 export const text = {
-  meta: "text-[12px] leading-4 text-ink-3",
+  meta: "text-[12px] leading-4 tracking-[0.01em] text-ink-3",
   ui: "text-[14px] leading-5 text-ink",
   body: "text-[16px] leading-6 text-ink",
   title: "text-[16px] leading-6 font-medium text-ink",
-  display: "text-[28px] leading-9 font-semibold tracking-tight text-ink",
+  display: "text-[28px] leading-9 font-normal tracking-[-0.022em] text-ink",
 } as const;

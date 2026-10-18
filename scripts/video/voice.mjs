@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Step 2: narration audio per beat -> <VIDEO_DIR>/audio/<beat>.mp3 (+ durations.json, source.json).
 // ElevenLabs REST when ELEVENLABS_API_KEY is set (run with: node --env-file=apps/server/.env ...), else macOS `say` placeholder.
-// Env: ELEVEN_VOICE_ID (default Rachel, a warm public-library voice), ELEVEN_MODEL (default eleven_multilingual_v2;
+// Env: ELEVEN_VOICE_ID (default George JBFqnCBsd6RMkjVDRZzb, an ElevenLabs default voice: the free plan blocks library voices), ELEVEN_MODEL (default eleven_multilingual_v2;
 // eleven_v4 is the newest flagship per the ElevenLabs model docs), BEAT=subset, FORCE=1, VOICE=Samantha (say voice).
 import fs from "node:fs";
 import path from "node:path";
@@ -10,7 +10,7 @@ import { spawn } from "node:child_process";
 import { loadBeats, VIDEO_DIR, FFMPEG, mkdir, readJson, writeJson, ffprobeDuration, run, log } from "./lib.mjs";
 
 let KEY = process.env.ELEVENLABS_API_KEY || "";
-let VOICE_ID = process.env.ELEVEN_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
+let VOICE_ID = process.env.ELEVEN_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb";
 const MODEL = process.env.ELEVEN_MODEL || "eleven_multilingual_v2";
 const SAY_VOICE = process.env.VOICE || "Samantha";
 
@@ -34,26 +34,14 @@ async function say(text, out) {
   fs.rmSync(aiff, { force: true });
 }
 
-/** Free ElevenLabs plans cannot use library voices over the API; fall back to an account/premade voice, then to `say`. */
+/** Probe the chosen voice once. On failure fall back to the macOS `say` placeholder (labelled in the video). */
 async function resolveVoice() {
   if (!KEY) return;
   const probe = path.join(dir, ".probe.mp3");
-  try { await eleven("Ready.", probe); fs.rmSync(probe, { force: true }); return; } catch (e) {
-    log(`ElevenLabs voice ${VOICE_ID} unavailable (${e.message.slice(0, 90)})`);
-    if (e.status === 401) { KEY = ""; return; }
+  try { await eleven("Ready.", probe); fs.rmSync(probe, { force: true }); log(`using ElevenLabs voice ${VOICE_ID}`); return; } catch (e) {
+    log(`ElevenLabs voice ${VOICE_ID} unavailable (${e.message.slice(0, 90)}); using the macOS \`say\` placeholder`);
+    KEY = "";
   }
-  try {
-    const r = await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": KEY } });
-    const voices = r.ok ? (await r.json()).voices || [] : [];
-    const warm = ["Sarah", "Alice", "Matilda", "Jessica", "Rachel", "Lily", "Charlotte"];
-    const ordered = [...voices].sort((a, b) => (warm.indexOf(a.name) + 99) % 99 - (warm.indexOf(b.name) + 99) % 99 || (a.category === "premade" ? -1 : 1));
-    for (const v of ordered) {
-      VOICE_ID = v.voice_id;
-      try { await eleven("Ready.", probe); fs.rmSync(probe, { force: true }); log(`using ElevenLabs voice ${v.name} (${v.voice_id})`); return; } catch {}
-    }
-  } catch {}
-  log("no usable ElevenLabs voice on this plan; using the macOS `say` placeholder");
-  KEY = "";
 }
 await resolveVoice();
 const provider = KEY ? `elevenlabs:${MODEL}:${VOICE_ID}` : `macos-say:${SAY_VOICE}`;

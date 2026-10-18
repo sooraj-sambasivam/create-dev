@@ -4,6 +4,7 @@ import { PERCEPTRON_DEFAULT_MODEL } from "../canvasOps/perceptron";
 import { imageBlock } from "../ask/ask";
 import { DEFAULT_MODEL } from "../ai/claude";
 import { geminiText } from "../providers/http";
+import { isEchoTitle } from "../lift/clean";
 import { judgeImage, type JevBox, type JevImageResult } from "../jev/image";
 
 /** Extract response plus the optional Jev image judgment; `focus` is the box the client may crop to. */
@@ -42,7 +43,8 @@ export function parseEntity(text: string, hint?: string): Entity | null {
       r && typeof r === "object" ? Object.fromEntries(Object.entries(r as Record<string, unknown>).map(([k, v]) => [k, String(v ?? "")])) : r,
     );
   }
-  if (typeof o.title !== "string" || !o.title.trim()) o.title = hint?.trim().slice(0, 80) || "Extracted data";
+  // A missing title, or one that repeats the user's request, is never kept: the lift step derives a title from the data.
+  if (typeof o.title !== "string" || !o.title.trim() || isEchoTitle(o.title, hint)) o.title = "Extracted data";
   const parsed = EntitySchema.safeParse(raw);
   return parsed.success && parsed.data.rows.length > 0 ? parsed.data : null;
 }
@@ -53,7 +55,7 @@ export function mockEntity(hint?: string): Entity {
   if (/schedule|bus|route|dining|hours|class/.test(h)) {
     return {
       kind: "schedule",
-      title: hint?.trim().slice(0, 80) || "Bus schedule",
+      title: "Bus schedule",
       columns: [
         { key: "route", label: "Route", type: "text" },
         { key: "departs", label: "Departs", type: "time" },
@@ -71,7 +73,7 @@ export function mockEntity(hint?: string): Entity {
   if (/price|pricing|plan|cost|menu/.test(h)) {
     return {
       kind: "table",
-      title: hint?.trim().slice(0, 80) || "Pricing",
+      title: "Pricing",
       columns: [
         { key: "plan", label: "Plan", type: "text" },
         { key: "price", label: "Price", type: "money" },
@@ -87,7 +89,7 @@ export function mockEntity(hint?: string): Entity {
   }
   return {
     kind: "chart",
-    title: hint?.trim().slice(0, 80) || "Weekly signups",
+    title: "Weekly signups",
     columns: [
       { key: "week", label: "Week", type: "text" },
       { key: "signups", label: "Signups", type: "number" },

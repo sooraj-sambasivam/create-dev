@@ -7,7 +7,8 @@ export async function postJson(app: Express, path: string, body: unknown): Promi
   try {
     const { port } = server.address() as AddressInfo;
     const r = await fetch(`http://127.0.0.1:${port}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    return { status: r.status, body: await r.json() };
+    const text = await r.text();
+    return { status: r.status, body: text ? JSON.parse(text) : null };
   } finally {
     server.close();
   }

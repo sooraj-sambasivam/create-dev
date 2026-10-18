@@ -37,7 +37,7 @@ export function ChoiceGroup<T extends string>({ label, labelId, options, value, 
             aria-checked={sel}
             tabIndex={sel ? 0 : -1}
             onClick={() => onChange(o.id)}
-            className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[14px] transition-colors duration-120 ${focusRing} ${sel ? "bg-hover text-ink" : "bg-tray text-ink-2 hover:bg-hover"}`}
+            className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[14px] transition-[color,border-color,transform] duration-120 ${focusRing} ${sel ? "border border-ink bg-surface text-ink" : "border border-line bg-transparent text-ink-2 hover:border-ink-3 hover:text-ink active:scale-[0.97]"}`}
           >
             {o.label}
             {sel && <Check size={ICON.md} strokeWidth={STROKE} aria-hidden="true" />}
@@ -91,7 +91,7 @@ export function KeyCap({ children, pressed }: { children: ReactNode; pressed?: b
 export function StatusPill({ state }: { state: PermState }) {
   const p = ICON.sm;
   return (
-    <span className={chip.status}>
+    <span className={`${chip.status} bg-hover`}>
       {state === "granted" ? (
         <><Check size={p} strokeWidth={STROKE} className="text-ok" aria-hidden="true" />Granted</>
       ) : state === "blocked" ? (

@@ -1,6 +1,6 @@
 # Demo quality
 
-Real server on :3002 (MOCK_AI=0), 15 scenarios in `scripts/eval/demo/scenarios.json`, run with `node scripts/eval/demo/run.mjs --round <name>`. Outputs live in the scratchpad `demo-quality/round0..3`. Scores are one reader's rubric reading of the PNG and JSON, not an automated metric. Server vitest 358/358 and `tsc --noEmit` clean.
+Real server on :3002 (MOCK_AI=0), 15 scenarios in `scripts/eval/demo/scenarios.json`, run with `node scripts/eval/demo/run.mjs --round <name>`. Outputs live in the scratchpad `demo-quality/round0..3`. Scores are one reader's rubric reading of the PNG and JSON, not an automated metric. Server vitest 361/361 and `tsc --noEmit` clean (server and web).
 
 ## Rubric (0-5)
 - Lift: D data fidelity (rows and values match the source), S structure (table, chart, form wired, columns match fields), C copy (clean title, headers, summary, no request echo), V visual (minimal, readable).
@@ -27,6 +27,19 @@ Real server on :3002 (MOCK_AI=0), 15 scenarios in `scripts/eval/demo/scenarios.j
 | B02 sign-up | S3 C4 V4 | S3 C4 V4 | S4 C5 V5 | S4 C5 V5 |
 | B03 tutoring | S2 C3 V3 | S2 C3 V3 | S3 C4 V3 | S4 C5 V5 |
 
+## Round 4 (demo-fixes lane, real :3002, 15/15 ran)
+Outputs in the scratchpad `demo-quality/round4`. Scores are the same rubric; B01-B03 and L02-L03 were not re-scored (latency only, same prompts).
+| id | r4 | note |
+|---|---|---|
+| L01 timetable | 4/4/4/3 | locate now returns the whole table (scope container, was one row). 8 rows from the 1440x900 viewport shot (all that is visible); 20 rows when the crop comes from the corpus full-page capture (what a scroll capture would give). Title "Lynnwood to Federal Way stops" (was "track this train"). Many cells are ":" placeholders on the source page. |
+| L04 invoice | 5/5/4/4 | title "Invoice line items and subtotal", no request echo; 7 rows |
+| L05 life expectancy | 3/4/4/4 | 13 rows, value column "Life Expectancy, 2023" |
+| E02 blue | 5 | edit sets style.color on the chart; bars render #2563eb (the chart title takes the color too) |
+| C01 / C02 / C03 | 5 / 4 / 4 | providers inkling / claude / gemini; 2.4 / 1.8 / 2.3 s |
+| B01 / B02 / B03 latency | | 12.8 / 10.1 / 12.0 s |
+
+What changed: `pipeline/container.ts` (a lift verb such as track, turn, make, build beats a row noun; an explicit "row" or "entry" still picks the row); `extract/extract.ts` and `lift/clean.ts` (a missing or echoed title becomes "Extracted data", which the lift step replaces with a title derived from the data; titles made only of the request's words count as echoes); `ai/claude.ts` (every tool_use block in a turn gets a tool_result on repair, the likely cause of the 400; not reproduced live, since repairs succeeded in this run); `ask/ask.ts` (default Inkling failure now sets `x-model-fallback`, and the answer carries provider "claude"); `POST /api/traces` (dev only, 204, appends to `client-YYYYMMDD.jsonl`); `LiveBlocks.tsx` (chart series 0 uses the node or style color); `CanvasMode.tsx` (library folds to its icon when the preview opens below 1500px, preview width capped so the drawing area stays at least 540px and the page frame at least 480px; canvas e2e 22/22).
+
 ## Final prompts, in brief
 - `lift/clean.ts` and `entityToScreen`: strip "(row n)" labels, type columns from values, plot one series, exclude total rows, never use a title that echoes the request.
 - `lift/polish.ts`: plain sentence-case copy, summary under 16 words naming what the data covers.
@@ -45,10 +58,11 @@ Rounds 1-3 are the three consecutive runs. Latencies in ms, r1/r2/r3.
 Phone add-row and the pointer "make this blue" beat are not in the set; see below.
 
 ## Known weak spots to avoid on stage
-- E02 "make this blue" recolors only the chart title; bars use the accent variable in `LiveBlocks.tsx` (web). Use "make this bigger" instead.
-- L01 timetable lifts to a one-row app (locate returns one row). L04 and L01 titles can echo the request.
-- Any PDF lift (L03, L04) spends 5.4-6.9s in locate. Pre-lift and open by `?p=<id>`.
-- L05 chart lift varies run to run (6 or 13 rows) and its value column is labelled "2023" with no unit.
-- B03 is much better (S4 C5 V5, 6.0s) but has one clean run; B01 is S4/V4 with a 10s build.
-- Chat falls back to Claude silently if Inkling is unavailable; confirm provider before going on stage. The edit-node repair call returns 400 (`ai/claude.ts`); first-call edits have succeeded in every run.
-- The composer still shows the coffee shop demo and the other two. Removing them is a web change not done here.
+- A table taller than the viewport is read only as far as the screenshot shows (8 rows on the Sound Transit timetable). Full rows need a scroll capture in the extension; the eval uses the corpus full-page image for L01.
+- L01 cells on the live page are mostly ":" placeholders, so its table is sparse.
+- Any PDF lift (L03, L04) spends 4-5s in locate. Pre-lift and open by `?p=<id>`.
+- L05 chart lift varies run to run (6 or 13 rows).
+- E02 recolors the chart title as well as the bars.
+- B01 is S4/V4 with a 10-13s build.
+- The edit-node repair fix (tool_result for every tool_use) is untested against the live API; first-call edits have succeeded in every run.
+- The composer still shows the coffee shop demo and the other two (web, not in this lane).

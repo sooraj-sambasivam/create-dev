@@ -17,6 +17,7 @@ let package = Package(
                 // Embeds LSUIElement + usage strings so even the bare binary is a menu-bar agent.
                 .unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist", "-Xlinker", "Resources/Info.plist"])
             ]
-        )
+        ),
+        .testTarget(name: "CreateTrayTests", dependencies: ["CreateTray"], path: "Tests/CreateTrayTests"),
     ]
 )

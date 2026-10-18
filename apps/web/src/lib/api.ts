@@ -193,6 +193,7 @@ export interface Health {
   hasPerceptron?: boolean;
   hasGemini?: boolean;
   hasInkling?: boolean;
+  hasTinker?: boolean;
   hasOpenRouter?: boolean;
 }
 

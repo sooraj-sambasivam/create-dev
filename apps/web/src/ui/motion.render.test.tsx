@@ -42,6 +42,15 @@ describe("motion surfaces render", () => {
     expect(line).toContain("<polyline");
   });
 
+  it("a color set on the chart paints its bars", () => {
+    const base = { id: "c", type: "chart", kind: "bar", labels: ["x", "y"], series: [{ name: "s", values: [1, 3] }] };
+    const byStyle = renderToStaticMarkup(<ChartBlock node={{ ...base, style: { color: "#2563eb" } } as never} style={{}} />);
+    expect(byStyle).toContain("#2563eb");
+    const byCss = renderToStaticMarkup(<ChartBlock node={base as never} style={{ color: "#dc2626" }} />);
+    expect(byCss).toContain("#dc2626");
+    expect(renderToStaticMarkup(<ChartBlock node={base as never} style={{}} />)).toContain("var(--accent)");
+  });
+
   it("toasts queue, cap at three and dismiss", () => {
     useToasts.setState({ toasts: [] });
     for (const m of ["a", "b", "c", "d"]) toast(m, 60000);

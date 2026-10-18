@@ -66,7 +66,14 @@ export function answerOffered(offered: Offered | null, reply: string, now: numbe
  * One spoken line against the pointer. Chat answers; Code routes the line and edits, unless the router calls
  * it a question, which is answered instead.
  */
-export function runPointerCommand(ctx: CommandCtx, text: string, req: IntentRequest, areas: Record<string, number>): void {
+export function runPointerCommand(
+  ctx: CommandCtx,
+  text: string,
+  req: IntentRequest,
+  areas: Record<string, number>,
+  /** "Move this here" bound two nodes: `sourceId` is the one the first word meant, and it is the one that gets edited. */
+  opts: { sourceId?: string } = {},
+): void {
   const labelOf = (id: string | null) => (id ? req.candidates.find((c) => c.id === id)?.label ?? null : null);
   const fail = (message: string, id: string | null) => ctx.setPhase({ kind: "failed", targetId: id, label: labelOf(id), message });
   const pre = preResolve(req, areas);
@@ -105,6 +112,7 @@ export function runPointerCommand(ctx: CommandCtx, text: string, req: IntentRequ
     if (intent.confidence < MIN_INTENT_CONFIDENCE) { fail("Not sure what to change", bound); return; }
     // The router's pick wins when it is one of the candidates; "this/that" falls back to the pointer.
     let id = intent.targetId && req.candidates.some((c) => c.id === intent.targetId) ? intent.targetId : null;
+    if (opts.sourceId && req.candidates.some((c) => c.id === opts.sourceId)) id = opts.sourceId;
     if (!id && isDeictic(text) && pre.kind === "target") id = pre.id;
     if (!id) {
       if (pre.kind === "ask" || req.candidates.length > 1) {
