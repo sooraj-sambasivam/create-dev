@@ -149,7 +149,7 @@ const ICON_PX: Record<string, number> = { sm: 16, md: 24, lg: 36, xl: 56, "2xl":
  *  If the icon cannot load (offline, rate-limited), an outlined box of the same size keeps rows from collapsing. */
 export function IconGlyph({ name, px, style }: { name: string; px: number; style?: CSSProperties }) {
   const [prefix, icon] = name.split(":");
-  const url = prefix && icon ? `https://api.iconify.design/${prefix}/${icon}.svg` : "";
+  const url = prefix && icon ? `/api/icons/svg?name=${encodeURIComponent(name)}` : "";
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const colorful = COLORFUL_SET.test(prefix ?? "");
   useEffect(() => {

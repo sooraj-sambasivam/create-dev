@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import express, { Router } from "express";
 import multer from "multer";
 import type { Asset } from "@create/shared";
-import { ICON_STYLES, searchIcons } from "../icons";
+import { ICON_STYLES, iconSvgHandler, searchIcons } from "../icons";
 
 export const assetsRouter = Router();
 
@@ -38,6 +38,9 @@ assetsRouter.use(
     setHeaders: (res) => res.setHeader("X-Content-Type-Options", "nosniff"),
   }),
 );
+
+/** GET /api/icons/svg?name=set:icon -> one icon as SVG (proxied from Iconify, cached 24 h). */
+assetsRouter.get("/icons/svg", iconSvgHandler);
 
 /** GET /api/icons/search?q=cart&style=cartoon -> { icons: ["fluent-emoji-flat:shopping-cart", …] } */
 assetsRouter.get("/icons/search", async (req, res) => {

@@ -45,6 +45,15 @@ async function portableUrl(url: string): Promise<string | null> {
     }
   } else if (url.startsWith("/api/uploads/")) {
     out = await toDataUrl(url);
+  } else if (url.startsWith("/api/icons/svg?")) {
+    // Icons go back to Iconify's own address so the file works without this server.
+    const name = new URL(url, "http://local").searchParams.get("name") ?? "";
+    if (/^[a-z0-9-]+:[a-z0-9-]+$/i.test(name)) {
+      const [set, icon] = name.toLowerCase().split(":");
+      out = `https://api.iconify.design/${set}/${icon}.svg`;
+    } else {
+      out = null;
+    }
   }
   resolved.set(url, out);
   return out;
