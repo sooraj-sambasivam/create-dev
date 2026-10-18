@@ -1,6 +1,8 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { Container, Leaf as LeafNode, Node, Style } from "@create/shared";
 import { EditableText } from "../editor/EditableText";
+import { formatDataValue, getField } from "./dataFormat";
+import { useSandboxData } from "./sandboxData";
 
 /**
  * How each element type looks. ScreenRenderer wraps these with editor behaviour
@@ -320,6 +322,25 @@ function Label({ nodeId, text, children }: { nodeId: string; text: string; child
   );
 }
 
+function LiveData({ node, o }: { node: Extract<LeafNode, { type: "data" }>; o: CSSProperties }) {
+  const result = useSandboxData(node.source, node.refreshSec ?? 0);
+  const shown = result.status === "ready" ? formatDataValue(getField(result.data, node.field), node.format) : null;
+  return (
+    <div className="flex flex-col gap-1" style={o} data-live-fallback={node.fallback} aria-busy={result.status === "loading"}>
+      {node.label && (
+        <span className="text-sm" style={{ color: "var(--fg-muted)" }}>
+          {node.label}
+        </span>
+      )}
+      {result.status === "loading" ? (
+        <span className="block h-8 w-24 animate-pulse rounded-md" style={{ background: "color-mix(in srgb, currentColor 14%, transparent)" }} aria-label="Loading" />
+      ) : (
+        <span className="text-3xl font-semibold leading-tight tracking-tight tabular-nums">{shown ?? node.fallback}</span>
+      )}
+    </div>
+  );
+}
+
 export function Leaf({ node, fill, interactive }: { node: LeafNode; fill: boolean; interactive: boolean }) {
   const o = overrides(node.style);
   const boxed = node.style?.background ? "px-2 py-1 rounded-md" : "";
@@ -564,6 +585,8 @@ export function Leaf({ node, fill, interactive }: { node: LeafNode; fill: boolea
           </select>
         </Label>
       );
+    case "data":
+      return <LiveData node={node} o={o} />;
     case "divider":
       return (
         <hr

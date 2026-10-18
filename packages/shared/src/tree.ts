@@ -159,6 +159,7 @@ export function defaultNode(screen: Screen, type: Node["type"]): Node {
     textbox: { label: "Label", placeholder: "Type here…" },
     checkbox: { label: "I agree" },
     select: { label: "Choose one", options: ["Option A", "Option B"] },
+    data: { source: { route: "/stats" }, field: "value", format: "number", label: "Live value", fallback: "—" },
     divider: {},
     spacer: { size: "md" },
     container: { direction: "row", padding: "md", background: "surface", align: "center", children: [] },

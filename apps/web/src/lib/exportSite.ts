@@ -90,6 +90,15 @@ export async function exportSite(): Promise<{ filename: string; html: string }> 
     el.id = el.dataset.nodeId!;
     el.removeAttribute("data-node-id");
   });
+  // A published page can't reach the sandbox: live values keep what was rendered; unloaded ones show their fallback.
+  root.querySelectorAll<HTMLElement>("[data-live-fallback]").forEach((el) => {
+    if (el.getAttribute("aria-busy") === "true") {
+      const skeleton = el.querySelector("[aria-label='Loading']");
+      if (skeleton) skeleton.replaceWith(Object.assign(document.createElement("span"), { textContent: el.dataset.liveFallback ?? "—", className: "text-3xl font-semibold" }));
+    }
+    el.removeAttribute("data-live-fallback");
+    el.removeAttribute("aria-busy");
+  });
   root.querySelectorAll(".shimmer-light").forEach((el) => el.remove());
 
   // Photos and uploads.
