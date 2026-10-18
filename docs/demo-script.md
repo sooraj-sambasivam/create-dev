@@ -4,8 +4,10 @@ Theme: **Point at it. Say it. It changes.** Target: 2:00. Narrate for non-coders
 businesses: say "page", "website", "your customers", never "component" or "API".
 
 **Length:** the team decision allows up to two minutes (B2); this script is written for 2:00. OWNER:
-confirm the length limit and the track name on the DubHacks hacker guide before recording.
+confirm the length limit on the DubHacks hacker guide before recording.
 If three minutes are allowed, use the spare time as buffer, not for extra features.
+
+**Tracks:** DubHacks NEXT, Perceptron (sketch beat), SideShift, MongoDB Atlas (form beat). Say each sponsor name once, on the beat that uses it.
 
 **Presenter:** OWNER: assign who speaks and who drives the mouse. Everyone presents or records (T3).
 
@@ -18,6 +20,7 @@ If three minutes are allowed, use the spare time as buffer, not for extra featur
 - [ ] Browser (Chrome) at laptop width, light theme, microphone permission granted in advance.
 - [ ] Start from an empty app (new chat, no page).
 - [ ] Narrate is on and the pointer bubble shows when you hover the page. Do one dry run.
+- [ ] Chat | Code toggle, click-to-pin and hold-Option talk, Backend panel and a real form submission in MongoDB confirmed in the browser (verify before submit). Drop the Chat + Backend beat if any fails.
 - [ ] Extension loaded unpacked in this Chrome profile and tested on the demo site (it has never been run in a real browser; OWNER: verify). Drop the beat if it fails.
 - [ ] Phone route for the share step is tested (see `docs/integration.md`, "Share links on a phone").
 - [ ] Replay is primed: run this exact script once in record mode (the default) in the same browser
@@ -34,6 +37,7 @@ If three minutes are allowed, use the spare time as buffer, not for extra featur
 | 1:05-1:15 | Undo and ask | Press Cmd+Z to undo. Hover where two items overlap and say `Make this red.` If the bubble asks "Which one?", click the right item. | "It never guesses silently. If it is unsure, it asks. Undo is one key." |
 | 1:15-1:35 | Sketch | Open the fan, choose **Canvas**. Draw a wide header box, two side-by-side cards, a small button box. Press Generate. Watch the preview pane. | "Or draw it. Perceptron reads the sketch, and Claude turns it into your page." |
 | 1:35-1:45 | Voice | Open the fan, choose **Mic**. Say: `Add a contact section with a phone number.` Press Go. | "Speech goes in live through ElevenLabs." |
+| OPTIONAL (verify before submit; needs time freed elsewhere, e.g. drop Undo and ask) | Chat + Backend | Switch **Chat | Code** to Chat, point at a figure, ask `What does this number mean?`. Switch back to Code. In Preview, submit the contact form; open the app's **Backend** panel and show the entry (stored in MongoDB). | "Chat answers questions about anything you point at. And the form is real: the answer lands in your backend." |
 | 1:45-1:55 | Extension (only if the gate confirms it works; otherwise do the phone share) | Click the extension icon on any website, click an element, type `make this mine but darker`. A Create tab opens. Phone alternative: **Share**, copy the link, open on the phone (`pnpm share:tunnel`). | "Point at any website and pull it into Create." |
 | 1:55-2:00 | Close | Show the four inputs: type, say, draw, point. | "Point at it. Say it. It changes." |
 

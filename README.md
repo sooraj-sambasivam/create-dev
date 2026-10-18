@@ -15,6 +15,10 @@ See [docs/screenshots](docs/screenshots/README.md).
 - **Point and talk (Narrate):** hover an element, hold Option, say "make this bigger" or "swap this
   photo". A bubble shows the target label, the words heard, then Editing and Done. Ambiguous
   targets ask "Which one?". Shift+drag selects several elements. Edits are queued and undoable.
+- **Chat | Code modes (verify before submit):** Chat answers questions about anything, including a figure you point at; Code builds and edits the page.
+- **AI pointer (verify before submit):** click to pin a target, or hold Option to talk.
+- **Per-app Backend (verify before submit):** form submissions on a built page are stored in MongoDB (file fallback) and listed in the app's Backend panel.
+- **Onboarding (verify before submit):** first-run paths for technical and non-technical users.
 - **Type, speak, draw:** prompt composer, live voice (ElevenLabs Scribe, browser speech fallback),
   and a tldraw canvas whose sketch (plus dropped sections, icons and photos) becomes edits.
 - **Editor:** click to select, drag, resize, type in place, inspector, per-element AI box.
@@ -32,7 +36,9 @@ See [docs/screenshots](docs/screenshots/README.md).
   the pointed element wins; otherwise the words choose. Falls back to Claude Haiku, then keywords.
 - **Perceptron:** reads canvas sketches (what each shape is and where) before Claude writes edit ops.
 - **ElevenLabs Scribe:** realtime transcription with a single-use token minted by the server.
-- **MongoDB Atlas:** optional share-link store (`MONGODB_URI`); local files without it.
+- **MongoDB Atlas (MLH):** share links and per-app form submissions (`MONGODB_URI`); local files without it.
+
+Hackathon tracks: DubHacks NEXT, Perceptron, SideShift, MongoDB Atlas. Team: Sooraj Sambasivam, Abel Anand, pentaswan. Per-track evidence: `docs/devpost.md`.
 
 ## Quickstart (judges)
 
