@@ -1,6 +1,7 @@
 # Create
 
-**Tagline:** Point at anything. Say what you want. Own the software.
+**Tagline:** Point at it. Say it. Own it.
+**Subtitle:** Point at a table, chart or schedule you cannot edit, say what you want, and get a live app you own.
 
 **Tracks:** DubHacks NEXT · Perceptron · SideShift · MongoDB Atlas (only if `MONGODB_URI` is set; OWNER)
 **Team:** Sooraj Sambasivam, Abel Anand, pentaswan
@@ -11,11 +12,17 @@ Status key: **(verify before submit)** means built and covered by tests or a ser
 
 ## Inspiration
 
-In May 2026, Google DeepMind wrote that the mouse pointer had barely changed in more than half a century (secondary coverage in `docs/research/competitors.md`; verify before submit: link the primary post), and showed one that understands what is under it: you point, say "compare these" or "fix this", and the pointer supplies the "this".
+The information people need lives in places they cannot change: a bus timetable, a pricing page, a PDF, someone else's spreadsheet, a dashboard in another app. To use it, people copy and paste it, retype it, or wait for an engineer to build something.
 
-We liked the idea and wanted to push it one step. In Google's version the pointer answers questions. A bus schedule, a dining hall's hours, a pricing table or a chart in a PDF is still something you can read and not change. You cannot add a row, sort it your way, chart it or let a friend contribute. We wanted pointing to end with software you keep: an app with a table, a chart and a form that stores what people add.
+AI tools do not fix this. They make you leave your work and describe it in a chat box, and the answer is text you read once.
+
+In May 2026, Google DeepMind wrote that the mouse pointer had barely changed in more than half a century (secondary coverage in `docs/research/competitors.md`; verify before submit: link the primary post), and showed one that understands what is under it: you point, say "compare these" or "fix this", and the pointer supplies the "this". We liked that you can just point and say "this".
+
+We wanted to push it one step. In Google's version the pointer answers questions, and the timetable is still something you can read and not change. You cannot add a row, sort it your way, chart it or let a friend contribute. We wanted pointing to end with software you keep: an app with a table, a chart and a form that stores what people add.
 
 ## What it does
+
+The data you need is on a page you cannot edit. Create lets you point at it and say what you want. You get a live table, a chart and a form that you own, backed by a real database. Then you change the app by pointing and talking ("make this bigger"), and Chat answers questions about whatever you point at, using the app's own rows.
 
 **Point at a table, chart or list, say "turn this into something I can track", and get a live app.**
 
@@ -48,7 +55,7 @@ Values read from an image are approximate, and the app says so. Exact numbers co
 
 ## Challenges
 
-- **Timing and sync.** The hand moves before the sentence ends, so "this" must bind to where the pointer was when the word was spoken, not where it is when speech finishes. We resolve the target at the start of speech, and we built a timeline and a test harness (`scripts/e2e/sync/`) to measure binding accuracy. Its results are not in this write-up; do not quote any. (verify before submit)
+- **Timing and sync.** The hand moves before the sentence ends, so "this" must bind to where the pointer was when the word was spoken, not where it is when speech finishes. We resolve the target at the start of speech, and we built a timeline and a test harness (`scripts/e2e/sync/`) to measure binding accuracy. In our sync test on live Scribe, 33 of 33 deictic words bound to the correct target, with timing error p95 of 35 ms (measured harness run, `scratchpad/sync/report.md`; it is a scripted test, not a user study). (verify before submit)
 - **Table versus cell.** Under the cursor is usually a cell. "Track this" means the table. We now return the enclosing table, row and cell and choose by what you said. The DOM provider alone went from 10/22 to 17/22 on web targets.
 - **Latency budgets.** Perceptron detection takes 3 to 8 s on our images, which is far over a 300 ms label budget. So hover never calls it. The commit step does, with an 8 s cap (the old 4 s cap cut off most calls, and PDF hits went from 1/8 to 4/8 when we raised it).
 - **Honest numbers.** Our first pointer eval scored 36.7% and our target was 90%. We kept the table and fixed what the data pointed at. We are still short (below).
@@ -61,6 +68,7 @@ All figures are from a real-mode server (`MOCK_AI=0`, live keys) on 2026-10-18 u
 - **Real-mode eval: 12/12 pass** (`scripts/eval/results/2026-10-18T08-04-46-248Z.json`). Generating a page takes 11 to 26 s, an element edit about 2 s, Jev routing about 0.13 to 0.16 s, and Chat 3.1 to 4.6 s.
 - **Pointer top-1 on 30 labelled targets: hover 20/30 (66.7%), commit 24/30 (80.0%).** Mean IoU 0.65 and 0.75. Web targets 20/22 in both modes; PDF targets 0/8 in hover and 4/8 in commit. The 90% target is not met. Hover latency: p50 4 ms, p95 137 ms. Commit p95 is about 5.1 s on the PDF targets that wait for Perceptron.
 - **Demo path, end to end: 16.3 s** (`docs/results/traces/demo-path-real.json`): locate 8.0 s, Perceptron read 1.4 s, lift 1.5 s, row submit instant, Chat about the chart 3.5 s (Inkling), "make this bigger" 1.8 s.
+- **Sync: 33/33 deictic words bound correctly in our sync test on live Scribe, timing error p95 35 ms** (measured harness run, `scratchpad/sync/report.md`; scripted utterances, not a user study).
 - **Known risk:** in commit mode, 6 of 30 answers are wrong without a "Which one?" prompt, mostly PDF boxes from Perceptron that nothing contradicts.
 - **Tests at the last recorded run:** server 330 tests pass, TypeScript clean for shared, server and web; the extension e2e passed 23/23 earlier in the night. (verify before submit: rerun all gates on the final commit)
 - The corpus is small: 30 targets, so one target is 3.3 points, and web targets were captured by the same lane that tuned the rules. Treat 20/22 as optimistic.
