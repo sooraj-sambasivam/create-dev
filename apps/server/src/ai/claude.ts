@@ -290,6 +290,18 @@ function withNotes(summary: string, notes: string[]): string {
   return unique.length ? `${summary} ${unique.join(" ")}` : summary;
 }
 
+function routesBlock(routes: string[] | undefined): string | null {
+  if (!routes || routes.length === 0) return null;
+  return `<routes>\n${routes.join("\n")}\n</routes>`;
+}
+
+/** Routes the request offers, plus any already used by data elements on the current page (kept on edits). */
+function allowedRoutes(routes: string[] | undefined, screen: Screen | null | undefined): string[] {
+  const out = new Set(routes ?? []);
+  if (screen) walkNodes(screen.children, (n) => n.type === "data" && out.add(n.source.route));
+  return [...out];
+}
+
 function assetsBlock(assets: Asset[] | undefined): string | null {
   if (!assets || assets.length === 0) return null;
   return `<assets>\n${JSON.stringify(assets)}\n</assets>`;
@@ -305,6 +317,8 @@ export function buildUserMessage(req: GenerateRequest): string {
   const parts: string[] = [`Today is ${today()}.`];
   const assets = assetsBlock(req.assets);
   if (assets) parts.push(assets);
+  const routes = routesBlock(req.routes);
+  if (routes) parts.push(routes);
   if (req.history && req.history.length > 0) {
     parts.push(`<history>\n${req.history.map((h, i) => `${i + 1}. ${h}`).join("\n")}\n</history>`);
   }
@@ -338,7 +352,7 @@ export async function generateWithClaude(req: GenerateRequest, opts: GenerateStr
     allowWebFetch: URL_RE.test(req.prompt),
     validate: (input, notes) => {
       const raw = (input ?? {}) as Record<string, unknown>;
-      return GenerateResponseSchema.safeParse({ ...raw, screen: sanitizeScreen(raw.screen, notes) });
+      return GenerateResponseSchema.safeParse({ ...raw, screen: sanitizeScreen(raw.screen, notes, allowedRoutes(req.routes, req.screen)) });
     },
   });
 
@@ -358,6 +372,7 @@ export async function editNodeWithClaude(req: EditNodeRequest): Promise<EditNode
   const message = [
     `Today is ${today()}.`,
     assetsBlock(req.assets),
+    routesBlock(req.routes),
     `<page_outline>\n${outlineScreen(req.screen)}\n</page_outline>`,
     `<target_node>\n${JSON.stringify(target)}\n</target_node>`,
     EDIT_NODE_INSTRUCTIONS,
@@ -377,7 +392,7 @@ export async function editNodeWithClaude(req: EditNodeRequest): Promise<EditNode
     allowWebFetch: URL_RE.test(req.prompt),
     validate: (input, notes) => {
       const raw = (input ?? {}) as Record<string, unknown>;
-      return EditNodeResponseSchema.safeParse({ ...raw, nodes: sanitizeNodes(raw.nodes, notes) });
+      return EditNodeResponseSchema.safeParse({ ...raw, nodes: sanitizeNodes(raw.nodes, notes, new Set<string>(), allowedRoutes(req.routes, req.screen)) });
     },
   });
 

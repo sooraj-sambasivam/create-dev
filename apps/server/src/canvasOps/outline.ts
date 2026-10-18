@@ -9,6 +9,7 @@ export function estimateHeight(n: Node): number {
     case "textbox": return n.multiline ? 120 : 72;
     case "select": return 72;
     case "icon": return 48;
+    case "data": return n.label ? 72 : 48;
     case "avatar": return 64;
     case "image": return n.size === "logo" ? 40 : n.size === "small" ? 96 : n.size === "medium" ? 200 : 420;
     case "video": case "map": return 420;

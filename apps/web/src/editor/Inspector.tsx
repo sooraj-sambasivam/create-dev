@@ -499,6 +499,39 @@ function ContentFields({ node, screen }: { node: Node; screen: Screen }) {
           </Field>
         </>
       );
+    case "data":
+      return (
+        <>
+          <Field label="Route">
+            <TextInput
+              value={node.source.route}
+              placeholder="/orders/today"
+              onChange={(route) => livePatch(node.id, { source: { ...node.source, route } })}
+            />
+          </Field>
+          <Field label="Field (dot path in the response)"><Prop node={node} field="field" placeholder="total" /></Field>
+          <Field label="Format">
+            <select value={node.format} onChange={(e) => patch(node.id, { format: e.target.value as typeof node.format })} className={`${inputCls} appearance-none pr-8`}>
+              {[["text", "Text"], ["number", "Number (1,234)"], ["compact", "Compact (1.2K)"], ["currency", "Currency ($)"], ["date", "Date"]].map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Label"><Prop node={node} field="label" placeholder="Orders today" /></Field>
+          <Field label="Fallback (when unavailable)"><Prop node={node} field="fallback" placeholder="—" /></Field>
+          <Field label="Refresh every (seconds, blank = once)">
+            <input
+              type="number" min={5} max={3600} value={node.refreshSec ?? ""}
+              onFocus={beginSession} onBlur={beginSession}
+              onChange={(e) => {
+                const n = e.target.value === "" ? null : Math.min(3600, Math.max(5, Math.round(Number(e.target.value)) || 5));
+                livePatch(node.id, { refreshSec: n });
+              }}
+              className={inputCls}
+            />
+          </Field>
+        </>
+      );
     case "badge":
       return <Field label="Text"><Prop node={node} field="text" /></Field>;
     case "list":
@@ -654,7 +687,7 @@ function LayoutFields({ node }: { node: Container }) {
   );
 }
 
-const TEXTY = ["heading", "text", "button", "link", "badge", "list", "checkbox", "textbox", "select", "table", "accordion", "rating"];
+const TEXTY = ["heading", "text", "button", "link", "badge", "list", "checkbox", "textbox", "select", "table", "accordion", "rating", "data"];
 const PHOTOGRAPHIC = ["image", "avatar", "icon", "container"];
 
 function StyleFields({ node }: { node: Node }) {

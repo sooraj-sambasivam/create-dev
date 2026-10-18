@@ -23,6 +23,7 @@ const ITEMS: { type: NodeType; hint: string }[] = [
   { type: "textbox", hint: "A field to type in" },
   { type: "checkbox", hint: "A tick box" },
   { type: "select", hint: "Pick from a list" },
+  { type: "data", hint: "A value from your backend" },
   { type: "divider", hint: "A line" },
   { type: "spacer", hint: "Empty space" },
   { type: "container", hint: "A box to group things in a row or column" },
